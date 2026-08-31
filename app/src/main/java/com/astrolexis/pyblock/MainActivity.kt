@@ -19,7 +19,7 @@ import com.astrolexis.pyblock.data.store.ThemeStore
 import com.astrolexis.pyblock.push.ChatLaunch
 import com.astrolexis.pyblock.push.DmPushService
 import com.astrolexis.pyblock.push.PushManager
-import com.astrolexis.pyblock.ui.nav.RootScaffold
+import com.astrolexis.pyblock.ui.blake.BlakeRootScaffold
 import com.astrolexis.pyblock.ui.theme.PyBlockTheme
 
 class MainActivity : ComponentActivity() {
@@ -43,7 +43,7 @@ class MainActivity : ComponentActivity() {
             com.astrolexis.pyblock.ui.theme.LocalizedApp {
                 PyBlockTheme(paletteId = ThemeStore.effectivePaletteId) {
                     androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
-                        RootScaffold()
+                        BlakeRootScaffold()
                         // CRT power-on over the whole cabinet, once per cold launch.
                         var booted by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
                         if (!booted) com.astrolexis.pyblock.ui.components.CrtBootSweep { booted = true }
