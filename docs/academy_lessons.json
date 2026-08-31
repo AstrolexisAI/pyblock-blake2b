@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "lessons": [
+    {
+      "id": 1,
+      "title": "What is Bitcoin?",
+      "summary": "Money without a middleman",
+      "premium": false,
+      "body": "Bitcoin is a peer-to-peer digital money. No company, bank, or government issues it or controls it. A public ledger — the timechain — records every transaction, and thousands of independent nodes around the world each keep a full copy and enforce the same rules.\n\nOnly 21 million bitcoin will ever exist. New coins enter circulation only as a reward to miners who secure the network, and that reward is cut in half roughly every four years (the \"halving\"). This fixed, transparent supply is what makes bitcoin scarce by design — nobody can print more.\n\nBecause the rules are enforced by everyone running the software, you don't have to trust any single party. You verify."
+    },
+    {
+      "id": 2,
+      "title": "How Mining Works",
+      "summary": "Turning energy into security",
+      "premium": false,
+      "body": "Mining is how new blocks of transactions get added to the timechain. Miners collect pending transactions, bundle them into a candidate block, and then race to find a number (the \"nonce\") that makes the block's hash fall below a target. There's no shortcut — it takes trillions of guesses, i.e. real computation and real energy.\n\nThe first miner to find a valid hash broadcasts the block; every node checks it instantly and, if valid, builds on top of it. The winner earns the block subsidy plus the fees of the transactions inside.\n\nThis \"proof-of-work\" is what makes rewriting history astronomically expensive — an attacker would have to out-compute the entire honest network."
+    },
+    {
+      "id": 3,
+      "title": "Pools vs Solo Mining",
+      "summary": "Steady drips or rare jackpots",
+      "premium": false,
+      "body": "A single miner's odds of finding a block alone are tiny, so most miners join a pool: they combine hashrate and share the rewards proportionally to the work each contributed. You get small, steady payouts instead of waiting years for one big hit.\n\nSolo mining is the opposite — you keep the entire block reward if you get lucky, but you might never find one. It's a lottery.\n\nPyBLØCK lets you point hashrate at different pools: LOTTO (solo-style lottery), DATUM/CHIRP (shared coinbase, non-custodial), SV2 and more. Payouts go straight to your own address — the pool never holds your coins."
+    },
+    {
+      "id": 4,
+      "title": "Reading Your Hashrate",
+      "summary": "TH/s, PH/s and what they mean",
+      "premium": true,
+      "body": "Hashrate measures how many guesses per second your hardware makes. It's quoted in TH/s (terahash = 10¹² hashes/s), PH/s (petahash = 10¹⁵), or EH/s (exahash = 10¹⁸) for the whole network.\n\nYour share of the network's total hashrate is your share of the expected rewards. If the network is 600 EH/s and you contribute 60 PH/s, you're ~0.00001% of it — so you'd expect that fraction of blocks over time.\n\nShort-term luck swings wildly; over long periods, earnings converge to your hashrate share minus fees. Don't judge a miner by one hour — judge it by weeks."
+    },
+    {
+      "id": 5,
+      "title": "Clean Blocks",
+      "summary": "Mining money, not spam",
+      "premium": true,
+      "body": "Not every transaction is a monetary payment. Some embed images, tokens, or arbitrary data (inscriptions, runes, spam) that bloat blocks and crowd out real payments.\n\nPyBLØCK runs an anti-spam Bitcoin Knots node that filters these out, building block templates from monetary transactions only: our blocks carry payments, not parasites — reclaiming blockspace for money.\n\nAny pool can mine a \"clean\" block; what matters is the content of the block, not who mined it. The Clean Blocks explorer in the app lets you watch this in real time and verify each block yourself."
+    },
+    {
+      "id": 6,
+      "title": "Difficulty & the Halving",
+      "summary": "Why the network self-adjusts",
+      "premium": true,
+      "body": "Bitcoin targets one block every ten minutes on average. As more hashrate joins, blocks would come faster — so every 2,016 blocks (~two weeks) the network automatically retargets difficulty up or down to hold that ten-minute pace.\n\nMore competition → higher difficulty → each unit of hashrate earns less. Less competition → difficulty falls.\n\nSeparately, every 210,000 blocks (~four years) the block subsidy halves: 50 → 25 → 12.5 → 6.25 → 3.125 BTC, and so on. Over time, transaction fees are designed to replace the shrinking subsidy as miners' main income."
+    },
+    {
+      "id": 7,
+      "title": "Non-custodial Payouts",
+      "summary": "Not your keys, not your coins",
+      "premium": true,
+      "body": "When you mine with PyBLØCK, rewards are paid on-chain directly to a Bitcoin address you control. The pool never takes custody of your funds — there's no account balance to withdraw, no counterparty who can freeze or lose your coins.\n\nThat's why the address you set matters: mined bitcoin goes exactly there. Use a wallet where you hold the private keys (hardware wallet, or a reputable self-custody app), not an exchange deposit address you don't fully control.\n\nSelf-custody is the whole point of Bitcoin: you don't ask permission, and you don't trust a middleman with your money."
+    },
+    {
+      "id": 8,
+      "title": "Stratum V1 vs V2",
+      "summary": "Who chooses what you mine",
+      "premium": true,
+      "body": "Stratum is the protocol between miners and pools. In Stratum V1, the pool builds the block template and tells your machine what to hash — so the pool decides which transactions go in.\n\nStratum V2 adds \"job declaration\": miners (or their chosen template provider) can build their own block templates and still get paid by the pool. This decentralizes transaction selection — power moves from a handful of pools back toward individual miners.\n\nPyBLØCK runs SV2 and CHIRP pools so you can help decide what Bitcoin mines, not just supply raw hashpower."
+    },
+    {
+      "id": 9,
+      "title": "Fees, sat/vB & the Mempool",
+      "summary": "The market for blockspace",
+      "premium": true,
+      "body": "Every unconfirmed transaction waits in the mempool. Blockspace is scarce (~1–4 million weight units per block), so users attach a fee to compete for inclusion. Fees are measured in satoshis per virtual byte (sat/vB) — pay more per byte, get confirmed sooner.\n\nMiners naturally prioritize the highest sat/vB transactions because that maximizes their reward. When the mempool is busy, fees rise; when it's quiet, they fall.\n\nFor miners, fees are an increasingly important slice of income as the subsidy halves. A well-built template packs the most fee-paying, monetary transactions into each block."
+    },
+    {
+      "id": 10,
+      "title": "Run Your Own Node",
+      "summary": "Verify, don't trust",
+      "premium": true,
+      "body": "A full node downloads and validates the entire timechain, enforcing every consensus rule itself. Running one is the strongest form of self-sovereignty: you personally verify that the coins you receive are real and that the rules haven't changed.\n\nNodes also power mining the right way — PyBLØCK's own anti-spam Bitcoin Knots node builds the spam-filtered templates the pools mine, so blocks reflect our rules, not someone else's.\n\nYou don't need to mine to run a node. Even a cheap always-on computer can validate the network, relay transactions, and back your own wallet — no third party required."
+    }
+  ]
+}
