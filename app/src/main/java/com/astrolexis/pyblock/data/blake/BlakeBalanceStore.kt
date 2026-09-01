@@ -5,6 +5,15 @@ import com.astrolexis.pyblock.data.wallet.WalletStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.WebSocket
+import okhttp3.WebSocketListener
+import org.json.JSONObject
 
 /**
  * Server-read balance/UTXO state for the BLAKE2b wallet — the Node B (PoW-agnostic)
@@ -88,4 +97,84 @@ object BlakeBalanceStore {
 
     /** Consume the pending receive event (after the UI plays the effect). */
     fun clearReceiveEvent() { _receiveEvent.value = null }
+
+    // ---- Live stream (WebSocket push — no time-based polling) ----
+
+    /** True while the push stream is connected. */
+    private val _live = MutableStateFlow(false)
+    val live: StateFlow<Boolean> = _live.asStateFlow()
+
+    private const val STREAM_URL = "wss://pyblock.xyz:8443/wallet_stream?chain=blake2b"
+    private val streamClient = OkHttpClient.Builder().build()
+    private val streamJson = Json { ignoreUnknownKeys = true; coerceInputValues = true }
+    @Volatile private var socket: WebSocket? = null
+    @Volatile private var subscribedAddrs: List<String> = emptyList()
+    @Volatile private var reconnectScheduled = false
+
+    @Serializable private data class StreamMsg(
+        val type: String? = null,
+        val address: String? = null,
+        @SerialName("tip_height") val tipHeight: Int? = null,
+        val utxos: List<BlakeApi.Utxo>? = null,
+    )
+
+    /** Open the live push stream and subscribe to every wallet address. Idempotent. */
+    fun startLive(ctx: Context) {
+        WalletStore.ensureLoaded(ctx)
+        subscribedAddrs = WalletStore.wallets.value.map { it.address }.filter { it.isNotBlank() }
+        if (subscribedAddrs.isEmpty()) return
+        if (socket == null) {
+            val req = Request.Builder().url(STREAM_URL).build()
+            socket = streamClient.newWebSocket(req, listener)
+        } else {
+            sendSubscribe()
+        }
+    }
+
+    fun stopLive() {
+        socket?.close(1000, null); socket = null; _live.value = false
+    }
+
+    private fun sendSubscribe() {
+        val ws = socket ?: return
+        val body = JSONObject().put("op", "subscribe")
+            .put("addresses", org.json.JSONArray(subscribedAddrs)).toString()
+        ws.send(body)
+    }
+
+    private val listener = object : WebSocketListener() {
+        override fun onOpen(webSocket: WebSocket, response: Response) { _live.value = true; sendSubscribe() }
+        override fun onMessage(webSocket: WebSocket, text: String) { handleStream(text) }
+        override fun onClosed(webSocket: WebSocket, code: Int, reason: String) { _live.value = false; socket = null; scheduleReconnect() }
+        override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) { _live.value = false; socket = null; scheduleReconnect() }
+    }
+
+    /** Server pushes the FULL current UTXO set for a changed address (idempotent) + tip. */
+    private fun handleStream(text: String) {
+        _live.value = true
+        val m = runCatching { streamJson.decodeFromString<StreamMsg>(text) }.getOrNull() ?: return
+        if (m.type == "ping") return
+        if ((m.tipHeight ?: 0) > 0) _tip.value = m.tipHeight!!
+        val addr = m.address ?: return
+        val us = m.utxos ?: return
+        _utxos.value = _utxos.value.toMutableMap().apply { put(addr, us) }
+        // fire the "received" effect the instant a payment lands
+        val total = totalSats()
+        val prev = lastTotal
+        if (prev != null && total > prev) { eventSeq += 1; _receiveEvent.value = ReceiveEvent(eventSeq, total - prev) }
+        lastTotal = total
+    }
+
+    private fun scheduleReconnect() {
+        if (reconnectScheduled || subscribedAddrs.isEmpty()) return
+        reconnectScheduled = true
+        Thread {
+            try { Thread.sleep(3_000) } catch (_: InterruptedException) {}
+            reconnectScheduled = false
+            if (socket == null && subscribedAddrs.isNotEmpty()) {
+                val req = Request.Builder().url(STREAM_URL).build()
+                socket = streamClient.newWebSocket(req, listener)
+            }
+        }.start()
+    }
 }

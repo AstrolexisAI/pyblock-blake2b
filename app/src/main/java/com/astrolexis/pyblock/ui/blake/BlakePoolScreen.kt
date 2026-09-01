@@ -2,6 +2,7 @@ package com.astrolexis.pyblock.ui.blake
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,81 +10,95 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.astrolexis.pyblock.data.blake.BlakeApi
-import com.astrolexis.pyblock.ui.theme.MarqueeTitle
-import com.astrolexis.pyblock.ui.theme.PyTheme
-import com.astrolexis.pyblock.ui.theme.PyType
-import com.astrolexis.pyblock.ui.theme.Starfield
-import com.astrolexis.pyblock.ui.theme.moduleFrame
 import kotlinx.coroutines.delay
 
-/** POOL — read-only BLAKE2b pool telemetry + recent blocks. Mirrors iOS PoolView. */
+/** HOME / POOL — the BLAKE2b network at a glance. Mirrors iOS PoolView + b.pyblock.xyz:
+ *  hero title, LIVE/RC badge, big mono KPIs, recent mined blocks. Sober, purple, spacious. */
 @Composable
 fun BlakePoolScreen() {
     var stats by remember { mutableStateOf<BlakeApi.PoolStats?>(null) }
     var status by remember { mutableStateOf<BlakeApi.Status?>(null) }
     var blocks by remember { mutableStateOf<List<BlakeApi.Block>>(emptyList()) }
+    var loaded by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         while (true) {
             BlakeApi.poolStats()?.let { stats = it }
             BlakeApi.status()?.let { status = it }
             BlakeApi.blocks().takeIf { it.isNotEmpty() }?.let { blocks = it }
+            loaded = true
             delay(20_000)
         }
     }
 
-    androidx.compose.foundation.layout.Box(Modifier.fillMaxSize().background(PyTheme.bg)) {
-        Starfield()
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
-            MarqueeTitle(text = "PyBLØCK ᛒ", accent = PyTheme.primary)
-            Spacer(Modifier.height(4.dp))
-            Text("BLAKE2b POOL", style = PyType.mono(11f), color = PyTheme.primaryDim, letterSpacing = 3.sp)
+    val live = status?.operational == true
 
-            // Not-yet-operational banner (auto-clears when the server says so).
-            if (status?.operational == false) {
-                Spacer(Modifier.height(12.dp))
-                Column(Modifier.fillMaxWidth().moduleFrame(PyTheme.yellow).padding(10.dp)) {
-                    Text("⚠ BLAKE2b ${status?.rc ?: "RC"} · TESTING ON MAINNET", style = PyType.mono(11f), color = PyTheme.yellow, letterSpacing = 1.sp)
-                    Text("The timechain is still being tested.", style = PyType.mono(9f), color = PyTheme.yellow.copy(alpha = 0.85f))
+    Box(Modifier.fillMaxSize().background(Blake.bg)) {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
+            // header
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("be PyBLØCK", style = Blake.mono(24f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 2.sp)
+                Spacer(Modifier.weight(1f))
+                Box(Modifier.size(7.dp).background(if (live) Blake.ok else Blake.warn, CircleShape))
+                Spacer(Modifier.size(5.dp))
+                Text(if (live) "LIVE" else (status?.rc ?: "RC"), style = Blake.mono(10f, FontWeight.ExtraBold),
+                    color = if (live) Blake.ok else Blake.warn, letterSpacing = 2.sp)
+            }
+            Spacer(Modifier.height(8.dp))
+            Text("BLAKE2b · timechain ${status?.blockHeight?.let { "#$it" } ?: "—"}",
+                style = Blake.mono(10f), color = Blake.ppDim, letterSpacing = 1.sp)
+
+            Spacer(Modifier.height(22.dp))
+            if (!loaded) Text("⟳ loading network…", style = Blake.mono(10f), color = Blake.pp)
+            else if (stats == null) Text("⚠ can't reach the server.", style = Blake.mono(10f), color = Blake.danger)
+
+            Spacer(Modifier.height(14.dp))
+            // KPI card
+            Column(Modifier.fillMaxWidth().blakeCard()) {
+                Row(Modifier.fillMaxWidth()) {
+                    BlakeStat(hashrate(stats?.networkHashrateThs), "network hashrate")
+                    Spacer(Modifier.weight(1f))
+                    BlakeStat("${stats?.miners ?: 0}", "miners", Blake.fg)
+                }
+                Spacer(Modifier.height(18.dp))
+                Row(Modifier.fillMaxWidth()) {
+                    BlakeStat(stats?.blockHeight?.toString() ?: "—", "block height", Blake.fg)
+                    Spacer(Modifier.weight(1f))
+                    BlakeStat("${stats?.connections ?: 0}", "connections", Blake.ppDim)
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
-            Column(Modifier.fillMaxWidth().moduleFrame(PyTheme.primary).padding(14.dp)) {
-                statRow("NETWORK HASHRATE", stats?.networkHashrateThs?.let { hashrateLabel(it) } ?: "—")
-                statRow("BLOCK HEIGHT", (status?.blockHeight ?: stats?.blockHeight)?.let { "#$it" } ?: "—")
-                statRow("MINERS", stats?.miners?.toString() ?: "—")
-                statRow("CONNECTIONS", stats?.connections?.toString() ?: "—")
-                statRow("SHARES ✓", stats?.sharesAccepted?.toString() ?: "—")
-                statRow("SHARES ✗", stats?.sharesRejected?.toString() ?: "—")
-            }
-
-            Spacer(Modifier.height(18.dp))
-            Text("BLOCKS FOUND", style = PyType.mono(13f), color = PyTheme.yellow, letterSpacing = 3.sp)
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(22.dp))
+            Text("MINED BLOCKS", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
+            Spacer(Modifier.height(12.dp))
             if (blocks.isEmpty()) {
-                Text("No blocks yet.", style = PyType.mono(11f), color = PyTheme.primaryDim)
+                Text("No blocks yet.", style = Blake.mono(10f), color = Blake.faint)
             } else {
-                blocks.take(8).forEach { b ->
-                    Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("#${b.height}", style = PyType.mono(15f), color = PyTheme.primary)
-                        Spacer(Modifier.height(0.dp))
-                        androidx.compose.foundation.layout.Spacer(Modifier.weight(1f))
-                        Text(b.finderMasked ?: (b.stratum ?: ""), style = PyType.mono(10f), color = PyTheme.cyan.copy(alpha = 0.7f))
+                blocks.take(20).forEach { b ->
+                    Row(Modifier.fillMaxWidth().padding(bottom = 8.dp).blakeCard(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("#${b.height}", style = Blake.mono(13f, FontWeight.ExtraBold), color = Blake.pp)
+                            Text("${b.stratum?.uppercase() ?: "—"} · ${b.finderMasked ?: "—"}",
+                                style = Blake.mono(9f), color = Blake.faint, maxLines = 1)
+                        }
+                        Text(b.reward?.let { "%.4f".format(it) } ?: "—", style = Blake.mono(12f), color = Blake.fg)
                     }
                 }
             }
@@ -92,18 +107,7 @@ fun BlakePoolScreen() {
     }
 }
 
-@Composable
-private fun statRow(label: String, value: String) {
-    Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(label, style = PyType.mono(11f), color = PyTheme.cyan.copy(alpha = 0.7f), letterSpacing = 1.sp)
-        androidx.compose.foundation.layout.Spacer(Modifier.weight(1f))
-        Text(value, style = PyType.mono(16f), color = PyTheme.yellow)
-    }
-}
-
-private fun hashrateLabel(th: Double): String = when {
-    th >= 1_000_000 -> "%.2f EH/s".format(th / 1_000_000)
-    th >= 1_000 -> "%.1f PH/s".format(th / 1_000)
-    th >= 1 -> "%.0f TH/s".format(th)
-    else -> "%.0f GH/s".format(th * 1_000)
+private fun hashrate(th: Double?): String {
+    th ?: return "—"
+    return if (th >= 1000) "%.2f PH/s".format(th / 1000) else "%.1f TH/s".format(th)
 }

@@ -42,12 +42,8 @@ class MainActivity : ComponentActivity() {
             }
             com.astrolexis.pyblock.ui.theme.LocalizedApp {
                 PyBlockTheme(paletteId = ThemeStore.effectivePaletteId) {
-                    androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
-                        BlakeRootScaffold()
-                        // CRT power-on over the whole cabinet, once per cold launch.
-                        var booted by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
-                        if (!booted) com.astrolexis.pyblock.ui.components.CrtBootSweep { booted = true }
-                    }
+                    // Sober BLAKE2b look — no arcade CRT boot/scanlines.
+                    BlakeRootScaffold()
                 }
             }
         }
