@@ -145,9 +145,9 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
                         modifier = Modifier.weight(1f).background(Blake.pp).padding(vertical = 12.dp)
                             .clickableNoRipple { if (spendable <= 0) toast(ctx, "No spendable coins yet.") else sheet = Sheet.Send })
                     if (BlakeChains.RICOCHET_ENABLED) {
-                        Text("⟿ RICOCHET", style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 1.sp, textAlign = TextAlign.Center,
+                        Text("⟿ RICOCHETS", style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 1.sp, textAlign = TextAlign.Center,
                             modifier = Modifier.weight(1f).border(1.dp, Blake.pp, RectangleShape).padding(vertical = 12.dp)
-                                .clickableNoRipple { if (spendable <= 0) toast(ctx, "No spendable coins yet.") else sheet = Sheet.Send })
+                                .clickableNoRipple { sheet = Sheet.Ricochets })
                     }
                 }
             }
@@ -163,7 +163,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
             // PayNym entry
             Spacer(Modifier.height(10.dp))
             Row(Modifier.fillMaxWidth().border(1.dp, Blake.line, RectangleShape).padding(horizontal = 14.dp, vertical = 11.dp)
-                .clickableNoRipple { sheet = Sheet.Addresses }, verticalAlignment = Alignment.CenterVertically) {
+                .clickableNoRipple { sheet = Sheet.Paynym }, verticalAlignment = Alignment.CenterVertically) {
                 Text("᛭ PAYNYM", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 2.sp)
                 Spacer(Modifier.weight(1f))
                 Text("share · receive", style = Blake.mono(9f), color = Blake.faint)
@@ -257,8 +257,14 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
             onSend = { addr, amt, max, fee, ricochet ->
                 scope.launch {
                     try {
-                        val txid = if (ricochet) com.astrolexis.pyblock.data.blake.BlakeSpend.ricochet(ctx, addr, amt, max, 3, fee).txids.last()
-                                   else com.astrolexis.pyblock.data.blake.BlakeSpend.send(ctx, addr, amt, max, fee)
+                        val txid: String
+                        if (ricochet) {
+                            val outcome = com.astrolexis.pyblock.data.blake.BlakeSpend.ricochet(ctx, addr, amt, max, 3, fee)
+                            txid = outcome.txids.last()
+                            com.astrolexis.pyblock.data.wallet.RicochetHistory.add(ctx, outcome, 3, if (max) total else amt, addr, "mainnet")
+                        } else {
+                            txid = com.astrolexis.pyblock.data.blake.BlakeSpend.send(ctx, addr, amt, max, fee)
+                        }
                         com.astrolexis.pyblock.data.blake.BlakeSentStore.add(txid, if (max) total else amt, addr, emptySet(), ricochet)
                         toast(ctx, "Sent · ${txid.take(12)}…"); BlakeBalanceStore.refresh(ctx); sheet = null
                     } catch (e: Exception) { toast(ctx, e.message ?: "Send failed") }
@@ -269,6 +275,8 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
         )
         Sheet.Currency -> CurrencyPickerSheet(BlakePrice.available()) { BlakePrice.setCurrency(it); sheet = null }
         Sheet.Settings -> SettingsSheet(operational, rc, statusHeight) { sheet = null }
+        Sheet.Ricochets -> RicochetHistorySheet(onCopy = { clip.setText(AnnotatedString(it)); toast(ctx, "Copied") }) { sheet = null }
+        Sheet.Paynym -> PaynymSheet(onCopy = { clip.setText(AnnotatedString(it)); toast(ctx, "Copied") }, paste = { clip.getText()?.text ?: "" }) { sheet = null }
         null -> {}
     }
 }
@@ -280,6 +288,8 @@ private sealed class Sheet {
     object Send : Sheet()
     object Currency : Sheet()
     object Settings : Sheet()
+    object Ricochets : Sheet()
+    object Paynym : Sheet()
 }
 
 @Composable

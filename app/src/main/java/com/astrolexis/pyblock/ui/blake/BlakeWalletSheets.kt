@@ -43,7 +43,7 @@ import com.astrolexis.pyblock.ui.components.clickableNoRipple
 import java.util.UUID
 
 @Composable
-private fun sheetBox(title: String, accent: androidx.compose.ui.graphics.Color, onClose: () -> Unit, body: @Composable () -> Unit) {
+internal fun sheetBox(title: String, accent: androidx.compose.ui.graphics.Color, onClose: () -> Unit, body: @Composable () -> Unit) {
     Dialog(onDismissRequest = onClose) {
         Column(
             Modifier.fillMaxWidth().background(Blake.ink).border(1.dp, Blake.line, RectangleShape)
@@ -61,7 +61,7 @@ private fun sheetBox(title: String, accent: androidx.compose.ui.graphics.Color, 
 }
 
 @Composable
-private fun sheetBtn(label: String, accent: androidx.compose.ui.graphics.Color, filled: Boolean = false, onClick: () -> Unit) {
+internal fun sheetBtn(label: String, accent: androidx.compose.ui.graphics.Color, filled: Boolean = false, onClick: () -> Unit) {
     Text(label, style = Blake.mono(12f, FontWeight.ExtraBold), color = if (filled) Blake.bg else accent, letterSpacing = 1.sp, textAlign = TextAlign.Center,
         modifier = Modifier.fillMaxWidth()
             .then(if (filled) Modifier.background(accent) else Modifier.border(1.dp, accent, RectangleShape))
@@ -69,7 +69,7 @@ private fun sheetBtn(label: String, accent: androidx.compose.ui.graphics.Color, 
 }
 
 @Composable
-private fun sheetField(value: String, hint: String, keyboard: KeyboardType, enabled: Boolean = true, onChange: (String) -> Unit) {
+internal fun sheetField(value: String, hint: String, keyboard: KeyboardType, enabled: Boolean = true, onChange: (String) -> Unit) {
     Column {
         Text(hint, style = Blake.mono(9f), color = Blake.faint)
         BasicTextField(
@@ -104,7 +104,7 @@ fun UtxoDetailSheet(u: BlakeApi.Utxo, tip: Int, onCopy: (String) -> Unit, onClos
 }
 
 @Composable
-private fun kv(k: String, v: String, accent: androidx.compose.ui.graphics.Color) {
+internal fun kv(k: String, v: String, accent: androidx.compose.ui.graphics.Color) {
     Row(Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
         Text(k, style = Blake.mono(9f), color = Blake.faint, letterSpacing = 1.sp)
         Spacer(Modifier.weight(1f))
@@ -257,7 +257,7 @@ fun SettingsSheet(operational: Boolean, rc: String?, height: Int, onClose: () ->
 }
 
 // ---- helpers ----
-private fun mid(s: String, h: Int = 12, t: Int = 8): String = if (s.length <= h + t + 1) s else "${s.take(h)}…${s.takeLast(t)}"
+internal fun mid(s: String, h: Int = 12, t: Int = 8): String = if (s.length <= h + t + 1) s else "${s.take(h)}…${s.takeLast(t)}"
 
 /** Import a WIF as a new BLAKE2b wallet (own vault). Returns false on invalid key. */
 fun importWif(ctx: android.content.Context, wif: String): Boolean {

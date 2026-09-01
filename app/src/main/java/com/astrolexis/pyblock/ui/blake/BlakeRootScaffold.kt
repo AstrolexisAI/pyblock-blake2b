@@ -117,9 +117,7 @@ fun BlakeRootScaffold() {
                     )
                 }
                 composable("chirp") { BlakeChirpScreen() }
-                composable("vanity") {
-                    com.astrolexis.pyblock.ui.screens.vanity.VanityAddressScreen(onClose = { nav.popBackStack() })
-                }
+                composable("vanity") { BlakeVanityScreen(onClose = { nav.popBackStack() }) }
             }
 
             // Received banner overlay (top).
