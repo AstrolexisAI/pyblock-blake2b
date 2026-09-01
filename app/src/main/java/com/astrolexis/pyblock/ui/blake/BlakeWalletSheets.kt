@@ -122,12 +122,20 @@ fun AddressControlSheet(
     balanceFor: (String) -> Long,
     onClose: () -> Unit,
 ) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
     var receiveFor by remember { mutableStateOf<VanityWallet?>(null) }
     var importing by remember { mutableStateOf(false) }
+    var scanning by remember { mutableStateOf(false) }
     var wif by remember { mutableStateOf("") }
 
     val rf = receiveFor
     if (rf != null) { ReceiveSheet(rf, onCopy) { receiveFor = null }; return }
+    if (scanning) {
+        com.astrolexis.pyblock.ui.components.QrScanner(title = "SCAN A PRIVATE KEY (WIF)",
+            onResult = { code -> wif = code.trim(); importing = true; scanning = false },
+            onClose = { scanning = false })
+        return
+    }
 
     sheetBox("ADDRESS CONTROL", Blake.pp, onClose) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -137,8 +145,14 @@ fun AddressControlSheet(
         if (importing) {
             Spacer(Modifier.height(10.dp))
             sheetField(wif, "Paste WIF (K.../L.../5...)", KeyboardType.Password) { wif = it }
+            Spacer(Modifier.height(6.dp))
+            Text("⛶ SCAN A WIF QR", style = Blake.mono(10f), color = Blake.pp, modifier = Modifier.clickableNoRipple { scanning = true })
             Spacer(Modifier.height(8.dp))
             sheetBtn("ADD KEY", Blake.ok) { if (wif.isNotBlank() && onImport(wif.trim())) { wif = ""; importing = false } }
+        }
+        if (wallets.isNotEmpty()) {
+            Spacer(Modifier.height(10.dp))
+            sheetBtn("⭳ EXPORT BACKUP PDF", Blake.warn) { exportBackup(ctx, wallets, balanceFor) }
         }
         Spacer(Modifier.height(16.dp))
         if (wallets.isEmpty()) Text("No addresses yet.", style = Blake.mono(10f), color = Blake.faint)
@@ -258,6 +272,28 @@ fun SettingsSheet(operational: Boolean, rc: String?, height: Int, onClose: () ->
 
 // ---- helpers ----
 internal fun mid(s: String, h: Int = 12, t: Int = 8): String = if (s.length <= h + t + 1) s else "${s.take(h)}…${s.takeLast(t)}"
+
+/** Build a paper-backup PDF of every wallet (address + WIF) and open it. */
+private fun exportBackup(ctx: android.content.Context, wallets: List<VanityWallet>, balanceFor: (String) -> Long) {
+    val entries = wallets.map { w ->
+        com.astrolexis.pyblock.data.wallet.BackupPdf.Entry(
+            label = w.label.ifEmpty { "wallet" },
+            address = w.address,
+            wif = WalletStore.wif(ctx, w.id) ?: "",
+            balanceSats = balanceFor(w.address),
+        )
+    }.filter { it.wif.isNotBlank() }
+    if (entries.isEmpty()) { android.widget.Toast.makeText(ctx, "Unlock the vault to export keys", android.widget.Toast.LENGTH_SHORT).show(); return }
+    val f = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.US).format(java.util.Date())
+    val paynym = runCatching { com.astrolexis.pyblock.data.crypto.PaymentCode.myCode(ctx) }.getOrNull()?.takeIf { it.isNotEmpty() }
+    val file = com.astrolexis.pyblock.data.wallet.BackupPdf.generate(ctx, entries, paynym, null, f)
+    if (file == null) { android.widget.Toast.makeText(ctx, "Export failed", android.widget.Toast.LENGTH_SHORT).show(); return }
+    val uri = androidx.core.content.FileProvider.getUriForFile(ctx, "${ctx.packageName}.fileprovider", file)
+    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW)
+        .setDataAndType(uri, "application/pdf")
+        .addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+    runCatching { ctx.startActivity(intent) }.onFailure { android.widget.Toast.makeText(ctx, "No PDF viewer", android.widget.Toast.LENGTH_SHORT).show() }
+}
 
 /** Import a WIF as a new BLAKE2b wallet (own vault). Returns false on invalid key. */
 fun importWif(ctx: android.content.Context, wif: String): Boolean {
