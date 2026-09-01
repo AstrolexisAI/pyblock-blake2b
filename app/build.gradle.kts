@@ -21,8 +21,8 @@ android {
         applicationId = "com.astrolexis.pyblockblake2b"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
         // Only ship ABIs the native deps (bdk-android / secp256k1-kmp) actually
         // provide, so the APK can't land on a device with no matching .so.
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64") }
