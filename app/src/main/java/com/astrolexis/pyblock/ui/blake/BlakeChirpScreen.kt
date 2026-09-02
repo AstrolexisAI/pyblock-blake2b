@@ -81,34 +81,34 @@ fun BlakeChirpScreen() {
             val minPowerMhs = pool?.minPower ?: 0.0
             fun eligibleOf(w: BlakeApi.ChirpWorker): Boolean =
                 w.eligible ?: ((w.hashrateThs ?: 0.0) * 1_000_000.0 >= minPowerMhs)
-            val eligible = online.filter { eligibleOf(it) && (it.share ?: it.hashrateThs ?: 0.0) > 0 }
-            // Real weighted split once miners qualify; until then a hashrate PREVIEW of all connected.
-            val previewMode = eligible.isEmpty()
-            fun slotWeight(w: BlakeApi.ChirpWorker): Double =
-                if (previewMode) (w.hashrateThs ?: 0.0) else (w.share ?: w.hashrateThs ?: 0.0)
-            val bars = (if (previewMode) online.filter { (it.hashrateThs ?: 0.0) > 0 } else eligible)
-                .sortedByDescending { slotWeight(it) }
-            val totalW = bars.sumOf { slotWeight(it) }
-            if (bars.isNotEmpty() && totalW > 0) {
+            fun weightOf(w: BlakeApi.ChirpWorker): Double = w.share ?: (w.hashrateThs ?: 0.0)
+            // The bar is ELIGIBLE miners only — those actually in the weighted reward split.
+            // Miners that are connected but not yet eligible do NOT appear here.
+            val eligible = online.filter { eligibleOf(it) && weightOf(it) > 0 }.sortedByDescending { weightOf(it) }
+            val totalW = eligible.sumOf { weightOf(it) }
+            if (online.isNotEmpty()) {
                 Spacer(Modifier.height(22.dp))
                 Column(Modifier.fillMaxWidth().blakeCard()) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("BLOCK PARTICIPATION", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
                         Spacer(Modifier.weight(1f))
-                        Text(if (previewMode) "${bars.size} connected" else "${bars.size} eligible", style = Blake.mono(9f), color = Blake.pp)
+                        Text("${eligible.size} eligible", style = Blake.mono(9f), color = Blake.pp)
                     }
-                    Spacer(Modifier.height(12.dp))
-                    Row(Modifier.fillMaxWidth().height(16.dp)) {
-                        bars.forEachIndexed { i, w ->
-                            Box(Modifier.weight((slotWeight(w) / totalW).toFloat()).fillMaxHeight().background(participationColor(i)))
+                    if (eligible.isNotEmpty() && totalW > 0) {
+                        Spacer(Modifier.height(12.dp))
+                        Row(Modifier.fillMaxWidth().height(16.dp)) {
+                            eligible.forEachIndexed { i, w ->
+                                Box(Modifier.weight((weightOf(w) / totalW).toFloat()).fillMaxHeight().background(participationColor(i)))
+                            }
                         }
+                        Spacer(Modifier.height(10.dp))
+                        Text("Largest slice ${"%.0f".format(weightOf(eligible.first()) / totalW * 100)}% · each eligible miner shares the block reward in proportion to its contribution.",
+                            style = Blake.mono(8f), color = Blake.faint)
+                    } else {
+                        Spacer(Modifier.height(8.dp))
+                        Text("No miners are eligible for the split yet — it needs the ${pool?.minDays ?: 7}-day loyalty floor. ${online.size} mining now; the bar fills in as they qualify.",
+                            style = Blake.mono(8f), color = Blake.faint)
                     }
-                    Spacer(Modifier.height(10.dp))
-                    Text(if (previewMode)
-                        "Preview by hashrate — the weighted reward split activates once miners meet the ${pool?.minDays ?: 7}-day loyalty floor."
-                    else
-                        "Largest slice ${"%.0f".format(slotWeight(bars.first()) / totalW * 100)}% · each eligible miner shares the block reward in proportion to its contribution.",
-                        style = Blake.mono(8f), color = Blake.faint)
                 }
             }
 
