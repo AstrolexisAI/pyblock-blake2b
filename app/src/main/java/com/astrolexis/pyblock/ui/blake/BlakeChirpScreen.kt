@@ -100,9 +100,11 @@ fun BlakeChirpScreen() {
                 Spacer(Modifier.height(22.dp))
                 Column(Modifier.fillMaxWidth().blakeCard()) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("BLOCK PARTICIPATION", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
+                        Text("BLOCK PARTICIPATION", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.ppDim,
+                            letterSpacing = 1.5.sp, maxLines = 1, softWrap = false)
                         Spacer(Modifier.weight(1f))
-                        Text("${eligible.size} eligible", style = Blake.mono(9f), color = Blake.pp)
+                        Spacer(Modifier.width(8.dp))
+                        Text("${eligible.size} eligible", style = Blake.mono(9f), color = Blake.pp, maxLines = 1, softWrap = false)
                     }
                     if (eligible.isNotEmpty() && totalW > 0) {
                         Spacer(Modifier.height(12.dp))
