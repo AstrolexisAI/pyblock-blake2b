@@ -81,28 +81,33 @@ fun BlakeChirpScreen() {
             val minPowerMhs = pool?.minPower ?: 0.0
             fun eligibleOf(w: BlakeApi.ChirpWorker): Boolean =
                 w.eligible ?: ((w.hashrateThs ?: 0.0) * 1_000_000.0 >= minPowerMhs)
-            fun weightOf(w: BlakeApi.ChirpWorker): Double = w.share ?: (w.hashrateThs ?: 0.0)
-            val eligible = online.filter { eligibleOf(it) && weightOf(it) > 0 }.sortedByDescending { weightOf(it) }
-            val totalW = eligible.sumOf { weightOf(it) }
-            if (eligible.isNotEmpty() && totalW > 0) {
+            val eligible = online.filter { eligibleOf(it) && (it.share ?: it.hashrateThs ?: 0.0) > 0 }
+            // Real weighted split once miners qualify; until then a hashrate PREVIEW of all connected.
+            val previewMode = eligible.isEmpty()
+            fun slotWeight(w: BlakeApi.ChirpWorker): Double =
+                if (previewMode) (w.hashrateThs ?: 0.0) else (w.share ?: w.hashrateThs ?: 0.0)
+            val bars = (if (previewMode) online.filter { (it.hashrateThs ?: 0.0) > 0 } else eligible)
+                .sortedByDescending { slotWeight(it) }
+            val totalW = bars.sumOf { slotWeight(it) }
+            if (bars.isNotEmpty() && totalW > 0) {
                 Spacer(Modifier.height(22.dp))
                 Column(Modifier.fillMaxWidth().blakeCard()) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("BLOCK PARTICIPATION", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
                         Spacer(Modifier.weight(1f))
-                        Text("${eligible.size} eligible", style = Blake.mono(9f), color = Blake.pp)
+                        Text(if (previewMode) "${bars.size} connected" else "${bars.size} eligible", style = Blake.mono(9f), color = Blake.pp)
                     }
                     Spacer(Modifier.height(12.dp))
                     Row(Modifier.fillMaxWidth().height(16.dp)) {
-                        eligible.forEachIndexed { i, w ->
-                            Box(Modifier.weight((weightOf(w) / totalW).toFloat()).fillMaxHeight()
-                                .padding(end = if (i == eligible.lastIndex) 0.dp else 1.dp)
-                                .background(participationColor(i)))
+                        bars.forEachIndexed { i, w ->
+                            Box(Modifier.weight((slotWeight(w) / totalW).toFloat()).fillMaxHeight().background(participationColor(i)))
                         }
                     }
                     Spacer(Modifier.height(10.dp))
-                    val top = eligible.first()
-                    Text("Largest slice ${"%.0f".format(weightOf(top) / totalW * 100)}% · each eligible miner shares the block reward in proportion to its contribution.",
+                    Text(if (previewMode)
+                        "Preview by hashrate — the weighted reward split activates once miners meet the ${pool?.minDays ?: 7}-day loyalty floor."
+                    else
+                        "Largest slice ${"%.0f".format(slotWeight(bars.first()) / totalW * 100)}% · each eligible miner shares the block reward in proportion to its contribution.",
                         style = Blake.mono(8f), color = Blake.faint)
                 }
             }
@@ -122,9 +127,8 @@ fun BlakeChirpScreen() {
                     if (showParticipants) {
                         Spacer(Modifier.height(10.dp))
                         online.forEach { w ->
-                            val elig = eligibleOf(w) && (w.hashrateThs ?: 0.0) > 0
                             Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Box(Modifier.size(5.dp).background(if (elig) Blake.ok else Blake.faint, CircleShape))
+                                Box(Modifier.size(5.dp).background(Blake.ok, CircleShape))
                                 Spacer(Modifier.width(8.dp))
                                 Text(w.name ?: "anon", style = Blake.mono(10f), color = Blake.fg, maxLines = 1)
                                 Spacer(Modifier.weight(1f))
