@@ -22,8 +22,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -70,9 +72,42 @@ fun BlakeChirpScreen() {
                 }
             }
 
+            // Connected miners, newest-active first (by last share, not by power).
+            val online = workers.filter { it.connected }.sortedByDescending { it.lastShare ?: 0L }
+
+            // BLOCK PARTICIPATION — eligible miners each hold a slice of the next block's
+            // weighted reward split (white paper), sized by contribution. Eligibility is
+            // server-authoritative when present, else approximated by the min-power floor.
+            val minPowerMhs = pool?.minPower ?: 0.0
+            fun eligibleOf(w: BlakeApi.ChirpWorker): Boolean =
+                w.eligible ?: ((w.hashrateThs ?: 0.0) * 1_000_000.0 >= minPowerMhs)
+            fun weightOf(w: BlakeApi.ChirpWorker): Double = w.share ?: (w.hashrateThs ?: 0.0)
+            val eligible = online.filter { eligibleOf(it) && weightOf(it) > 0 }.sortedByDescending { weightOf(it) }
+            val totalW = eligible.sumOf { weightOf(it) }
+            if (eligible.isNotEmpty() && totalW > 0) {
+                Spacer(Modifier.height(22.dp))
+                Column(Modifier.fillMaxWidth().blakeCard()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("BLOCK PARTICIPATION", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
+                        Spacer(Modifier.weight(1f))
+                        Text("${eligible.size} eligible", style = Blake.mono(9f), color = Blake.pp)
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Row(Modifier.fillMaxWidth().height(16.dp)) {
+                        eligible.forEachIndexed { i, w ->
+                            Box(Modifier.weight((weightOf(w) / totalW).toFloat()).fillMaxHeight()
+                                .padding(end = if (i == eligible.lastIndex) 0.dp else 1.dp)
+                                .background(participationColor(i)))
+                        }
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    val top = eligible.first()
+                    Text("Largest slice ${"%.0f".format(weightOf(top) / totalW * 100)}% · each eligible miner shares the block reward in proportion to its contribution.",
+                        style = Blake.mono(8f), color = Blake.faint)
+                }
+            }
+
             // PARTICIPANTS — connected miners only (disconnected hidden). Collapsible.
-            // Appears once the server exposes the per-worker list (mode=workers).
-            val online = workers.filter { it.connected }
             if (online.isNotEmpty()) {
                 Spacer(Modifier.height(22.dp))
                 Column(Modifier.fillMaxWidth().blakeCard()) {
@@ -87,8 +122,9 @@ fun BlakeChirpScreen() {
                     if (showParticipants) {
                         Spacer(Modifier.height(10.dp))
                         online.forEach { w ->
+                            val elig = eligibleOf(w) && (w.hashrateThs ?: 0.0) > 0
                             Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Box(Modifier.size(5.dp).background(Blake.ok, CircleShape))
+                                Box(Modifier.size(5.dp).background(if (elig) Blake.ok else Blake.faint, CircleShape))
                                 Spacer(Modifier.width(8.dp))
                                 Text(w.name ?: "anon", style = Blake.mono(10f), color = Blake.fg, maxLines = 1)
                                 Spacer(Modifier.weight(1f))
@@ -130,6 +166,12 @@ private fun rule(label: String, value: String) {
         Text(value, style = Blake.mono(12f), color = Blake.fg)
     }
 }
+
+/** Sober purple palette for the participation-bar slices — cycles so adjacent slices differ. */
+private val participationPalette = listOf(
+    Color(0xFFB96BFF), Color(0xFF8F6FD0), Color(0xFF7A4FD0), Color(0xFFCBA6FF), Color(0xFF6A4A9A),
+)
+private fun participationColor(i: Int): Color = participationPalette[i % participationPalette.size]
 
 private fun hr(h: Double?): String {
     h ?: return "—"

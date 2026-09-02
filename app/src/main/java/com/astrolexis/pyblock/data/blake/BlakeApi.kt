@@ -99,6 +99,8 @@ object BlakeApi {
         @SerialName("hashrate_ths") val hashrateThs: Double? = null,
         val connected: Boolean = true,
         @SerialName("last_share") val lastShare: Long? = null,      // epoch seconds
+        val eligible: Boolean? = null,                              // meets the split floor (loyalty + power); server-authoritative
+        val share: Double? = null,                                  // reward-split weight 0..1 (white-paper weighted split)
     )
 
     @Serializable
