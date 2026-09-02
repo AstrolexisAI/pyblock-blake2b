@@ -139,9 +139,16 @@ fun AddressControlSheet(
 
     sheetBox("ADDRESS CONTROL", Blake.pp, onClose) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Box(Modifier.weight(1f)) { sheetBtn("GENERATE", Blake.pp, filled = true) { onGenerate() } }
-            Box(Modifier.weight(1f)) { sheetBtn("IMPORT", Blake.pp) { importing = !importing } }
+            Box(Modifier.weight(1f)) {
+                sheetBtn("+ NEW", Blake.pp, filled = true) {
+                    if (createRandomWallet(ctx)) android.widget.Toast.makeText(ctx, "New address created", android.widget.Toast.LENGTH_SHORT).show()
+                    else android.widget.Toast.makeText(ctx, "Couldn't create address", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+            Box(Modifier.weight(1f)) { sheetBtn("⛒ VANITY", Blake.pp) { onGenerate() } }
         }
+        Spacer(Modifier.height(10.dp))
+        sheetBtn(if (importing) "✕ IMPORT WIF" else "IMPORT WIF", Blake.pp) { importing = !importing }
         if (importing) {
             Spacer(Modifier.height(10.dp))
             sheetField(wif, "Paste WIF (K.../L.../5...)", KeyboardType.Password) { wif = it }
@@ -293,6 +300,22 @@ private fun exportBackup(ctx: android.content.Context, wallets: List<VanityWalle
         .setDataAndType(uri, "application/pdf")
         .addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
     runCatching { ctx.startActivity(intent) }.onFailure { android.widget.Toast.makeText(ctx, "No PDF viewer", android.widget.Toast.LENGTH_SHORT).show() }
+}
+
+/** Generate a fresh random BLAKE2b wallet (own vault) — the "+ NEW" path, matching iOS
+ *  `store.generate()`. Full-entropy CSPRNG key (VanityCrypto.hardenedRandom32), compressed
+ *  K/L WIF, watch-only pubkey cached. Returns false only if the key math fails. */
+fun createRandomWallet(ctx: android.content.Context): Boolean {
+    val priv = VanityCrypto.hardenedRandom32(ByteArray(0))
+    val pub = VanityCrypto.compressedPubkey(priv) ?: return false
+    val addr = VanityCrypto.p2pkhAddress(pub)
+    val wif = VanityCrypto.wifCompressed(priv)
+    return WalletStore.add(
+        ctx,
+        VanityWallet(id = UUID.randomUUID().toString(), label = "", address = addr,
+            compressed = true, birthday = BlakeFork.FORK_HEIGHT, pubkeyHex = pub.toHex()),
+        wif,
+    )
 }
 
 /** Import a WIF as a new BLAKE2b wallet (own vault). Returns false on invalid key. */

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -388,8 +389,9 @@ private fun breakdownRow(label: String, sats: Long, accent: androidx.compose.ui.
 
 @Composable
 private fun navBtn(modifier: Modifier, title: String, sub: String, onClick: () -> Unit) {
-    Column(modifier.border(1.dp, Blake.line, RectangleShape).padding(12.dp).clickableNoRipple(onClick)) {
-        Text(title, style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 1.sp)
+    Column(modifier.fillMaxHeight().border(1.dp, Blake.line, RectangleShape).padding(12.dp).clickableNoRipple(onClick)) {
+        Text(title, style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 0.5.sp,
+            maxLines = 1, softWrap = false)
         Text(sub, style = Blake.mono(9f), color = Blake.faint)
     }
 }
