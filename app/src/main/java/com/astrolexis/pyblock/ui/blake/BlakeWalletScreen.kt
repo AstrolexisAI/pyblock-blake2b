@@ -2,6 +2,12 @@ package com.astrolexis.pyblock.ui.blake
 
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -14,6 +20,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.graphics.RectangleShape
@@ -64,6 +72,10 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
     val ccy by BlakePrice.currency.collectAsState()
     val live by BlakeBalanceStore.live.collectAsState()
     val sentRecords by com.astrolexis.pyblock.data.blake.BlakeSentStore.records.collectAsState()
+    val pendingIn by BlakeBalanceStore.pendingIn.collectAsState()
+    val pendingSpent by BlakeBalanceStore.pendingSpentIds.collectAsState()
+    val pendingActivity by BlakeBalanceStore.pendingActivity.collectAsState()
+    var sentDetail by remember { mutableStateOf<com.astrolexis.pyblock.data.blake.SentRecord?>(null) }
     val operational by BlakeStatus.operational.collectAsState()
     val statusLoaded by BlakeStatus.loaded.collectAsState()
     val rc by BlakeStatus.rc.collectAsState()
@@ -71,6 +83,22 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
 
     var showDetails by remember { mutableStateOf(false) }
     var sheet by remember { mutableStateOf<Sheet?>(null) }
+
+    // Live activity feedback: a heartbeat dot on the header + a one-shot slide-down/blink of
+    // the list whenever it changes (new pending/sent/confirmed row, or a confirmation tick)
+    // so a change is felt even while the user is staring at it — no manual pull-to-refresh.
+    val actSig = "${pendingActivity.size}:${sentRecords.size}:${BlakeBalanceStore.allUtxos().size}:$tip"
+    val slide = remember { Animatable(0f) }
+    var actSeen by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(actSig) {
+        if (actSeen == null) { actSeen = actSig } else if (actSeen != actSig) {
+            actSeen = actSig
+            slide.snapTo(1f)
+            slide.animateTo(0f, tween(520))
+        }
+    }
+    val beat by rememberInfiniteTransition(label = "beat").animateFloat(
+        0.35f, 1f, infiniteRepeatable(tween(850), RepeatMode.Reverse), label = "beatv")
 
     LaunchedEffect(Unit) {
         WalletStore.ensureLoaded(ctx)
@@ -120,7 +148,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
                     Text("⚙", style = Blake.mono(14f), color = Blake.ppDim, modifier = Modifier.clickableNoRipple { sheet = Sheet.Settings })
                 }
                 Spacer(Modifier.height(6.dp))
-                Text("${Blake.btc(total)} ${Blake.RUNE}", style = Blake.mono(26f, FontWeight.ExtraBold), color = Blake.pp, maxLines = 1)
+                Text("${Blake.btc(total)} ${Blake.RUNE}", style = Blake.mono(30f, FontWeight.ExtraBold), color = Blake.pp, maxLines = 1)
                 Spacer(Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.clickableNoRipple { sheet = Sheet.Currency }) {
@@ -134,6 +162,19 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
                 Spacer(Modifier.height(4.dp))
                 Text("${"%,d".format(total)} sats · ${wallets.size} address${if (wallets.size == 1) "" else "es"}",
                     style = Blake.mono(9f), color = Blake.faint)
+                val pendInTotal = pendingIn.values.sum()
+                if (pendInTotal > 0 || pendingSpent.isNotEmpty()) {
+                    Spacer(Modifier.height(2.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(5.dp).background(Blake.warn, CircleShape))
+                        Spacer(Modifier.width(6.dp))
+                        val parts = buildList {
+                            if (pendInTotal > 0) add("+${Blake.btc(pendInTotal)} ${Blake.RUNE} incoming")
+                            if (pendingSpent.isNotEmpty()) add("send in flight")
+                        }
+                        Text(parts.joinToString(" · ") + " · pending", style = Blake.mono(9f), color = Blake.warn)
+                    }
+                }
                 if (loading) Text("⟳ scanning…", style = Blake.mono(9f), color = Blake.pp)
             }
 
@@ -200,36 +241,63 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
                                 style = Blake.mono(7f), color = Blake.faint)
                         }
                         Spacer(Modifier.height(20.dp))
-                        Text("ACTIVITY", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("ACTIVITY", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
+                            if (live) {
+                                Spacer(Modifier.width(8.dp))
+                                Box(Modifier.size(6.dp).graphicsLayer { alpha = beat }.background(Blake.ok, CircleShape))
+                            }
+                        }
                         Spacer(Modifier.height(12.dp))
-                        // Outgoing sends (locally recorded) — newest first, pending/confirmed.
+                        // ONE list, newest-first: pending (0-conf) → sent → confirmed. Confirmed
+                        // recency is estimated from block depth (~40s/block, monotonic w/ height).
                         val liveCoinIds = BlakeBalanceStore.allUtxos().map { it.id }.toSet()
-                        sentRecords.take(20).forEach { r ->
+                        val now = System.currentTimeMillis() / 1000
+                        data class Act(val ts: Long, val view: @Composable () -> Unit)
+                        val acts = ArrayList<Act>()
+                        pendingActivity.forEach { p ->
+                            acts.add(Act(maxOf(now, p.seen)) {
+                                Row(Modifier.fillMaxWidth().padding(bottom = 8.dp).blakeCard(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text("+ ${Blake.btc(p.sats)} ${Blake.RUNE}", style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.warn)
+                                        Text("incoming · ${p.address.take(10)}…", style = Blake.mono(8f), color = Blake.faint)
+                                    }
+                                    Text("pending", style = Blake.mono(9f), color = Blake.warn)
+                                }
+                            })
+                        }
+                        sentRecords.take(30).forEach { r ->
                             val pending = com.astrolexis.pyblock.data.blake.BlakeSentStore.isPending(r, liveCoinIds)
-                            Row(Modifier.fillMaxWidth().padding(bottom = 8.dp).blakeCard(12.dp)
-                                .clickableNoRipple { clip.setText(AnnotatedString(r.id)); toast(ctx, "TXID copied") },
-                                verticalAlignment = Alignment.CenterVertically) {
-                                Column(Modifier.weight(1f)) {
-                                    Text("− ${Blake.btc(r.amountSats)} ${Blake.RUNE}${if (r.ricochet) " · ricochet" else ""}",
-                                        style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.warn)
-                                    Text("to ${r.toAddress.take(10)}…${r.toAddress.takeLast(8)}", style = Blake.mono(8f), color = Blake.faint)
+                            acts.add(Act(r.date) {
+                                Row(Modifier.fillMaxWidth().padding(bottom = 8.dp).blakeCard(12.dp)
+                                    .clickableNoRipple { sentDetail = r }, verticalAlignment = Alignment.CenterVertically) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text("− ${Blake.btc(r.amountSats)} ${Blake.RUNE}${if (r.ricochet) " · ricochet" else ""}",
+                                            style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.warn)
+                                        Text("to ${r.toAddress.take(10)}…${r.toAddress.takeLast(8)}", style = Blake.mono(8f), color = Blake.faint)
+                                    }
+                                    Text(if (pending) "pending" else "sent", style = Blake.mono(9f), color = if (pending) Blake.warn else Blake.ppDim)
                                 }
-                                Text(if (pending) "pending" else "sent", style = Blake.mono(9f), color = if (pending) Blake.warn else Blake.ppDim)
-                            }
+                            })
                         }
-                        val rows = BlakeBalanceStore.allUtxos().sortedByDescending { it.height }.take(30)
-                        if (rows.isEmpty() && sentRecords.isEmpty()) Text("No movements yet.", style = Blake.mono(10f), color = Blake.faint)
-                        else rows.forEach { u ->
-                            Row(Modifier.fillMaxWidth().padding(bottom = 8.dp).blakeCard(12.dp)
-                                .clickableNoRipple { sheet = Sheet.Utxo(u) }, verticalAlignment = Alignment.CenterVertically) {
-                                Column(Modifier.weight(1f)) {
-                                    Text("+ ${Blake.btc(u.value)} ${Blake.RUNE}", style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.ok)
-                                    Text("${if (u.coinbase) "mined · " else ""}block #${u.height}", style = Blake.mono(8f), color = Blake.faint)
+                        BlakeBalanceStore.allUtxos().forEach { u ->
+                            acts.add(Act(now - maxOf(0, tip - u.height).toLong() * 40) {
+                                Row(Modifier.fillMaxWidth().padding(bottom = 8.dp).blakeCard(12.dp)
+                                    .clickableNoRipple { sheet = Sheet.Utxo(u) }, verticalAlignment = Alignment.CenterVertically) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text("+ ${Blake.btc(u.value)} ${Blake.RUNE}", style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.ok)
+                                        Text("${if (u.coinbase) "mined · " else ""}block #${u.height}", style = Blake.mono(8f), color = Blake.faint)
+                                    }
+                                    val conf = BlakeFork.confirmations(u, tip)
+                                    Text("$conf conf", style = Blake.mono(9f), color = if (BlakeFork.isSpendable(u, tip)) Blake.ok else Blake.warn)
                                 }
-                                val conf = BlakeFork.confirmations(u, tip)
-                                Text("$conf conf", style = Blake.mono(9f), color = if (BlakeFork.isSpendable(u, tip)) Blake.ok else Blake.warn)
-                            }
+                            })
                         }
+                        if (acts.isEmpty()) Text("No movements yet.", style = Blake.mono(10f), color = Blake.faint)
+                        else Column(Modifier.graphicsLayer {
+                            translationY = slide.value * 16.dp.toPx()
+                            alpha = 1f - slide.value * 0.55f
+                        }) { acts.sortedByDescending { it.ts }.take(60).forEach { it.view() } }
                     }
                 }
             }
@@ -267,7 +335,10 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
                         }
                         com.astrolexis.pyblock.data.blake.BlakeSentStore.add(txid, if (max) total else amt, addr, emptySet(), ricochet)
                         toast(ctx, "Sent · ${txid.take(12)}…"); BlakeBalanceStore.refresh(ctx); sheet = null
-                    } catch (e: Exception) { toast(ctx, e.message ?: "Send failed") }
+                    } catch (e: Exception) {
+                        val raw = e.message ?: "Send failed"
+                        toast(ctx, if (raw.contains("min relay", ignoreCase = true)) "Fee too low — pick 2 sat/vB or more" else raw)
+                    }
                 }
             },
             paste = { clip.getText()?.text ?: "" },
@@ -278,6 +349,15 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
         Sheet.Ricochets -> RicochetHistorySheet(onCopy = { clip.setText(AnnotatedString(it)); toast(ctx, "Copied") }) { sheet = null }
         Sheet.Paynym -> PaynymSheet(onCopy = { clip.setText(AnnotatedString(it)); toast(ctx, "Copied") }, paste = { clip.getText()?.text ?: "" }) { sheet = null }
         null -> {}
+    }
+
+    sentDetail?.let { r ->
+        SentDetailDialog(
+            r = r,
+            pending = com.astrolexis.pyblock.data.blake.BlakeSentStore.isPending(r, BlakeBalanceStore.allUtxos().map { it.id }.toSet()),
+            onCopy = { clip.setText(AnnotatedString(it)); toast(ctx, "Copied") },
+            onClose = { sentDetail = null },
+        )
     }
 }
 
@@ -311,6 +391,48 @@ private fun navBtn(modifier: Modifier, title: String, sub: String, onClick: () -
     Column(modifier.border(1.dp, Blake.line, RectangleShape).padding(12.dp).clickableNoRipple(onClick)) {
         Text(title, style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 1.sp)
         Text(sub, style = Blake.mono(9f), color = Blake.faint)
+    }
+}
+
+/** Tap a sent row → full detail with copyable txid + live PENDING/CONFIRMED status.
+ *  Mirrors iOS SentDetailSheet. */
+@Composable
+private fun SentDetailDialog(
+    r: com.astrolexis.pyblock.data.blake.SentRecord,
+    pending: Boolean,
+    onCopy: (String) -> Unit,
+    onClose: () -> Unit,
+) {
+    var copied by remember { mutableStateOf(false) }
+    LaunchedEffect(copied) { if (copied) { delay(2000); copied = false } }
+    sheetBox(if (r.ricochet) "RICOCHET SENT" else "SENT", Blake.pp, onClose) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(7.dp).background(if (pending) Blake.warn else Blake.ok, CircleShape))
+            Spacer(Modifier.width(8.dp))
+            Text(if (pending) "PENDING · waiting for a block" else "CONFIRMED",
+                style = Blake.mono(10f, FontWeight.ExtraBold), color = if (pending) Blake.warn else Blake.ok, letterSpacing = 1.sp)
+        }
+        Spacer(Modifier.height(14.dp))
+        Text("− ${Blake.btc(r.amountSats)} ${Blake.RUNE}", style = Blake.mono(24f, FontWeight.ExtraBold), color = Blake.warn)
+        Text("${"%,d".format(r.amountSats)} sats", style = Blake.mono(10f), color = Blake.faint)
+        Spacer(Modifier.height(14.dp))
+        Text("TO", style = Blake.mono(9f), color = Blake.faint, letterSpacing = 1.sp)
+        Text(r.toAddress, style = Blake.mono(10f), color = Blake.fg)
+        Spacer(Modifier.height(12.dp))
+        Text("TXID", style = Blake.mono(9f), color = Blake.faint, letterSpacing = 1.sp)
+        Text(r.id, style = Blake.mono(10f), color = Blake.pp)
+        Spacer(Modifier.height(8.dp))
+        sheetBtn(if (copied) "✓ COPIED" else "TAP TO COPY TXID", if (copied) Blake.ok else Blake.pp) { onCopy(r.id); copied = true }
+        if (r.ricochet) {
+            Spacer(Modifier.height(10.dp))
+            Text("Open RICOCHETS in the wallet to see the full hop chain + provable keys.",
+                style = Blake.mono(8f), color = Blake.faint)
+        }
+        Spacer(Modifier.height(10.dp))
+        Text("BLAKE2b balances update once the transaction is mined — the sent coins are still counted as spendable until then.",
+            style = Blake.mono(7f), color = Blake.faint)
+        Spacer(Modifier.height(12.dp))
+        sheetBtn("CLOSE", Blake.ppDim) { onClose() }
     }
 }
 

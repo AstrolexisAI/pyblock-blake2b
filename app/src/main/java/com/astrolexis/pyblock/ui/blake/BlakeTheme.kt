@@ -38,9 +38,13 @@ object Blake {
     val line2 = Color(0xFFB96BFF).copy(alpha = 0.08f)  // separators
 
     // Monospace everywhere; global ~18% readability bump (matches iOS `scale`).
+    // Small text (< 12pt: labels, hints, subtitles) gets an extra flat lift so the
+    // tiny mono captions stay legible on device — the whole app reads a notch larger.
     private const val SCALE = 1.18f
-    fun mono(size: Float, weight: FontWeight = FontWeight.Normal): TextStyle =
-        TextStyle(fontFamily = FontFamily.Monospace, fontSize = (size * SCALE).roundToInt().sp, fontWeight = weight)
+    fun mono(size: Float, weight: FontWeight = FontWeight.Normal): TextStyle {
+        val eff = if (size < 12f) size + 1.6f else size
+        return TextStyle(fontFamily = FontFamily.Monospace, fontSize = (eff * SCALE).roundToInt().sp, fontWeight = weight)
+    }
 
     /** BTC from sats, trailing zeros trimmed (1.50000000 → "1.5", 0 → "0"). */
     fun btc(sats: Long): String {
@@ -61,10 +65,12 @@ object Blake {
 fun Modifier.blakeCard(padding: Dp = 16.dp): Modifier =
     this.background(Blake.ink, Blake.shape).border(1.dp, Blake.line, Blake.shape).padding(padding)
 
-/** A KPI: big mono number + small UPPERCASE label below (iOS `BlakeStat`). */
+/** A KPI: big mono number + small UPPERCASE label below (iOS `BlakeStat`).
+ *  `alignEnd` right-aligns the value + label (for the right column of a two-up KPI row,
+ *  so the digits line up under the label edge and nothing runs off the card). */
 @Composable
-fun BlakeStat(value: String, label: String, accent: Color = Blake.pp) {
-    Column {
+fun BlakeStat(value: String, label: String, accent: Color = Blake.pp, alignEnd: Boolean = false) {
+    Column(horizontalAlignment = if (alignEnd) androidx.compose.ui.Alignment.End else androidx.compose.ui.Alignment.Start) {
         Text(value, style = Blake.mono(24f, FontWeight.ExtraBold), color = accent, maxLines = 1)
         Text(label.uppercase(), style = Blake.mono(9f), color = Blake.ppDim, letterSpacing = 2.sp)
     }

@@ -54,7 +54,7 @@ fun BlakePoolScreen() {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
             // header
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("be PyBLØCK", style = Blake.mono(24f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 2.sp)
+                Text("PyBLØCK", style = Blake.mono(24f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 2.sp)
                 Spacer(Modifier.weight(1f))
                 Box(Modifier.size(7.dp).background(if (live) Blake.ok else Blake.warn, CircleShape))
                 Spacer(Modifier.size(5.dp))
@@ -75,13 +75,13 @@ fun BlakePoolScreen() {
                 Row(Modifier.fillMaxWidth()) {
                     BlakeStat(hashrate(stats?.networkHashrateThs), "network hashrate")
                     Spacer(Modifier.weight(1f))
-                    BlakeStat("${stats?.miners ?: 0}", "miners", Blake.fg)
+                    BlakeStat("${stats?.miners ?: 0}", "miners", Blake.fg, alignEnd = true)
                 }
                 Spacer(Modifier.height(18.dp))
                 Row(Modifier.fillMaxWidth()) {
                     BlakeStat(stats?.blockHeight?.toString() ?: "—", "block height", Blake.fg)
                     Spacer(Modifier.weight(1f))
-                    BlakeStat("${stats?.connections ?: 0}", "connections", Blake.ppDim)
+                    BlakeStat("${stats?.connections ?: 0}", "connections", Blake.ppDim, alignEnd = true)
                 }
             }
 

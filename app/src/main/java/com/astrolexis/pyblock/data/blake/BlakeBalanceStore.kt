@@ -46,6 +46,22 @@ object BlakeBalanceStore {
     private var lastTotal: Long? = null
     private var eventSeq = 0L
 
+    // ---- Pending (0-conf mempool) ----
+
+    /** address → 0-conf INCOMING sats (mempool receives / change not yet mined). */
+    private val _pendingIn = MutableStateFlow<Map<String, Long>>(emptyMap())
+    val pendingIn: StateFlow<Map<String, Long>> = _pendingIn.asStateFlow()
+    /** Our confirmed-UTXO ids being SPENT by an unconfirmed tx (in-flight send). */
+    private val _pendingSpentIds = MutableStateFlow<Set<String>>(emptySet())
+    val pendingSpentIds: StateFlow<Set<String>> = _pendingSpentIds.asStateFlow()
+    /** 0-conf incoming rows for the unified activity list. */
+    private val _pendingActivity = MutableStateFlow<List<PendingItem>>(emptyList())
+    val pendingActivity: StateFlow<List<PendingItem>> = _pendingActivity.asStateFlow()
+    data class PendingItem(val id: String, val incoming: Boolean, val sats: Long, val address: String, val seen: Long)
+
+    fun pendingInTotal(): Long = _pendingIn.value.values.sum()
+    fun hasPending(): Boolean = pendingInTotal() > 0 || _pendingSpentIds.value.isNotEmpty()
+
     // ---- Derived totals ----
 
     /** All UTXOs across every wallet, flattened. */
@@ -54,10 +70,12 @@ object BlakeBalanceStore {
     /** Confirmed balance = every UTXO's value (server returns confirmed only). */
     fun totalSats(): Long = allUtxos().sumOf { it.value }
 
-    /** Spendable = mature post-fork coinbase only (non-replayable). */
+    /** Spendable = mature post-fork coinbase only (non-replayable). Excludes coins a mempool
+     *  tx is already spending (in-flight send) so the balance drops immediately. */
     fun spendableSats(): Long {
         val t = _tip.value
-        return allUtxos().filter { BlakeFork.isSpendable(it, t) }.sumOf { it.value }
+        val spent = _pendingSpentIds.value
+        return allUtxos().filter { BlakeFork.isSpendable(it, t) && it.id !in spent }.sumOf { it.value }
     }
 
     /** Locked = everything not safely spendable (pre-fork/shared or immature coinbase). */
@@ -84,6 +102,7 @@ object BlakeBalanceStore {
         }
         _utxos.value = next
         if (tipSeen > 0) _tip.value = tipSeen
+        pollMempool(wallets)
         _loading.value = false
 
         val total = totalSats()
@@ -93,6 +112,32 @@ object BlakeBalanceStore {
             _receiveEvent.value = ReceiveEvent(eventSeq, total - prev)
         }
         lastTotal = total
+    }
+
+    /** Poll the blake2b mempool for every address → 0-conf incoming (receives/change) and
+     *  in-flight spends of our own coins. Adds the pending layer over confirmed reads. */
+    private suspend fun pollMempool(wallets: List<com.astrolexis.pyblock.data.wallet.VanityWallet>) {
+        val ourIds = allUtxos().map { it.id }.toSet()
+        val inSats = HashMap<String, Long>()
+        val spent = HashSet<String>()
+        val items = ArrayList<PendingItem>()
+        val seen = HashSet<String>()
+        for (w in wallets) {
+            for (tx in BlakeApi.walletMempool(w.address)) {
+                BlakeApi.spentOutpoints(tx.hex).forEach { if (it in ourIds) spent.add(it) }
+                val key = tx.txid + w.address
+                if (key in seen) continue
+                seen.add(key)
+                val sats = BlakeApi.incomingSats(w.address, tx.hex)
+                if (sats > 0) {
+                    inSats[w.address] = (inSats[w.address] ?: 0) + sats
+                    items.add(PendingItem(key, true, sats, w.address, tx.seen ?: (System.currentTimeMillis() / 1000)))
+                }
+            }
+        }
+        _pendingIn.value = inSats
+        _pendingSpentIds.value = spent
+        _pendingActivity.value = items.sortedByDescending { it.seen }
     }
 
     /** Consume the pending receive event (after the UI plays the effect). */

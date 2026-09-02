@@ -205,4 +205,78 @@ object BlakeApi {
             decoded.url
         }
     }
+
+    // ---- Mempool (0-conf pending in/out) ----
+
+    @Serializable
+    data class MemTx(val txid: String = "", val hex: String = "", val seen: Long? = null)
+    @Serializable private data class MemResp(val txs: List<MemTx>? = null)
+
+    /** Unconfirmed (mempool) txs touching [address] on blake2b. Empty on failure. */
+    suspend fun walletMempool(address: String): List<MemTx> =
+        get("/api/wallet_mempool.php?chain=blake2b&address=${enc(address)}") {
+            runCatching { json.decodeFromString<MemResp>(it) }.getOrNull()
+        }?.txs ?: emptyList()
+
+    private fun hexBytes(s: String): ByteArray? =
+        runCatching { ByteArray(s.length / 2) { ((s[it * 2].digitToInt(16) shl 4) or s[it * 2 + 1].digitToInt(16)).toByte() } }.getOrNull()
+
+    /** Sats an unconfirmed tx pays to the P2PKH [address] (sum of matching outputs). */
+    fun incomingSats(address: String, txHex: String): Long {
+        val dec = com.astrolexis.pyblock.data.crypto.VanityCrypto.base58Decode(address) ?: return 0
+        if (dec.size != 25) return 0
+        val raw = hexBytes(txHex) ?: return 0
+        val spk = byteArrayOf(0x76, 0xa9.toByte(), 0x14) + dec.copyOfRange(1, 21) + byteArrayOf(0x88.toByte(), 0xac.toByte())
+        val p = TxParser(raw)
+        if (p.take(4) == null) return 0
+        p.skipSegwitMarker()
+        val nin = p.varint() ?: return 0
+        repeat(nin) { if (p.take(32) == null || p.take(4) == null) return 0; val sl = p.varint() ?: return 0; if (p.take(sl) == null || p.take(4) == null) return 0 }
+        val nout = p.varint() ?: return 0
+        var total = 0L
+        repeat(nout) {
+            val valB = p.take(8) ?: return total
+            val sl = p.varint() ?: return total
+            val script = p.take(sl) ?: return total
+            if (script.contentEquals(spk)) { var v = 0L; for (k in 0..7) v = v or ((valB[k].toLong() and 0xff) shl (8 * k)); total += v }
+        }
+        return total
+    }
+
+    /** Outpoints ("txid:vout", display order) an unconfirmed tx SPENDS. */
+    fun spentOutpoints(txHex: String): List<String> {
+        val raw = hexBytes(txHex) ?: return emptyList()
+        val p = TxParser(raw)
+        if (p.take(4) == null) return emptyList()
+        p.skipSegwitMarker()
+        val nin = p.varint() ?: return emptyList()
+        val out = ArrayList<String>()
+        repeat(nin) {
+            val prev = p.take(32) ?: return out
+            val voutB = p.take(4) ?: return out
+            val txid = prev.reversed().joinToString("") { "%02x".format(it) }
+            val vout = (voutB[0].toLong() and 0xff) or ((voutB[1].toLong() and 0xff) shl 8) or ((voutB[2].toLong() and 0xff) shl 16) or ((voutB[3].toLong() and 0xff) shl 24)
+            out.add("$txid:$vout")
+            val sl = p.varint() ?: return out
+            if (p.take(sl) == null || p.take(4) == null) return out
+        }
+        return out
+    }
+
+    /** Minimal cursor over a raw tx for the two parsers above. */
+    private class TxParser(val raw: ByteArray) {
+        var i = 0
+        fun take(n: Int): ByteArray? { if (i + n > raw.size) return null; val r = raw.copyOfRange(i, i + n); i += n; return r }
+        fun u8(): Int? { if (i >= raw.size) return null; return raw[i++].toInt() and 0xff }
+        fun varint(): Int? {
+            val n = u8() ?: return null
+            return when {
+                n < 0xfd -> n
+                n == 0xfd -> take(2)?.let { (it[0].toInt() and 0xff) or ((it[1].toInt() and 0xff) shl 8) }
+                n == 0xfe -> take(4)?.let { (it[0].toInt() and 0xff) or ((it[1].toInt() and 0xff) shl 8) or ((it[2].toInt() and 0xff) shl 16) or ((it[3].toInt() and 0xff) shl 24) }
+                else -> take(8)?.let { var v = 0; for (k in 0..7) v = v or ((it[k].toInt() and 0xff) shl (8 * k)); v }
+            }
+        }
+        fun skipSegwitMarker() { if (i + 1 < raw.size && raw[i].toInt() == 0x00 && raw[i + 1].toInt() == 0x01) i += 2 }
+    }
 }

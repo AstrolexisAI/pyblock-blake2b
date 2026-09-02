@@ -48,13 +48,13 @@ fun BlakeChirpScreen() {
                 Row(Modifier.fillMaxWidth()) {
                     BlakeStat(hr(pool?.hashrate), "syndicate hashrate")
                     Spacer(Modifier.weight(1f))
-                    BlakeStat("${pool?.workers ?: 0}", "workers", Blake.fg)
+                    BlakeStat("${pool?.workers ?: 0}", "workers", Blake.fg, alignEnd = true)
                 }
                 Spacer(Modifier.height(18.dp))
                 Row(Modifier.fillMaxWidth()) {
                     BlakeStat("${pool?.blocks ?: 0}", "blocks found", Blake.fg)
                     Spacer(Modifier.weight(1f))
-                    BlakeStat("${pool?.candidates ?: 0}", "candidates", Blake.ppDim)
+                    BlakeStat("${pool?.candidates ?: 0}", "candidates", Blake.ppDim, alignEnd = true)
                 }
             }
 
