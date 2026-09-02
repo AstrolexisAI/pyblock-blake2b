@@ -9,9 +9,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
+import com.astrolexis.pyblock.ui.components.clickableNoRipple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -31,8 +35,16 @@ import kotlinx.coroutines.delay
 @Composable
 fun BlakeChirpScreen() {
     var pool by remember { mutableStateOf<BlakeApi.ChirpPool?>(null) }
+    var workers by remember { mutableStateOf<List<BlakeApi.ChirpWorker>>(emptyList()) }
+    var showParticipants by remember { mutableStateOf(true) }
     var loaded by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { while (true) { BlakeApi.chirpPool()?.let { pool = it }; loaded = true; delay(20_000) } }
+    LaunchedEffect(Unit) {
+        while (true) {
+            BlakeApi.chirpPool()?.let { pool = it }
+            workers = BlakeApi.chirpWorkers()
+            loaded = true; delay(20_000)
+        }
+    }
 
     Box(Modifier.fillMaxSize().background(Blake.bg)) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
@@ -55,6 +67,35 @@ fun BlakeChirpScreen() {
                     BlakeStat("${pool?.blocks ?: 0}", "blocks found", Blake.fg)
                     Spacer(Modifier.weight(1f))
                     BlakeStat("${pool?.candidates ?: 0}", "candidates", Blake.ppDim, alignEnd = true)
+                }
+            }
+
+            // PARTICIPANTS — connected miners only (disconnected hidden). Collapsible.
+            // Appears once the server exposes the per-worker list (mode=workers).
+            val online = workers.filter { it.connected }
+            if (online.isNotEmpty()) {
+                Spacer(Modifier.height(22.dp))
+                Column(Modifier.fillMaxWidth().blakeCard()) {
+                    Row(Modifier.fillMaxWidth().clickableNoRipple { showParticipants = !showParticipants },
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Text("PARTICIPANTS", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
+                        Spacer(Modifier.width(8.dp))
+                        Text("${online.size}", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.pp)
+                        Spacer(Modifier.weight(1f))
+                        Text(if (showParticipants) "▲" else "▼", style = Blake.mono(9f), color = Blake.ppDim)
+                    }
+                    if (showParticipants) {
+                        Spacer(Modifier.height(10.dp))
+                        online.forEach { w ->
+                            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Box(Modifier.size(5.dp).background(Blake.ok, CircleShape))
+                                Spacer(Modifier.width(8.dp))
+                                Text(w.name ?: "anon", style = Blake.mono(10f), color = Blake.fg, maxLines = 1)
+                                Spacer(Modifier.weight(1f))
+                                Text(hr(w.hashrateThs), style = Blake.mono(10f), color = Blake.ppDim)
+                            }
+                        }
+                    }
                 }
             }
 

@@ -92,6 +92,18 @@ object BlakeApi {
         @SerialName("min_power") val minPower: Double? = null,
     )
 
+    /** One connected participant on the CHIRP syndicate (server `mode=workers`). */
+    @Serializable
+    data class ChirpWorker(
+        val name: String? = null,                                   // worker label or masked payout address
+        @SerialName("hashrate_ths") val hashrateThs: Double? = null,
+        val connected: Boolean = true,
+        @SerialName("last_share") val lastShare: Long? = null,      // epoch seconds
+    )
+
+    @Serializable
+    private data class ChirpWorkersResp(val workers: List<ChirpWorker> = emptyList())
+
     // ---- Plumbing ----
 
     private suspend inline fun <reified T> get(path: String, crossinline deserializer: (String) -> T?): T? =
@@ -124,6 +136,12 @@ object BlakeApi {
 
     suspend fun chirpPool(): ChirpPool? =
         get("/chirp_api.php?chain=blake2b&mode=pool") { runCatching { json.decodeFromString<ChirpPool>(it) }.getOrNull() }
+
+    /** Connected CHIRP participants (empty until the server ships `mode=workers`). */
+    suspend fun chirpWorkers(): List<ChirpWorker> =
+        get("/chirp_api.php?chain=blake2b&mode=workers") {
+            runCatching { json.decodeFromString<ChirpWorkersResp>(it).workers }.getOrNull()
+        } ?: emptyList()
 
     /** UTXOs for one address on blake2b. Returns null on failure/warming (retry — never a false 0). */
     suspend fun walletUtxos(address: String): Pair<List<Utxo>, Int>? {
