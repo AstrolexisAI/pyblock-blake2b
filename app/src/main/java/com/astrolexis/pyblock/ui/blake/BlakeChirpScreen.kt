@@ -48,9 +48,10 @@ fun BlakeChirpScreen() {
     var loaded by remember { mutableStateOf(false) }
     var refreshing by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    // Keep last-good on a transient failure (never blanks stats/participants), one retry each.
     val load: suspend () -> Unit = {
-        BlakeApi.chirpPool()?.let { pool = it }
-        workers = BlakeApi.chirpWorkers()
+        (BlakeApi.chirpPool() ?: BlakeApi.chirpPool())?.let { pool = it }
+        (BlakeApi.chirpWorkers() ?: BlakeApi.chirpWorkers())?.let { workers = it }
         loaded = true
     }
     LaunchedEffect(Unit) { while (true) { load(); delay(20_000) } }

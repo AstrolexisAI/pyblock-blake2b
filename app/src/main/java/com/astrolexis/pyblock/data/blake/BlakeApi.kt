@@ -139,11 +139,12 @@ object BlakeApi {
     suspend fun chirpPool(): ChirpPool? =
         get("/chirp_api.php?chain=blake2b&mode=pool") { runCatching { json.decodeFromString<ChirpPool>(it) }.getOrNull() }
 
-    /** Connected CHIRP participants (empty until the server ships `mode=workers`). */
-    suspend fun chirpWorkers(): List<ChirpWorker> =
+    /** Connected CHIRP participants. null on a fetch failure (so callers keep last-good instead
+     *  of blanking); empty list only on a genuine empty response. */
+    suspend fun chirpWorkers(): List<ChirpWorker>? =
         get("/chirp_api.php?chain=blake2b&mode=workers") {
             runCatching { json.decodeFromString<ChirpWorkersResp>(it).workers }.getOrNull()
-        } ?: emptyList()
+        }
 
     /** UTXOs for one address on blake2b. Returns null on failure/warming (retry — never a false 0). */
     suspend fun walletUtxos(address: String): Pair<List<Utxo>, Int>? {
