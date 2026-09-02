@@ -14,8 +14,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.runtime.rememberCoroutineScope
 import com.astrolexis.pyblock.ui.components.clickableNoRipple
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -35,21 +39,26 @@ import kotlinx.coroutines.delay
 
 /** CHIRP — the syndicate: weighted split, loyalty, eligibility + connect info.
  *  Mirrors iOS ChirpView. Sober, purple, flat. */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BlakeChirpScreen() {
     var pool by remember { mutableStateOf<BlakeApi.ChirpPool?>(null) }
     var workers by remember { mutableStateOf<List<BlakeApi.ChirpWorker>>(emptyList()) }
     var showParticipants by remember { mutableStateOf(true) }
     var loaded by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        while (true) {
-            BlakeApi.chirpPool()?.let { pool = it }
-            workers = BlakeApi.chirpWorkers()
-            loaded = true; delay(20_000)
-        }
+    var refreshing by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val load: suspend () -> Unit = {
+        BlakeApi.chirpPool()?.let { pool = it }
+        workers = BlakeApi.chirpWorkers()
+        loaded = true
     }
+    LaunchedEffect(Unit) { while (true) { load(); delay(20_000) } }
 
     Box(Modifier.fillMaxSize().background(Blake.bg)) {
+      PullToRefreshBox(isRefreshing = refreshing, onRefresh = {
+          scope.launch { refreshing = true; load(); refreshing = false }
+      }, modifier = Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
             Text("CHIRP", style = Blake.mono(24f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 3.sp)
             Spacer(Modifier.height(6.dp))
@@ -161,6 +170,7 @@ fun BlakeChirpScreen() {
             }
             Spacer(Modifier.height(24.dp))
         }
+      }
     }
 }
 

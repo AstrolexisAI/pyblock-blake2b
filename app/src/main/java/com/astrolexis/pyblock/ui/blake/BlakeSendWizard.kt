@@ -75,6 +75,8 @@ fun SendWizardSheet(
     val tip by BlakeBalanceStore.tip.collectAsState()
     val ccy by BlakePrice.currency.collectAsState()
     BlakePrice.rates.collectAsState().value            // recompose on rate load
+    BlakeBalanceStore.utxos.collectAsState().value            // recompose when balances/UTXOs change
+    BlakeBalanceStore.pendingSpentIds.collectAsState().value  // recompose when a send goes in-flight
 
     var step by remember { mutableStateOf(1) }
     var toAddress by remember { mutableStateOf(prefillTo) }

@@ -27,7 +27,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -59,6 +61,7 @@ import kotlinx.coroutines.launch
 
 /** WALLET — clean overview: balance (spendable/locked), quick actions, recent activity.
  *  Faithful port of iOS WalletView — flat Blake aesthetic (black, ink cards, hairlines). */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
     val ctx = LocalContext.current
@@ -84,6 +87,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
 
     var showDetails by remember { mutableStateOf(false) }
     var sheet by remember { mutableStateOf<Sheet?>(null) }
+    var refreshing by remember { mutableStateOf(false) }
 
     // Live activity feedback: a heartbeat dot on the header + a one-shot slide-down/blink of
     // the list whenever it changes (new pending/sent/confirmed row, or a confirmation tick)
@@ -122,6 +126,9 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
     val locked = BlakeBalanceStore.lockedSats()
 
     Box(Modifier.fillMaxSize().background(Blake.bg)) {
+      PullToRefreshBox(isRefreshing = refreshing, onRefresh = {
+          scope.launch { refreshing = true; BlakeBalanceStore.refresh(ctx); BlakePrice.refresh(); BlakeStatus.refresh(); refreshing = false }
+      }, modifier = Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
             if (statusLoaded && !operational) {
                 Row(Modifier.fillMaxWidth().border(1.dp, Blake.warn.copy(alpha = 0.5f), RectangleShape).padding(10.dp),
@@ -304,6 +311,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
             }
             Spacer(Modifier.height(28.dp))
         }
+      }
     }
 
     when (val s = sheet) {

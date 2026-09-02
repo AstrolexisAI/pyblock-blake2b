@@ -5,6 +5,8 @@ import com.astrolexis.pyblock.data.wallet.WalletStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -86,9 +88,13 @@ object BlakeBalanceStore {
 
     // ---- Refresh ----
 
+    // Serializes refresh() so the concurrent callers (RootScaffold + WalletScreen seed + 30s
+    // backstop + pull-to-refresh + post-send) don't do overlapping read-modify-write on _utxos.
+    private val refreshMutex = Mutex()
+
     /** Re-read UTXOs for every wallet from the server. Preserves last-good on a per-address
      *  failure/warming (never a false zero). Emits a receive event when the total rises. */
-    suspend fun refresh(ctx: Context) {
+    suspend fun refresh(ctx: Context) = refreshMutex.withLock {
         WalletStore.ensureLoaded(ctx)
         val wallets = WalletStore.wallets.value.filter { it.address.isNotBlank() }
         if (wallets.isEmpty()) { _utxos.value = emptyMap(); lastTotal = 0L; return }
@@ -96,7 +102,9 @@ object BlakeBalanceStore {
         val next = _utxos.value.toMutableMap()
         var tipSeen = _tip.value
         for (w in wallets) {
-            val r = BlakeApi.walletUtxos(w.address) ?: continue   // warming/fail → keep last-good
+            // One retry — the per-address endpoint occasionally warms/hiccups; without it a single
+            // miss left that address stale until the next refresh.
+            val r = BlakeApi.walletUtxos(w.address) ?: BlakeApi.walletUtxos(w.address) ?: continue
             next[w.address] = r.first
             if (r.second > tipSeen) tipSeen = r.second
         }
@@ -155,6 +163,7 @@ object BlakeBalanceStore {
     @Volatile private var socket: WebSocket? = null
     @Volatile private var subscribedAddrs: List<String> = emptyList()
     @Volatile private var reconnectScheduled = false
+    private val socketLock = Any()   // guards the check-then-create so we never open two sockets
 
     @Serializable private data class StreamMsg(
         val type: String? = null,
@@ -168,11 +177,13 @@ object BlakeBalanceStore {
         WalletStore.ensureLoaded(ctx)
         subscribedAddrs = WalletStore.wallets.value.map { it.address }.filter { it.isNotBlank() }
         if (subscribedAddrs.isEmpty()) return
-        if (socket == null) {
-            val req = Request.Builder().url(STREAM_URL).build()
-            socket = streamClient.newWebSocket(req, listener)
-        } else {
-            sendSubscribe()
+        synchronized(socketLock) {
+            if (socket == null) {
+                val req = Request.Builder().url(STREAM_URL).build()
+                socket = streamClient.newWebSocket(req, listener)
+            } else {
+                sendSubscribe()
+            }
         }
     }
 
@@ -216,9 +227,11 @@ object BlakeBalanceStore {
         Thread {
             try { Thread.sleep(3_000) } catch (_: InterruptedException) {}
             reconnectScheduled = false
-            if (socket == null && subscribedAddrs.isNotEmpty()) {
-                val req = Request.Builder().url(STREAM_URL).build()
-                socket = streamClient.newWebSocket(req, listener)
+            synchronized(socketLock) {
+                if (socket == null && subscribedAddrs.isNotEmpty()) {
+                    val req = Request.Builder().url(STREAM_URL).build()
+                    socket = streamClient.newWebSocket(req, listener)
+                }
             }
         }.start()
     }
