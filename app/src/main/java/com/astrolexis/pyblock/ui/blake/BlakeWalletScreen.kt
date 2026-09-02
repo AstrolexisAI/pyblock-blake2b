@@ -322,29 +322,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
             onClose = { sheet = null },
         )
         Sheet.Coins -> CoinsSheet(BlakeBalanceStore.allUtxos(), tip) { sheet = null }
-        Sheet.Send -> SendSheet(
-            onSend = { addr, amt, max, fee, ricochet ->
-                scope.launch {
-                    try {
-                        val txid: String
-                        if (ricochet) {
-                            val outcome = com.astrolexis.pyblock.data.blake.BlakeSpend.ricochet(ctx, addr, amt, max, 3, fee)
-                            txid = outcome.txids.last()
-                            com.astrolexis.pyblock.data.wallet.RicochetHistory.add(ctx, outcome, 3, if (max) total else amt, addr, "mainnet")
-                        } else {
-                            txid = com.astrolexis.pyblock.data.blake.BlakeSpend.send(ctx, addr, amt, max, fee)
-                        }
-                        com.astrolexis.pyblock.data.blake.BlakeSentStore.add(txid, if (max) total else amt, addr, emptySet(), ricochet)
-                        toast(ctx, "Sent · ${txid.take(12)}…"); BlakeBalanceStore.refresh(ctx); sheet = null
-                    } catch (e: Exception) {
-                        val raw = e.message ?: "Send failed"
-                        toast(ctx, if (raw.contains("min relay", ignoreCase = true)) "Fee too low — pick 2 sat/vB or more" else raw)
-                    }
-                }
-            },
-            paste = { clip.getText()?.text ?: "" },
-            onClose = { sheet = null },
-        )
+        Sheet.Send -> SendWizardSheet(onClose = { sheet = null })
         Sheet.Currency -> CurrencyPickerSheet(BlakePrice.available()) { BlakePrice.setCurrency(it); sheet = null }
         Sheet.Settings -> SettingsSheet(operational, rc, statusHeight) { sheet = null }
         Sheet.Ricochets -> RicochetHistorySheet(onCopy = { clip.setText(AnnotatedString(it)); toast(ctx, "Copied") }) { sheet = null }
