@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.astrolexis.pyblock.data.blake.BlakeApi
@@ -130,9 +131,10 @@ fun BlakeChirpScreen() {
                             Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Box(Modifier.size(5.dp).background(Blake.ok, CircleShape))
                                 Spacer(Modifier.width(8.dp))
-                                Text(w.name ?: "anon", style = Blake.mono(10f), color = Blake.fg, maxLines = 1)
-                                Spacer(Modifier.weight(1f))
-                                Text(hr(w.hashrateThs), style = Blake.mono(10f), color = Blake.ppDim)
+                                Text(w.name ?: "anon", style = Blake.mono(10f), color = Blake.fg,
+                                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                                Spacer(Modifier.width(8.dp))
+                                Text(hr(w.hashrateThs), style = Blake.mono(10f), color = Blake.ppDim, maxLines = 1, softWrap = false)
                             }
                         }
                     }
