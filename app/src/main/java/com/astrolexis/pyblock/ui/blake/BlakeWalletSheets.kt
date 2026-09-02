@@ -201,9 +201,16 @@ fun CoinsSheet(utxos: List<BlakeApi.Utxo>, tip: Int, onSpend: (Set<String>) -> U
     sheetBox("COIN CONTROL", Blake.pp, onClose) {
         if (utxos.isEmpty()) { Text("No coins.", style = Blake.mono(10f), color = Blake.faint); return@sheetBox }
         val sorted = utxos.sortedByDescending { it.value }
-        val hasSpendable = sorted.any { BlakeFork.lockReason(it, tip) == null }
-        if (hasSpendable && BlakeChains.SEND_ENABLED)
-            Text("Tap spendable coins to select, then SEND.", style = Blake.mono(9f), color = Blake.faint)
+        val spendableIds = sorted.filter { BlakeFork.lockReason(it, tip) == null }.map { it.id }.toSet()
+        if (spendableIds.isNotEmpty() && BlakeChains.SEND_ENABLED) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("Tap spendable coins to select, then SEND.", style = Blake.mono(9f), color = Blake.faint)
+                Spacer(Modifier.weight(1f))
+                val allOn = selected.containsAll(spendableIds)
+                Text(if (allOn) "NONE" else "ALL", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.pp,
+                    modifier = Modifier.clickableNoRipple { selected = if (allOn) emptySet() else spendableIds })
+            }
+        }
         Spacer(Modifier.height(10.dp))
         sorted.forEach { u ->
             val reason = BlakeFork.lockReason(u, tip)
