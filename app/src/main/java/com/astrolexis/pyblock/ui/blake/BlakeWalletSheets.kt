@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.astrolexis.pyblock.data.blake.BlakeApi
+import com.astrolexis.pyblock.data.blake.BlakeChains
 import com.astrolexis.pyblock.data.blake.BlakeFork
 import com.astrolexis.pyblock.data.crypto.VanityCrypto
 import com.astrolexis.pyblock.data.crypto.toHex
@@ -195,21 +196,40 @@ fun ReceiveSheet(wallet: VanityWallet, onCopy: (String) -> Unit, onClose: () -> 
 
 // ---- Coins ----
 @Composable
-fun CoinsSheet(utxos: List<BlakeApi.Utxo>, tip: Int, onClose: () -> Unit) {
+fun CoinsSheet(utxos: List<BlakeApi.Utxo>, tip: Int, onSpend: (Set<String>) -> Unit, onClose: () -> Unit) {
+    var selected by remember { mutableStateOf<Set<String>>(emptySet()) }
     sheetBox("COIN CONTROL", Blake.pp, onClose) {
-        if (utxos.isEmpty()) Text("No coins.", style = Blake.mono(10f), color = Blake.faint)
-        else utxos.sortedByDescending { it.value }.forEach { u ->
+        if (utxos.isEmpty()) { Text("No coins.", style = Blake.mono(10f), color = Blake.faint); return@sheetBox }
+        val sorted = utxos.sortedByDescending { it.value }
+        val hasSpendable = sorted.any { BlakeFork.lockReason(it, tip) == null }
+        if (hasSpendable && BlakeChains.SEND_ENABLED)
+            Text("Tap spendable coins to select, then SEND.", style = Blake.mono(9f), color = Blake.faint)
+        Spacer(Modifier.height(10.dp))
+        sorted.forEach { u ->
             val reason = BlakeFork.lockReason(u, tip)
-            Row(Modifier.fillMaxWidth().padding(bottom = 8.dp).border(1.dp, Blake.line, RectangleShape).padding(12.dp),
+            val spendable = reason == null
+            val on = u.id in selected
+            Row(Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                .border(1.dp, if (on) Blake.pp else Blake.line, RectangleShape).padding(12.dp)
+                .then(if (spendable && BlakeChains.SEND_ENABLED) Modifier.clickableNoRipple {
+                    selected = if (on) selected - u.id else selected + u.id
+                } else Modifier),
                 verticalAlignment = Alignment.CenterVertically) {
-                Text(if (reason == null) "🔓" else "🔒", style = Blake.mono(11f), color = Blake.faint)
+                Text(if (!spendable) "🔒" else if (on) "◉" else "○",
+                    style = Blake.mono(12f), color = if (on) Blake.pp else Blake.faint)
                 Spacer(Modifier.width(8.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("${Blake.btc(u.value)} ${Blake.RUNE}", style = Blake.mono(12f, FontWeight.ExtraBold), color = if (reason == null) Blake.ok else Blake.warn)
+                    Text("${Blake.btc(u.value)} ${Blake.RUNE}", style = Blake.mono(12f, FontWeight.ExtraBold), color = if (spendable) Blake.ok else Blake.warn)
                     Text(reason ?: (if (u.coinbase) "mined · spendable" else "received"), style = Blake.mono(8f), color = Blake.faint)
                 }
                 Text("#${u.height}", style = Blake.mono(9f), color = Blake.faint)
             }
+        }
+        if (selected.isNotEmpty() && BlakeChains.SEND_ENABLED) {
+            val selSats = sorted.filter { it.id in selected }.sumOf { it.value }
+            Spacer(Modifier.height(6.dp))
+            sheetBtn("SEND ${selected.size} COIN${if (selected.size == 1) "" else "S"} · ${Blake.btc(selSats)} ${Blake.RUNE}",
+                Blake.pp, filled = true) { onSpend(selected) }
         }
     }
 }

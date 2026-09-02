@@ -185,7 +185,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("↗ SEND", style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.bg, letterSpacing = 1.sp, textAlign = TextAlign.Center,
                         modifier = Modifier.weight(1f).background(Blake.pp).padding(vertical = 12.dp)
-                            .clickableNoRipple { if (spendable <= 0) toast(ctx, "No spendable coins yet.") else sheet = Sheet.Send })
+                            .clickableNoRipple { if (spendable <= 0) toast(ctx, "No spendable coins yet.") else sheet = Sheet.Send() })
                     if (BlakeChains.RICOCHET_ENABLED) {
                         Text("⟿ RICOCHETS", style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 1.sp, textAlign = TextAlign.Center,
                             modifier = Modifier.weight(1f).border(1.dp, Blake.pp, RectangleShape).padding(vertical = 12.dp)
@@ -321,8 +321,8 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
             balanceFor = { BlakeBalanceStore.balanceForAddress(it) },
             onClose = { sheet = null },
         )
-        Sheet.Coins -> CoinsSheet(BlakeBalanceStore.allUtxos(), tip) { sheet = null }
-        Sheet.Send -> SendWizardSheet(onClose = { sheet = null })
+        Sheet.Coins -> CoinsSheet(BlakeBalanceStore.allUtxos(), tip, onSpend = { keys -> sheet = Sheet.Send(keys) }) { sheet = null }
+        is Sheet.Send -> SendWizardSheet(coinKeys = s.coinKeys, onClose = { sheet = null })
         Sheet.Currency -> CurrencyPickerSheet(BlakePrice.available()) { BlakePrice.setCurrency(it); sheet = null }
         Sheet.Settings -> SettingsSheet(operational, rc, statusHeight) { sheet = null }
         Sheet.Ricochets -> RicochetHistorySheet(onCopy = { clip.setText(AnnotatedString(it)); toast(ctx, "Copied") }) { sheet = null }
@@ -344,7 +344,7 @@ private sealed class Sheet {
     data class Utxo(val utxo: BlakeApi.Utxo) : Sheet()
     object Addresses : Sheet()
     object Coins : Sheet()
-    object Send : Sheet()
+    data class Send(val coinKeys: Set<String> = emptySet()) : Sheet()
     object Currency : Sheet()
     object Settings : Sheet()
     object Ricochets : Sheet()
