@@ -507,9 +507,22 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch(parent) { runCatching { sweepPaynymsOnce() } }
     }
 
+    // Events awaiting a live socket. Without this, a message posted while the socket was down/
+    // reconnecting was silently dropped (only the optimistic echo showed, so it looked "sent" to
+    // you but never reached the relay). Queued events flush on the next open.
+    private val outbox = mutableListOf<NostrEvent>()
+
     private fun broadcast(ev: NostrEvent) {
-        val msg = JSONArray().put("EVENT").put(eventJson(ev)).toString()
-        for (ws in sockets) ws.send(msg)
+        outbox.add(ev)
+        flushOutbox()
+    }
+
+    /** Send everything queued. If there's no live socket, (re)connect — onOpen flushes again. */
+    private fun flushOutbox() {
+        val ws = sockets.firstOrNull()
+        if (ws == null) { connect(); return }
+        val pending = outbox.toList(); outbox.clear()
+        for (ev in pending) ws.send(JSONArray().put("EVENT").put(eventJson(ev)).toString())
     }
 
     // MARK: Receive
@@ -519,12 +532,15 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
             subscribe(ws)
             _state.update { it.copy(connected = true) }
             publishMetadata()
+            flushOutbox()          // deliver anything queued while we were disconnected
         }
         override fun onMessage(ws: WebSocket, text: String) = handle(text)
         override fun onFailure(ws: WebSocket, t: Throwable, response: Response?) {
+            sockets.remove(ws)   // drop the dead socket so connect() can re-open (else sends are lost)
             _state.update { it.copy(connected = false) }
         }
         override fun onClosed(ws: WebSocket, code: Int, reason: String) {
+            sockets.remove(ws)
             _state.update { it.copy(connected = false) }
         }
     }

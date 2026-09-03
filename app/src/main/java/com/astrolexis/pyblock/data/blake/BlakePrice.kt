@@ -69,14 +69,8 @@ object BlakePrice {
     }
 
     /** "≈ $78,401" in the selected currency, or null when no price is loaded. */
-    fun fiatLabel(sats: Long): String? {
-        val rate = _rates.value[_currency.value] ?: return null
-        if (rate <= 0) return null
-        val v = sats / 100_000_000.0 * rate
-        val decimals = if (v >= 100) 0 else if (v >= 1) 2 else 3
-        val nf = NumberFormat.getNumberInstance(Locale.US).apply {
-            minimumFractionDigits = decimals; maximumFractionDigits = decimals; isGroupingUsed = true
-        }
-        return "≈ ${symbol(_currency.value)}${nf.format(v)}"
-    }
+    /** Fiat conversion is intentionally DISABLED for the BLAKE2b app: the fork's market value is
+     *  uncertain, so a BTC-priced fiat figure would mislead. Returning null hides every fiat
+     *  display (all call sites are conditional on this). */
+    fun fiatLabel(sats: Long): String? = null
 }

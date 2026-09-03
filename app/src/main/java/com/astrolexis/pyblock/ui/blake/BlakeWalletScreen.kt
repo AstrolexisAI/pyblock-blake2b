@@ -73,7 +73,6 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
     val tip by BlakeBalanceStore.tip.collectAsState()
     val loading by BlakeBalanceStore.loading.collectAsState()
     val rates by BlakePrice.rates.collectAsState()
-    val ccy by BlakePrice.currency.collectAsState()
     val live by BlakeBalanceStore.live.collectAsState()
     val sentRecords by com.astrolexis.pyblock.data.blake.BlakeSentStore.records.collectAsState()
     val pendingIn by BlakeBalanceStore.pendingIn.collectAsState()
@@ -157,16 +156,6 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
                 }
                 Spacer(Modifier.height(6.dp))
                 Text("${Blake.btc(total)} ${Blake.RUNE}", style = Blake.mono(30f, FontWeight.ExtraBold), color = Blake.pp, maxLines = 1)
-                Spacer(Modifier.height(4.dp))
-                Row(verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.clickableNoRipple { sheet = Sheet.Currency }) {
-                    BlakePrice.fiatLabel(total)?.let {
-                        Text(it, style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.fg)
-                        Spacer(Modifier.size(8.dp))
-                    }
-                    Text(ccy, style = Blake.mono(9f), color = Blake.pp,
-                        modifier = Modifier.border(1.dp, Blake.line, RectangleShape).padding(horizontal = 6.dp, vertical = 2.dp))
-                }
                 Spacer(Modifier.height(4.dp))
                 Text("${"%,d".format(total)} sats · ${wallets.size} address${if (wallets.size == 1) "" else "es"}",
                     style = Blake.mono(9f), color = Blake.faint)
