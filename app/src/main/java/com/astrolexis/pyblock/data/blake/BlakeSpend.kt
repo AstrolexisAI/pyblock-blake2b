@@ -109,8 +109,8 @@ object BlakeSpend {
             val wif = WalletStore.wif(ctx, w.id) ?: continue
             val r = BlakeApi.walletUtxos(w.address) ?: continue     // warming/fail → skip (safe subset only)
             for (u in r.first) {
-                val confs = tip - u.height + 1
-                if (!u.coinbase || u.height < forkHeight || confs < coinbaseMaturity) continue
+                // Mature post-fork coinbase (safe) OR a replay-locked coin the user chose to unlock.
+                if (!BlakeFork.isEffectivelySpendable(u, tip)) continue
                 val prev = runCatching { Transaction(hexToBytes(u.hex)) }.getOrNull() ?: continue
                 val outpoint = OutPoint(Txid.fromString(u.txid), u.vout.toUInt())
                 coins.add(Coin(outpoint, prev, wif, u.value, metaKey(u.txid, u.vout)))

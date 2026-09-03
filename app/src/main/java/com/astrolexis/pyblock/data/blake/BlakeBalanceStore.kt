@@ -77,7 +77,7 @@ object BlakeBalanceStore {
     fun spendableSats(): Long {
         val t = _tip.value
         val spent = _pendingSpentIds.value
-        return allUtxos().filter { BlakeFork.isSpendable(it, t) && it.id !in spent }.sumOf { it.value }
+        return allUtxos().filter { BlakeFork.isEffectivelySpendable(it, t) && it.id !in spent }.sumOf { it.value }
     }
 
     /** Locked = everything not safely spendable (pre-fork/shared or immature coinbase). */

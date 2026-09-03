@@ -28,4 +28,15 @@ object BlakeFork {
         val need = COINBASE_MATURITY - confirmations(u, tip)
         return "immature · ${maxOf(0, need)} blocks to mature"
     }
+
+    /** Locked for REPLAY reasons (pre-fork or received), so the user MAY unlock it (accepting the
+     *  replay risk). Immature coinbase is a consensus lock — NOT unlockable, must wait to mature. */
+    fun isReplayLocked(u: BlakeApi.Utxo, tip: Int): Boolean {
+        if (isSpendable(u, tip)) return false
+        return u.height < FORK_HEIGHT || !u.coinbase
+    }
+
+    /** Effectively spendable = safe mature coinbase, OR the user unlocked a replay-locked coin. */
+    fun isEffectivelySpendable(u: BlakeApi.Utxo, tip: Int): Boolean =
+        isSpendable(u, tip) || (isReplayLocked(u, tip) && UnlockStore.isUnlocked(u.id))
 }

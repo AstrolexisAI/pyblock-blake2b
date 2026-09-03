@@ -19,6 +19,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -86,12 +87,21 @@ internal fun sheetField(value: String, hint: String, keyboard: KeyboardType, ena
 // ---- UTXO detail ----
 @Composable
 fun UtxoDetailSheet(u: BlakeApi.Utxo, tip: Int, onCopy: (String) -> Unit, onClose: () -> Unit) {
+    val unlockedIds by com.astrolexis.pyblock.data.blake.UnlockStore.ids.collectAsState()
+    val unlocked = u.id in unlockedIds
+    val replayLocked = BlakeFork.isReplayLocked(u, tip)
+    var warn by remember { mutableStateOf(false) }
     sheetBox("COIN", Blake.pp, onClose) {
         Text("${Blake.btc(u.value)} ${Blake.RUNE}", style = Blake.mono(24f, FontWeight.ExtraBold), color = Blake.pp)
         Text("${"%,d".format(u.value)} sats", style = Blake.mono(10f), color = Blake.faint)
         Spacer(Modifier.height(12.dp))
         val reason = BlakeFork.lockReason(u, tip)
-        kv("STATUS", if (reason == null) "spendable (mature mined)" else "locked · $reason", if (reason == null) Blake.ok else Blake.warn)
+        val statusText = when {
+            reason == null -> "spendable (mature mined)"
+            unlocked -> "unlocked · replay-exposed (you accepted the risk)"
+            else -> "locked · $reason"
+        }
+        kv("STATUS", statusText, if (reason == null) Blake.ok else if (unlocked) Blake.pp else Blake.warn)
         kv("CONFIRMATIONS", "${BlakeFork.confirmations(u, tip)}", Blake.fg)
         kv("HEIGHT", "#${u.height}", Blake.fg)
         kv("TYPE", if (u.coinbase) "coinbase (mined)" else "received", Blake.fg)
@@ -100,7 +110,44 @@ fun UtxoDetailSheet(u: BlakeApi.Utxo, tip: Int, onCopy: (String) -> Unit, onClos
         Text("${u.txid}:${u.vout}", style = Blake.mono(10f), color = Blake.pp,
             modifier = Modifier.clickableNoRipple { onCopy("${u.txid}:${u.vout}") })
         Spacer(Modifier.height(14.dp))
+        // Unlock / re-lock — only for replay-locked coins (immature coinbase can't be unlocked).
+        if (replayLocked) {
+            if (unlocked) {
+                sheetBtn("🔒 RE-LOCK", Blake.warn) { com.astrolexis.pyblock.data.blake.UnlockStore.relock(u.id) }
+            } else {
+                sheetBtn("🔓 UNLOCK — REPLAY RISK", Blake.danger) { warn = true }
+            }
+            Spacer(Modifier.height(8.dp))
+        }
         sheetBtn("CLOSE", Blake.ppDim) { onClose() }
+    }
+    if (warn) UnlockWarningDialog(
+        onConfirm = { com.astrolexis.pyblock.data.blake.UnlockStore.unlock(u.id); warn = false },
+        onDismiss = { warn = false },
+    )
+}
+
+/** Strong replay-risk warning shown before unlocking a pre-fork/received coin. */
+@Composable
+private fun UnlockWarningDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss) {
+        Column(Modifier.fillMaxWidth().background(Blake.ink).border(1.dp, Blake.danger, RectangleShape).padding(20.dp)) {
+            Text("⚠ UNLOCK — REPLAY RISK", style = Blake.mono(14f, FontWeight.ExtraBold), color = Blake.danger, letterSpacing = 1.sp)
+            Spacer(Modifier.height(12.dp))
+            Text("This is a pre-fork or received coin. Bitcoin (SHA-256) and BLAKE2b share the same history before the fork, and this fork has NO replay protection.",
+                style = Blake.mono(9f), color = Blake.fg)
+            Spacer(Modifier.height(8.dp))
+            Text("If you spend it here, the same transaction can be valid on BOTH chains — it can move or LOSE the matching coin on your Bitcoin (SHA-256) balance. This cannot be undone.",
+                style = Blake.mono(9f), color = Blake.warn)
+            Spacer(Modifier.height(8.dp))
+            Text("Only unlock if you understand and accept this. Safer: move your Bitcoin coins with a Bitcoin wallet first, then these become yours alone on BLAKE2b.",
+                style = Blake.mono(8f), color = Blake.faint)
+            Spacer(Modifier.height(16.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Box(Modifier.weight(1f)) { sheetBtn("CANCEL", Blake.ppDim) { onDismiss() } }
+                Box(Modifier.weight(1f)) { sheetBtn("I UNDERSTAND", Blake.danger, filled = true) { onConfirm() } }
+            }
+        }
     }
 }
 
@@ -198,10 +245,11 @@ fun ReceiveSheet(wallet: VanityWallet, onCopy: (String) -> Unit, onClose: () -> 
 @Composable
 fun CoinsSheet(utxos: List<BlakeApi.Utxo>, tip: Int, onSpend: (Set<String>) -> Unit, onClose: () -> Unit) {
     var selected by remember { mutableStateOf<Set<String>>(emptySet()) }
+    val unlockedIds by com.astrolexis.pyblock.data.blake.UnlockStore.ids.collectAsState()
     sheetBox("COIN CONTROL", Blake.pp, onClose) {
         if (utxos.isEmpty()) { Text("No coins.", style = Blake.mono(10f), color = Blake.faint); return@sheetBox }
         val sorted = utxos.sortedByDescending { it.value }
-        val spendableIds = sorted.filter { BlakeFork.lockReason(it, tip) == null }.map { it.id }.toSet()
+        val spendableIds = sorted.filter { BlakeFork.isEffectivelySpendable(it, tip) }.map { it.id }.toSet()
         if (spendableIds.isNotEmpty() && BlakeChains.SEND_ENABLED) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text("Tap spendable coins to select, then SEND.", style = Blake.mono(9f), color = Blake.faint)
@@ -214,7 +262,8 @@ fun CoinsSheet(utxos: List<BlakeApi.Utxo>, tip: Int, onSpend: (Set<String>) -> U
         Spacer(Modifier.height(10.dp))
         sorted.forEach { u ->
             val reason = BlakeFork.lockReason(u, tip)
-            val spendable = reason == null
+            val unlocked = u.id in unlockedIds
+            val spendable = BlakeFork.isEffectivelySpendable(u, tip)
             val on = u.id in selected
             Row(Modifier.fillMaxWidth().padding(bottom = 8.dp)
                 .border(1.dp, if (on) Blake.pp else Blake.line, RectangleShape).padding(12.dp)
@@ -222,12 +271,14 @@ fun CoinsSheet(utxos: List<BlakeApi.Utxo>, tip: Int, onSpend: (Set<String>) -> U
                     selected = if (on) selected - u.id else selected + u.id
                 } else Modifier),
                 verticalAlignment = Alignment.CenterVertically) {
-                Text(if (!spendable) "🔒" else if (on) "◉" else "○",
+                Text(when { on -> "◉"; !spendable -> "🔒"; unlocked -> "🔓"; else -> "○" },
                     style = Blake.mono(12f), color = if (on) Blake.pp else Blake.faint)
                 Spacer(Modifier.width(8.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("${Blake.btc(u.value)} ${Blake.RUNE}", style = Blake.mono(12f, FontWeight.ExtraBold), color = if (spendable) Blake.ok else Blake.warn)
-                    Text(reason ?: (if (u.coinbase) "mined · spendable" else "received"), style = Blake.mono(8f), color = Blake.faint)
+                    Text("${Blake.btc(u.value)} ${Blake.RUNE}", style = Blake.mono(12f, FontWeight.ExtraBold),
+                        color = if (reason == null) Blake.ok else if (unlocked) Blake.pp else Blake.warn)
+                    Text(if (unlocked) "unlocked · replay risk" else (reason ?: (if (u.coinbase) "mined · spendable" else "received")),
+                        style = Blake.mono(8f), color = if (unlocked) Blake.pp else Blake.faint)
                 }
                 Text("#${u.height}", style = Blake.mono(9f), color = Blake.faint)
             }

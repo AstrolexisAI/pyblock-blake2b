@@ -108,6 +108,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
         WalletStore.ensureLoaded(ctx)
         BlakePrice.init(ctx)
         com.astrolexis.pyblock.data.blake.BlakeSentStore.init(ctx)
+        com.astrolexis.pyblock.data.blake.UnlockStore.init(ctx)
         BlakeBalanceStore.refresh(ctx)      // seed
         BlakeBalanceStore.startLive(ctx)    // live push (WebSocket) — no time-based polling
         // Slow safety refresh for price/status + a balance backstop if the socket drops.
@@ -119,6 +120,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
     }
     // recompute derived off rates too
     rates.size
+    com.astrolexis.pyblock.data.blake.UnlockStore.ids.collectAsState().value   // recompose on unlock/relock
 
     val total = BlakeBalanceStore.totalSats()
     val spendable = BlakeBalanceStore.spendableSats()
