@@ -1,8 +1,0 @@
-{
-  "version_code": 1,
-  "version_name": "1.0.0",
-  "apk_url": "https://pyblock.xyz:8443/download/pyblock-1.0.0.apk",
-  "sha256": "7ee262e29b5bab883efc0bf0c48b05c60035a1b228e50292b159cece2c4281b0",
-  "min_supported_version_code": 1,
-  "changelog": "PyBLOCK for Android 1.0.0 \u2014 first public release. Pool stats, anti-spam clean blocks, buy hashrate over Lightning, Node Defender arcade, Bitcoin Academy, node map, premium themes. 100% Lightning, no Google Play."
-}

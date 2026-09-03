@@ -15,3 +15,6 @@ captures/
 *.keystore
 keystore.properties
 .kotlin/
+
+# Internal server-coordination notes live in fedora ~/pyblock-android-docs/, never in this repo
+docs/

@@ -243,7 +243,7 @@ object BlakeSpend {
         var totalFee = selectedTotal - tx0.output().sumOf { it.value.toSat().toLong() }   // tx0 fee
 
         val hop0Bytes = hopChain[0].script.toBytes()
-        val hop0Idx = tx0.output().indexOfFirst { it.scriptPubkey.toBytes() == hop0Bytes }
+        val hop0Idx = tx0.output().indexOfFirst { it.scriptPubkey.toBytes().contentEquals(hop0Bytes) }
         if (hop0Idx < 0) throw Err.BuildFailed
         var prevTxid = tx0.computeTxid()
         var prevVout = hop0Idx.toUInt()
