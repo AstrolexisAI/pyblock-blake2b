@@ -205,8 +205,10 @@ interface PyblockApi {
     suspend fun purchaseStatus(@Query("id") id: String): PurchaseStatusResp
 
     // ---- Sideload update check ----
+    // MUST pass app=blake2b: this endpoint defaults to the SHA-256 app's manifest, so without
+    // the param a BLAKE2b build is offered the wrong APK (pyblock-*.apk) as an "update".
     @GET("api/app/android_version.php")
-    suspend fun androidVersion(): com.astrolexis.pyblock.data.model.AndroidVersion
+    suspend fun androidVersion(@Query("app") app: String = "blake2b"): com.astrolexis.pyblock.data.model.AndroidVersion
 
     // ---- Node Defender leaderboard ----
     @GET("api/app/defender_scores.php")
