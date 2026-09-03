@@ -79,7 +79,9 @@ fun BlakeChatScreen(client: NostrClient, onPay: (String, Long?, String) -> Unit)
 
     LaunchedEffect(Unit) { client.connect() }
     LaunchedEffect(state.messages.size) {
-        if (state.messages.isNotEmpty()) listState.animateScrollToItem(state.messages.size - 1)
+        // Snap instantly to the newest message (no animated scroll journey) so streaming/loading
+        // history doesn't visibly travel the list.
+        if (state.messages.isNotEmpty()) listState.scrollToItem(state.messages.size - 1)
     }
 
     // DM overlays.
