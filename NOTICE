@@ -1,0 +1,10 @@
+PyBLØCK ᛒ (BLAKE2b)
+Copyright 2026 AstroLexis LLC
+
+This product includes software developed by AstroLexis LLC.
+Licensed under the Apache License, Version 2.0 (the "License"); see the LICENSE file.
+
+Third-party components (Apache-2.0 / MIT), fetched from Maven and pinned by SHA-256 in
+gradle/verification-metadata.xml: AndroidX, Jetpack Compose, Kotlin/kotlinx, OkHttp/Retrofit,
+Coil, ZXing, CameraX, ACINQ secp256k1-kmp, Bitcoin Dev Kit (bdk-android), Sparrow hummingbird,
+co.nstant.in cbor, UnifiedPush connector.
