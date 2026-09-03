@@ -35,6 +35,10 @@ android {
                 storePassword = keystoreProps.getProperty("storePassword")
                 keyAlias = keystoreProps.getProperty("keyAlias")
                 keyPassword = keystoreProps.getProperty("keyPassword")
+                // v2 + v3 (same key, no rotation now). v3 enables future keystore rotation via a
+                // signing lineage without users losing the app. Verify: apksigner verify -v → v2 & v3 true.
+                enableV2Signing = true
+                enableV3Signing = true
             }
         }
     }
