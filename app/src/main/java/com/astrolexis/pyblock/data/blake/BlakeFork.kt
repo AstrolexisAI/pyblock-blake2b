@@ -21,7 +21,10 @@ object BlakeFork {
     /** Human reason a coin is still locked (null if spendable). */
     fun lockReason(u: BlakeApi.Utxo, tip: Int): String? {
         if (isSpendable(u, tip)) return null
-        if (!u.coinbase || u.height < FORK_HEIGHT) return "pre-fork · replay-exposed"
+        if (u.height < FORK_HEIGHT) return "pre-fork · replay-exposed"
+        // Post-fork but NOT our own mined coinbase (a received/incoming coin) → replay-exposed
+        // (the fork has no replay protection), so locked. NOT a pre-fork coin.
+        if (!u.coinbase) return "received · replay-exposed"
         val need = COINBASE_MATURITY - confirmations(u, tip)
         return "immature · ${maxOf(0, need)} blocks to mature"
     }
