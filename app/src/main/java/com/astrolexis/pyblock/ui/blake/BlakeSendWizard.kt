@@ -152,7 +152,9 @@ fun SendWizardSheet(
         error = null; busy = true
         val only = coinKeys.ifEmpty { null }
         val recorded = if (sendMax) sweepSats else amt
-        scope.launch {
+        // Run OFF the main thread: the BDK tx build/sign (esp. SegWit) is CPU-heavy and was blocking
+        // the UI thread → ANR (button stuck on BROADCASTING). Compose state writes are thread-safe.
+        scope.launch(kotlinx.coroutines.Dispatchers.IO) {
             try {
                 // A PayNym payment code (PM…) → derive a fresh BIP-47 send address (advances the per-code counter).
                 var dest = toAddress.trim()
