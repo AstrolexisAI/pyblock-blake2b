@@ -10,9 +10,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -73,6 +72,18 @@ fun SendWizardSheet(
     onClose: () -> Unit,
 ) {
     val ctx = LocalContext.current
+    val density = LocalDensity.current
+    // WindowInsets are unreliable inside a Compose Dialog (often report 0), so read the real
+    // status-bar / nav-bar heights from platform resources — always non-zero, keeps the header
+    // below the notch and the BACK/NEXT footer above the gesture bar on every screen.
+    val topInsetDp = remember {
+        val id = ctx.resources.getIdentifier("status_bar_height", "dimen", "android")
+        with(density) { (if (id > 0) ctx.resources.getDimensionPixelSize(id) else 0).toDp() }
+    }
+    val botInsetDp = remember {
+        val id = ctx.resources.getIdentifier("navigation_bar_height", "dimen", "android")
+        with(density) { (if (id > 0) ctx.resources.getDimensionPixelSize(id) else 0).toDp() }
+    }
     val scope = rememberCoroutineScope()
     val clip = LocalClipboardManager.current
     val tip by BlakeBalanceStore.tip.collectAsState()
@@ -166,7 +177,7 @@ fun SendWizardSheet(
             } else {
                 // Safe-area insets: header below the status bar, footer above the gesture nav bar,
                 // and the whole wizard lifts above the keyboard (was clipping BACK/NEXT).
-                Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding()) {
+                Column(Modifier.fillMaxSize().padding(top = topInsetDp, bottom = botInsetDp).imePadding()) {
                     // Header
                     Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 10.dp),
                         verticalAlignment = Alignment.CenterVertically) {
