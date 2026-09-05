@@ -52,6 +52,43 @@ object VanityCrypto {
         return base58Encode(payload + checksum)
     }
 
+    // ---- Native SegWit (P2WPKH, "bc1q…") — BIP173 bech32 ----
+    private const val BECH32 = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
+    private fun bech32Polymod(values: IntArray): Int {
+        val gen = intArrayOf(0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3)
+        var chk = 1
+        for (v in values) {
+            val b = chk ushr 25
+            chk = ((chk and 0x1ffffff) shl 5) xor v
+            for (i in 0 until 5) if (((b ushr i) and 1) != 0) chk = chk xor gen[i]
+        }
+        return chk
+    }
+    private fun bech32HrpExpand(hrp: String): IntArray =
+        IntArray(hrp.length) { hrp[it].code ushr 5 } + intArrayOf(0) + IntArray(hrp.length) { hrp[it].code and 31 }
+    private fun bech32Checksum(hrp: String, data: IntArray): IntArray {
+        val values = bech32HrpExpand(hrp) + data + intArrayOf(0, 0, 0, 0, 0, 0)
+        val pm = bech32Polymod(values) xor 1
+        return IntArray(6) { (pm ushr (5 * (5 - it))) and 31 }
+    }
+    /** 8-bit → 5-bit group conversion (with padding) for the witness program. */
+    private fun convertBits8to5(data: ByteArray): IntArray {
+        var acc = 0; var bits = 0; val out = ArrayList<Int>()
+        for (b in data) {
+            acc = (acc shl 8) or (b.toInt() and 0xff); bits += 8
+            while (bits >= 5) { bits -= 5; out.add((acc ushr bits) and 31) }
+        }
+        if (bits > 0) out.add((acc shl (5 - bits)) and 31)
+        return out.toIntArray()
+    }
+    /** Mainnet native SegWit v0 P2WPKH "bc1q…" address for a COMPRESSED pubkey. */
+    fun p2wpkhAddress(compressedPubkey: ByteArray): String {
+        val h160 = RIPEMD160.hash(sha256(compressedPubkey))     // 20-byte witness program
+        val data = intArrayOf(0) + convertBits8to5(h160)         // witver 0 + program
+        val full = data + bech32Checksum("bc", data)
+        return "bc1" + full.joinToString("") { BECH32[it].toString() }
+    }
+
     /** Compressed WIF ("K"/"L"): Base58Check(0x80 || key || 0x01). */
     fun wifCompressed(priv: ByteArray): String {
         val payload = ByteArray(34)
@@ -105,6 +142,12 @@ object VanityCrypto {
      */
     fun validatedPubkeyHex(wif: String, expectedAddress: String): String? {
         val (priv, compressed) = decodeWif(wif) ?: return null
+        if (expectedAddress.startsWith("bc1")) {
+            // Native SegWit is compressed-only; the watch-only pubkey is the compressed one.
+            val cpub = compressedPubkey(priv) ?: return null
+            if (p2wpkhAddress(cpub) != expectedAddress) return null
+            return cpub.toHex()
+        }
         val pub = (if (compressed) compressedPubkey(priv) else uncompressedPubkey(priv)) ?: return null
         if (p2pkhAddress(pub) != expectedAddress) return null    // fail-closed: key must match the saved address
         return pub.toHex()
@@ -187,6 +230,8 @@ object VanityCrypto {
         if (validatedPubkeyHex("KwDiBf89QgGbjEhKnhXJuH7LrciVrZi3qYjgd9M7rFU73sVHnoWn", "1EHNa6Q4Jz2uvNExL497mE43ikXhwF6kZm") != null) return false  // wrong address ⇒ null
         if (otherFormatPubkeyHex(pub.toHex()) != unc.toHex()) return false
         if (otherFormatPubkeyHex(unc.toHex()) != pub.toHex()) return false
+        // BIP173 native SegWit vector: privkey=1 compressed → bc1qw508d6...
+        if (p2wpkhAddress(pub) != "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4") return false
         return p2pkhAddress(pub) == "1BgGZ9tcN4rm9KBzDn7KprQz87SZ26SAMH" &&
             wifCompressed(one) == "KwDiBf89QgGbjEhKnhXJuH7LrciVrZi3qYjgd9M7rFU73sVHnoWn" &&
             p2pkhAddress(unc) == "1EHNa6Q4Jz2uvNExL497mE43ikXhwF6kZm" &&

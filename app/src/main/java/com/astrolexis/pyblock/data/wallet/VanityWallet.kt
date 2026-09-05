@@ -21,4 +21,7 @@ data class VanityWallet(
     // a spend, never for syncing — so the wallet follows the chain even while the
     // vault is locked. Null on legacy wallets until backfilled on the next unlock.
     val pubkeyHex: String? = null,
+    // true → this wallet's address is native SegWit (P2WPKH "bc1q…"); false → legacy P2PKH "1…".
+    // Spending reads the coin's own scriptPubKey per-UTXO, so this only drives address display.
+    val segwit: Boolean = false,
 )
