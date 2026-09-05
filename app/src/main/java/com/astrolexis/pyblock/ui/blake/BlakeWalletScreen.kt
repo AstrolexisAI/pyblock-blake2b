@@ -312,6 +312,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
             onGenerate = { onLaunchVanity(); sheet = null },
             onCopy = { clip.setText(AnnotatedString(it)); toast(ctx, "Address copied") },
             balanceFor = { BlakeBalanceStore.balanceForAddress(it) },
+            onSend = { keys -> sheet = Sheet.Send(keys) },
             onClose = { sheet = null },
         )
         Sheet.Coins -> CoinsSheet(BlakeBalanceStore.allUtxos(), tip, onSpend = { keys -> sheet = Sheet.Send(keys) }, onOpen = { u -> sheet = Sheet.Utxo(u) }) { sheet = null }

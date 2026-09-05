@@ -170,11 +170,13 @@ fun AddressControlSheet(
     onGenerate: () -> Unit,
     onCopy: (String) -> Unit,
     balanceFor: (String) -> Long,
+    onSend: (Set<String>) -> Unit,
     onClose: () -> Unit,
 ) {
     val ctx = androidx.compose.ui.platform.LocalContext.current
     val scope = rememberCoroutineScope()
     var receiveFor by remember { mutableStateOf<VanityWallet?>(null) }
+    var detailFor by remember { mutableStateOf<VanityWallet?>(null) }
     var importing by remember { mutableStateOf(false) }
     var scanning by remember { mutableStateOf(false) }
     var wif by remember { mutableStateOf("") }
@@ -186,6 +188,14 @@ fun AddressControlSheet(
 
     val rf = receiveFor
     if (rf != null) { ReceiveSheet(rf, onCopy) { receiveFor = null }; return }
+    val df = detailFor
+    if (df != null) {
+        AddressDetailSheet(df, balanceFor,
+            onReceive = { detailFor = null; receiveFor = df },
+            onSend = { keys -> detailFor = null; onSend(keys) },
+            onCopy = onCopy) { detailFor = null }
+        return
+    }
     if (scanning) {
         com.astrolexis.pyblock.ui.components.QrScanner(title = "SCAN A PRIVATE KEY (WIF)",
             onResult = { code -> wif = code.trim(); importing = true; scanning = false },
@@ -243,7 +253,7 @@ fun AddressControlSheet(
         if (wallets.isEmpty()) Text("No addresses yet.", style = Blake.mono(10f), color = Blake.faint)
         else wallets.forEach { w ->
             Row(Modifier.fillMaxWidth().padding(bottom = 8.dp).border(1.dp, Blake.line, RectangleShape).padding(12.dp)
-                .clickableNoRipple { receiveFor = w }, verticalAlignment = Alignment.CenterVertically) {
+                .clickableNoRipple { detailFor = w }, verticalAlignment = Alignment.CenterVertically) {
                 BlakeIdenticon(seed = w.address, dimen = 30.dp)
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
@@ -322,6 +332,51 @@ fun ReceiveSheet(wallet: VanityWallet, onCopy: (String) -> Unit, onClose: () -> 
         Spacer(Modifier.height(14.dp))
         sheetBtn("COPY ADDRESS", Blake.pp, filled = true) { onCopy(wallet.address) }
         Spacer(Modifier.height(8.dp))
+        sheetBtn("CLOSE", Blake.ppDim) { onClose() }
+    }
+}
+
+/** Per-address wallet detail: this address' own balance + SEND (spends ONLY this address' coins) +
+ *  RECEIVE. Each address behaves as an independent wallet. */
+@Composable
+fun AddressDetailSheet(
+    wallet: VanityWallet,
+    balanceFor: (String) -> Long,
+    onReceive: () -> Unit,
+    onSend: (Set<String>) -> Unit,
+    onCopy: (String) -> Unit,
+    onClose: () -> Unit,
+) {
+    val tip by com.astrolexis.pyblock.data.blake.BlakeBalanceStore.tip.collectAsState()
+    com.astrolexis.pyblock.data.blake.BlakeBalanceStore.utxos.collectAsState().value   // recompose on UTXO change
+    val mine = com.astrolexis.pyblock.data.blake.BlakeBalanceStore.allUtxos().filter { it.address == wallet.address }
+    val spendable = mine.filter { BlakeFork.isEffectivelySpendable(it, tip) }
+    val spendableSats = spendable.sumOf { it.value }
+    val total = balanceFor(wallet.address)
+    val canSend = spendableSats > 0 && BlakeChains.SEND_ENABLED
+    sheetBox(wallet.label.ifEmpty { "WALLET" }.uppercase(), Blake.pp, onClose) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            BlakeIdenticon(seed = wallet.address, dimen = 34.dp)
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text("${Blake.btc(total)} ${Blake.RUNE}", style = Blake.mono(18f, FontWeight.ExtraBold), color = Blake.pp)
+                if (spendableSats > 0) Text("${Blake.btc(spendableSats)} ${Blake.RUNE} spendable", style = Blake.mono(9f), color = Blake.ok)
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        Text(wallet.address, style = Blake.mono(10f), color = Blake.faint, modifier = Modifier.clickableNoRipple { onCopy(wallet.address) })
+        Spacer(Modifier.height(16.dp))
+        sheetBtn(if (canSend) "↗ SEND FROM THIS ADDRESS" else "↗ SEND", if (canSend) Blake.pp else Blake.faint, filled = canSend) {
+            if (canSend) onSend(spendable.map { it.id }.toSet())
+        }
+        Spacer(Modifier.height(8.dp))
+        sheetBtn("⭳ RECEIVE", Blake.pp) { onReceive() }
+        if (spendableSats == 0L && total > 0L) {
+            Spacer(Modifier.height(10.dp))
+            Text("No spendable coins here — only mature mined coinbase is spendable; received/pre-fork coins are replay-locked (unlock in COIN CONTROL).",
+                style = Blake.mono(8f), color = Blake.faint)
+        }
+        Spacer(Modifier.height(10.dp))
         sheetBtn("CLOSE", Blake.ppDim) { onClose() }
     }
 }
