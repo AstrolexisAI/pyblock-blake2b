@@ -127,11 +127,13 @@ object BlakeSpend {
     /** Gather every MATURE POST-FORK COINBASE across the user's wallets, with its owning key. */
     private suspend fun gatherCoins(ctx: Context, tip: Int): List<Coin> {
         val coins = ArrayList<Coin>()
+        val spent = BlakeBalanceStore.pendingSpentIds.value   // just-spent (this session) → never reuse
         for (w in WalletStore.wallets.value) {
             if (w.address.isBlank()) continue
             val wif = WalletStore.wif(ctx, w.id) ?: continue
             val r = BlakeApi.walletUtxos(w.address) ?: continue     // warming/fail → skip (safe subset only)
             for (u in r.first) {
+                if (u.id in spent) continue                          // don't re-spend an in-flight coin
                 // Mature post-fork coinbase (safe) OR a replay-locked coin the user chose to unlock.
                 if (!BlakeFork.isEffectivelySpendable(u, tip)) continue
                 val prev = runCatching { Transaction(hexToBytes(u.hex)) }.getOrNull() ?: continue
@@ -210,7 +212,9 @@ object BlakeSpend {
         val fee = if (inTotal >= outTotal) inTotal - outTotal else 0L
         if (!sendMax && fee >= amountSats) throw Err.FeeTooHigh(fee, amountSats)
 
-        return BlakeApi.pushTx(bytesToHex(tx.serialize()))
+        val txid = BlakeApi.pushTx(bytesToHex(tx.serialize()))
+        BlakeBalanceStore.markSpent(selectedKeys)   // lock these inputs locally (no double-spend in the cache window)
+        return txid
     }
 
     // ---- Ricochet (multi-hop sweep) ----
@@ -305,6 +309,7 @@ object BlakeSpend {
 
         for ((idx, tx) in builtTxs.withIndex()) {
             BlakeApi.pushTx(bytesToHex(tx.serialize()))
+            if (idx == 0) BlakeBalanceStore.markSpent(selectedKeys)   // tx0 spent the user's coins → lock them
             if (idx < builtTxs.size - 1) delay(1_500)
         }
 

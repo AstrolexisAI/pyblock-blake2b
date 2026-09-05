@@ -64,6 +64,11 @@ object BlakeBalanceStore {
     fun pendingInTotal(): Long = _pendingIn.value.values.sum()
     fun hasPending(): Boolean = pendingInTotal() > 0 || _pendingSpentIds.value.isNotEmpty()
 
+    /** Mark coins as spent IMMEDIATELY after a successful broadcast, so a second send within the
+     *  server's cache window can't reuse them (double-spend → bad-txns-inputs-missingorspent). Ids
+     *  are "txid:vout"; cleared naturally once a confirmed refresh drops the spent UTXOs. */
+    fun markSpent(ids: Set<String>) { if (ids.isNotEmpty()) _pendingSpentIds.value = _pendingSpentIds.value + ids }
+
     // ---- Derived totals ----
 
     /** All UTXOs across every wallet, flattened. */
