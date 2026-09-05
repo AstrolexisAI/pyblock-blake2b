@@ -186,6 +186,10 @@ fun SendWizardSheet(
                 android.util.Log.e("BlakeSend", "send failed: ${e::class.java.simpleName}: ${e.message}", e)
                 val raw = e.message ?: "Send failed (${e::class.java.simpleName})"
                 error = when {
+                    // This exact send already reached the network (a prior attempt landed but looked
+                    // like it failed). Not an error — refresh so the coin shows in-flight, tell the
+                    // user to stop resending.
+                    e is BlakeSpend.Err.AlreadyPending -> { runCatching { BlakeBalanceStore.refresh(ctx) }; e.message }
                     // The notification tx broadcast, but it consumed the only spendable coin so the
                     // payment itself couldn't be built. It's not a failure — the peer is now announced;
                     // the user just needs another coin (wait for the change to confirm, or receive more).

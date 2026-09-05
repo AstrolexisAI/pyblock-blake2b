@@ -164,7 +164,18 @@ object BlakeApi {
         class Rejected(val errors: List<String>) : PushErr(
             if (errors.isEmpty()) "The BLAKE2b network rejected the transaction."
             else "Network rejected the transaction: " + errors.joinToString("; ")
-        )
+        ) {
+            /** The node rejected because these inputs are already spent / already in a pending tx —
+             *  i.e. a PRIOR broadcast of this same send already landed and a network hiccup made the
+             *  client think it failed. Treat as "already in flight" (mark spent, don't invite a resend),
+             *  NOT a fresh failure. Covers txn-mempool-conflict, bad-txns-inputs-missingorspent and the
+             *  "already known/in block chain" family. */
+            val alreadyInFlight: Boolean get() = errors.any {
+                val s = it.lowercase()
+                "txn-mempool-conflict" in s || "missingorspent" in s ||
+                    "already known" in s || "txn-already-known" in s || "already in block chain" in s
+            }
+        }
     }
 
     @Serializable private data class PushResult(val txid: String? = null, val accepted: Boolean? = null)

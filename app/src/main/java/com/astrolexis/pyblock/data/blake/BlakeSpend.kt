@@ -48,6 +48,7 @@ object BlakeSpend {
         object NotSigned : Err("Couldn't sign the BLAKE2b transaction.")
         object UnexpectedInput : Err("Safety check failed — a non-mature or shared coin entered the tx. Aborted.")
         object BroadcastFailed : Err("Couldn't broadcast to the BLAKE2b network.")
+        object AlreadyPending : Err("This coin is already in a pending transaction — it will confirm shortly. No need to resend.")
         data class FeeTooHigh(val fee: Long, val amount: Long) : Err("Fee ($fee sats) would equal or exceed the amount ($amount sats).")
     }
 
@@ -215,7 +216,15 @@ object BlakeSpend {
         val fee = if (inTotal >= outTotal) inTotal - outTotal else 0L
         if (!sendMax && fee >= amountSats) throw Err.FeeTooHigh(fee, amountSats)
 
-        val txid = BlakeApi.pushTx(bytesToHex(tx.serialize()))
+        val txid = try {
+            BlakeApi.pushTx(bytesToHex(tx.serialize()))
+        } catch (e: BlakeApi.PushErr.Rejected) {
+            // A prior broadcast of this exact send already landed (client thought it failed → user
+            // resent → node reports conflict/already-spent). Lock the inputs so we stop reselecting
+            // them, and surface a calm "already pending" instead of another "Send failed".
+            if (e.alreadyInFlight) { BlakeBalanceStore.markSpent(selectedKeys); throw Err.AlreadyPending }
+            throw e
+        }
         BlakeBalanceStore.markSpent(selectedKeys)   // lock these inputs locally (no double-spend in the cache window)
         return txid
     }
