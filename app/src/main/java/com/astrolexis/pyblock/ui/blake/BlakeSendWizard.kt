@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -76,17 +75,25 @@ fun SendWizardSheet(
 ) {
     val ctx = LocalContext.current
     val density = LocalDensity.current
-    val view = LocalView.current
-    // Compose WindowInsets read 0 inside a Dialog, and navigation_bar_height resource is 0 under
-    // gesture nav. Read the REAL root-window system-bar insets (works with gestures) and apply a
-    // floor, so the header clears the status bar and BACK/NEXT clears the gesture bar everywhere.
+    // Compose WindowInsets (and the Dialog's own view) read 0 under gesture nav, so read the REAL
+    // system-bar insets from the ACTIVITY's decorView (auto-detects per device) and apply a floor.
+    fun activityInsets(): androidx.core.graphics.Insets? {
+        var c: android.content.Context? = ctx
+        while (c is android.content.ContextWrapper) {
+            if (c is android.app.Activity) {
+                return ViewCompat.getRootWindowInsets(c.window.decorView)
+                    ?.getInsets(WindowInsetsCompat.Type.systemBars())
+            }
+            c = c.baseContext
+        }
+        return null
+    }
     val topInsetDp = remember {
-        val real = ViewCompat.getRootWindowInsets(view)?.getInsets(WindowInsetsCompat.Type.systemBars())?.top ?: 0
-        with(density) { maxOf(real, 24.dp.roundToPx()).toDp() }
+        with(density) { maxOf(activityInsets()?.top ?: 0, 28.dp.roundToPx()).toDp() }
     }
     val botInsetDp = remember {
-        val real = ViewCompat.getRootWindowInsets(view)?.getInsets(WindowInsetsCompat.Type.systemBars())?.bottom ?: 0
-        with(density) { maxOf(real, 40.dp.roundToPx()).toDp() }
+        // 48dp floor clears the gesture pill / nav bar on devices that report 0 inside the dialog.
+        with(density) { maxOf(activityInsets()?.bottom ?: 0, 48.dp.roundToPx()).toDp() }
     }
     val scope = rememberCoroutineScope()
     val clip = LocalClipboardManager.current

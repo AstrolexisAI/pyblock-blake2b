@@ -19,6 +19,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.collectAsState
@@ -179,6 +180,9 @@ fun AddressControlSheet(
     var wif by remember { mutableStateOf("") }
     var probing by remember { mutableStateOf(false) }
     var chooseTypeWif by remember { mutableStateOf<String?>(null) }   // set when neither/both funded → ask
+    var newTypeAsk by remember { mutableStateOf(false) }              // "+ NEW" segwit/legacy prompt
+    var dontAskAgain by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { com.astrolexis.pyblock.data.wallet.NewAddressPref.init(ctx) }
 
     val rf = receiveFor
     if (rf != null) { ReceiveSheet(rf, onCopy) { receiveFor = null }; return }
@@ -193,8 +197,11 @@ fun AddressControlSheet(
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Box(Modifier.weight(1f)) {
                 sheetBtn("+ NEW", Blake.pp, filled = true) {
-                    if (createRandomWallet(ctx)) android.widget.Toast.makeText(ctx, "New address created", android.widget.Toast.LENGTH_SHORT).show()
-                    else android.widget.Toast.makeText(ctx, "Couldn't create address", android.widget.Toast.LENGTH_SHORT).show()
+                    when (com.astrolexis.pyblock.data.wallet.NewAddressPref.mode.value) {
+                        com.astrolexis.pyblock.data.wallet.NewAddressPref.Mode.SEGWIT -> doCreateNew(ctx, true)
+                        com.astrolexis.pyblock.data.wallet.NewAddressPref.Mode.LEGACY -> doCreateNew(ctx, false)
+                        com.astrolexis.pyblock.data.wallet.NewAddressPref.Mode.ASK -> newTypeAsk = true
+                    }
                 }
             }
             Box(Modifier.weight(1f)) { sheetBtn("⛒ VANITY", Blake.pp) { onGenerate() } }
@@ -269,6 +276,36 @@ fun AddressControlSheet(
                 }
                 Spacer(Modifier.height(8.dp))
                 sheetBtn("CANCEL", Blake.ppDim) { chooseTypeWif = null }
+            }
+        }
+    }
+
+    // "+ NEW" → choose address type, with an optional "don't ask again" (reversible in Settings).
+    if (newTypeAsk) {
+        androidx.compose.ui.window.Dialog(onDismissRequest = { newTypeAsk = false }) {
+            Column(Modifier.background(Blake.ink).border(1.dp, Blake.line, RectangleShape).padding(20.dp)) {
+                Text("NEW ADDRESS TYPE", style = Blake.mono(14f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 2.sp)
+                Spacer(Modifier.height(8.dp))
+                Text("SegWit (bc1q) is cheaper to spend and the modern default. Legacy (1…) is the classic format.",
+                    style = Blake.mono(10f), color = Blake.faint)
+                Spacer(Modifier.height(14.dp))
+                Row(Modifier.fillMaxWidth().clickableNoRipple { dontAskAgain = !dontAskAgain }, verticalAlignment = Alignment.CenterVertically) {
+                    Text(if (dontAskAgain) "☑" else "☐", style = Blake.mono(14f), color = Blake.pp)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Don't ask again (change in Settings)", style = Blake.mono(10f), color = Blake.ppDim)
+                }
+                Spacer(Modifier.height(14.dp))
+                sheetBtn("SEGWIT · bc1q", Blake.pp, filled = true) {
+                    if (dontAskAgain) com.astrolexis.pyblock.data.wallet.NewAddressPref.set(ctx, com.astrolexis.pyblock.data.wallet.NewAddressPref.Mode.SEGWIT)
+                    doCreateNew(ctx, true); newTypeAsk = false
+                }
+                Spacer(Modifier.height(8.dp))
+                sheetBtn("LEGACY · 1…", Blake.pp) {
+                    if (dontAskAgain) com.astrolexis.pyblock.data.wallet.NewAddressPref.set(ctx, com.astrolexis.pyblock.data.wallet.NewAddressPref.Mode.LEGACY)
+                    doCreateNew(ctx, false); newTypeAsk = false
+                }
+                Spacer(Modifier.height(8.dp))
+                sheetBtn("CANCEL", Blake.ppDim) { newTypeAsk = false }
             }
         }
     }
@@ -398,10 +435,31 @@ fun CurrencyPickerSheet(currencies: List<String>, onPick: (String) -> Unit) {
 // ---- Settings ----
 @Composable
 fun SettingsSheet(operational: Boolean, rc: String?, height: Int, onClose: () -> Unit) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    LaunchedEffect(Unit) { com.astrolexis.pyblock.data.wallet.NewAddressPref.init(ctx) }
+    val newMode by com.astrolexis.pyblock.data.wallet.NewAddressPref.mode.collectAsState()
     sheetBox("SETTINGS", Blake.pp, onClose) {
         kv("NETWORK", if (operational) "operational" else "${rc ?: "RC"} · testing", if (operational) Blake.ok else Blake.warn)
         kv("TIMECHAIN", "#$height", Blake.fg)
         kv("APP", "PyBLØCK ${Blake.RUNE} 0.1.0", Blake.fg)
+        Spacer(Modifier.height(6.dp))
+        // Tap to cycle the "+ NEW" address type (reversible; "ask each time" re-enables the prompt).
+        Row(Modifier.fillMaxWidth().clickableNoRipple {
+            val next = when (newMode) {
+                com.astrolexis.pyblock.data.wallet.NewAddressPref.Mode.ASK -> com.astrolexis.pyblock.data.wallet.NewAddressPref.Mode.SEGWIT
+                com.astrolexis.pyblock.data.wallet.NewAddressPref.Mode.SEGWIT -> com.astrolexis.pyblock.data.wallet.NewAddressPref.Mode.LEGACY
+                com.astrolexis.pyblock.data.wallet.NewAddressPref.Mode.LEGACY -> com.astrolexis.pyblock.data.wallet.NewAddressPref.Mode.ASK
+            }
+            com.astrolexis.pyblock.data.wallet.NewAddressPref.set(ctx, next)
+        }, verticalAlignment = Alignment.CenterVertically) {
+            Text("NEW ADDRESSES", style = Blake.mono(10f), color = Blake.faint, letterSpacing = 1.sp)
+            Spacer(Modifier.weight(1f))
+            Text(when (newMode) {
+                com.astrolexis.pyblock.data.wallet.NewAddressPref.Mode.ASK -> "ask each time ▸"
+                com.astrolexis.pyblock.data.wallet.NewAddressPref.Mode.SEGWIT -> "SegWit (bc1q) ▸"
+                com.astrolexis.pyblock.data.wallet.NewAddressPref.Mode.LEGACY -> "Legacy (1…) ▸"
+            }, style = Blake.mono(11f), color = Blake.pp)
+        }
         Spacer(Modifier.height(14.dp))
         Text("BLAKE2b is Bitcoin under a BLAKE2b proof-of-work. Coins are read from the PyBLØCK node; only mature mined coinbase is spendable (non-replayable).",
             style = Blake.mono(9f), color = Blake.faint)
@@ -438,15 +496,21 @@ private fun exportBackup(ctx: android.content.Context, wallets: List<VanityWalle
 /** Generate a fresh random BLAKE2b wallet (own vault) — the "+ NEW" path, matching iOS
  *  `store.generate()`. Full-entropy CSPRNG key (VanityCrypto.hardenedRandom32), compressed
  *  K/L WIF, watch-only pubkey cached. Returns false only if the key math fails. */
-fun createRandomWallet(ctx: android.content.Context): Boolean {
+private fun doCreateNew(ctx: android.content.Context, segwit: Boolean) {
+    if (createRandomWallet(ctx, segwit))
+        android.widget.Toast.makeText(ctx, if (segwit) "New SegWit address created" else "New legacy address created", android.widget.Toast.LENGTH_SHORT).show()
+    else android.widget.Toast.makeText(ctx, "Couldn't create address", android.widget.Toast.LENGTH_SHORT).show()
+}
+
+fun createRandomWallet(ctx: android.content.Context, segwit: Boolean = true): Boolean {
     val priv = VanityCrypto.hardenedRandom32(ByteArray(0))
     val pub = VanityCrypto.compressedPubkey(priv) ?: return false
-    val addr = VanityCrypto.p2wpkhAddress(pub)          // new wallets default to native SegWit "bc1q…"
+    val addr = if (segwit) VanityCrypto.p2wpkhAddress(pub) else VanityCrypto.p2pkhAddress(pub)
     val wif = VanityCrypto.wifCompressed(priv)
     return WalletStore.add(
         ctx,
         VanityWallet(id = UUID.randomUUID().toString(), label = "", address = addr,
-            compressed = true, birthday = BlakeFork.FORK_HEIGHT, pubkeyHex = pub.toHex(), segwit = true),
+            compressed = true, birthday = BlakeFork.FORK_HEIGHT, pubkeyHex = pub.toHex(), segwit = segwit),
         wif,
     )
 }
