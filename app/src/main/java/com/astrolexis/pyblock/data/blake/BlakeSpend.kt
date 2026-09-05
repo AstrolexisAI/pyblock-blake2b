@@ -184,6 +184,9 @@ object BlakeSpend {
         val hostSigner = singleSigner(hostCoin.wif, if (isSegwitScript(hostCoin.scriptHex)) "wpkh" else "pkh")
 
         var builder = TxBuilder().feeRate(feeRate).manuallySelectedOnly()
+        // SegWit foreign UTXOs carry only a witnessUtxo → BDK needs onlyWitnessUtxo() (else it
+        // demands the full prev-tx and throws "outpoint=…"). Harmless for legacy inputs.
+        if (selected.any { isSegwitScript(it.scriptHex) }) builder = builder.onlyWitnessUtxo()
         for (c in selected) builder = builder.addForeignUtxo(c.outpoint, coinInput(c), coinWeight(c))
         builder = if (sendMax) builder.drainTo(recipient)
                   else builder.addRecipient(recipient, Amount.fromSat(amountSats.toULong()))
@@ -255,6 +258,7 @@ object BlakeSpend {
         val hostCoin = selected.maxByOrNull { it.valueSats }!!
         val hostSigner = singleSigner(hostCoin.wif, if (isSegwitScript(hostCoin.scriptHex)) "wpkh" else "pkh")
         var builder = TxBuilder().feeRate(feeRate).manuallySelectedOnly()
+        if (selected.any { isSegwitScript(it.scriptHex) }) builder = builder.onlyWitnessUtxo()
         for (c in selected) builder = builder.addForeignUtxo(c.outpoint, coinInput(c), coinWeight(c))
         builder = if (sendMax) builder.drainTo(hopChain[0].script)
                   else builder.addRecipient(hopChain[0].script, Amount.fromSat(staged.toULong()))
