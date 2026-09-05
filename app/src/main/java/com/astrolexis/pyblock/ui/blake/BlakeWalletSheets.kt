@@ -243,7 +243,7 @@ fun ReceiveSheet(wallet: VanityWallet, onCopy: (String) -> Unit, onClose: () -> 
 
 // ---- Coins ----
 @Composable
-fun CoinsSheet(utxos: List<BlakeApi.Utxo>, tip: Int, onSpend: (Set<String>) -> Unit, onClose: () -> Unit) {
+fun CoinsSheet(utxos: List<BlakeApi.Utxo>, tip: Int, onSpend: (Set<String>) -> Unit, onOpen: (BlakeApi.Utxo) -> Unit, onClose: () -> Unit) {
     var selected by remember { mutableStateOf<Set<String>>(emptySet()) }
     val unlockedIds by com.astrolexis.pyblock.data.blake.UnlockStore.ids.collectAsState()
     sheetBox("COIN CONTROL", Blake.pp, onClose) {
@@ -267,9 +267,14 @@ fun CoinsSheet(utxos: List<BlakeApi.Utxo>, tip: Int, onSpend: (Set<String>) -> U
             val on = u.id in selected
             Row(Modifier.fillMaxWidth().padding(bottom = 8.dp)
                 .border(1.dp, if (on) Blake.pp else Blake.line, RectangleShape).padding(12.dp)
-                .then(if (spendable && BlakeChains.SEND_ENABLED) Modifier.clickableNoRipple {
-                    selected = if (on) selected - u.id else selected + u.id
-                } else Modifier),
+                .then(when {
+                    spendable && BlakeChains.SEND_ENABLED -> Modifier.clickableNoRipple {
+                        selected = if (on) selected - u.id else selected + u.id
+                    }
+                    // Replay-locked (pre-fork/received) → tappable to open the detail + UNLOCK.
+                    BlakeFork.isReplayLocked(u, tip) -> Modifier.clickableNoRipple { onOpen(u) }
+                    else -> Modifier
+                }),
                 verticalAlignment = Alignment.CenterVertically) {
                 Text(when { on -> "◉"; !spendable -> "🔒"; unlocked -> "🔓"; else -> "○" },
                     style = Blake.mono(12f), color = if (on) Blake.pp else Blake.faint)
@@ -277,7 +282,9 @@ fun CoinsSheet(utxos: List<BlakeApi.Utxo>, tip: Int, onSpend: (Set<String>) -> U
                 Column(Modifier.weight(1f)) {
                     Text("${Blake.btc(u.value)} ${Blake.RUNE}", style = Blake.mono(12f, FontWeight.ExtraBold),
                         color = if (reason == null) Blake.ok else if (unlocked) Blake.pp else Blake.warn)
-                    Text(if (unlocked) "unlocked · replay risk" else (reason ?: (if (u.coinbase) "mined · spendable" else "received")),
+                    Text(if (unlocked) "unlocked · replay risk"
+                         else if (!spendable && BlakeFork.isReplayLocked(u, tip)) "${reason ?: "received"} · tap to unlock"
+                         else (reason ?: (if (u.coinbase) "mined · spendable" else "received")),
                         style = Blake.mono(8f), color = if (unlocked) Blake.pp else Blake.faint)
                 }
                 Text("#${u.height}", style = Blake.mono(9f), color = Blake.faint)

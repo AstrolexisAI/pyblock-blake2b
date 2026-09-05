@@ -320,7 +320,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
             balanceFor = { BlakeBalanceStore.balanceForAddress(it) },
             onClose = { sheet = null },
         )
-        Sheet.Coins -> CoinsSheet(BlakeBalanceStore.allUtxos(), tip, onSpend = { keys -> sheet = Sheet.Send(keys) }) { sheet = null }
+        Sheet.Coins -> CoinsSheet(BlakeBalanceStore.allUtxos(), tip, onSpend = { keys -> sheet = Sheet.Send(keys) }, onOpen = { u -> sheet = Sheet.Utxo(u) }) { sheet = null }
         is Sheet.Send -> SendWizardSheet(coinKeys = s.coinKeys, onClose = { sheet = null })
         Sheet.Currency -> CurrencyPickerSheet(BlakePrice.available()) { BlakePrice.setCurrency(it); sheet = null }
         Sheet.Settings -> SettingsSheet(operational, rc, statusHeight) { sheet = null }

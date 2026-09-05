@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -148,7 +151,10 @@ fun SendWizardSheet(
         }
     }
 
-    Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+    // decorFitsSystemWindows=false → the dialog draws edge-to-edge so the statusBars/navigationBars/
+    // ime padding modifiers below actually take effect (otherwise the dialog consumes the insets and
+    // the footer stays clipped under the gesture bar).
+    Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         Box(Modifier.fillMaxSize().background(Blake.bg)) {
             val r = result
             if (r != null) {
@@ -158,7 +164,9 @@ fun SendWizardSheet(
                     onResult = { code -> toAddress = sanitizeAddress(code); scanning = false },
                     onClose = { scanning = false })
             } else {
-                Column(Modifier.fillMaxSize()) {
+                // Safe-area insets: header below the status bar, footer above the gesture nav bar,
+                // and the whole wizard lifts above the keyboard (was clipping BACK/NEXT).
+                Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding()) {
                     // Header
                     Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 10.dp),
                         verticalAlignment = Alignment.CenterVertically) {
