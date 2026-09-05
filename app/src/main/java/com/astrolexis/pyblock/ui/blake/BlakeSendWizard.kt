@@ -154,14 +154,20 @@ fun SendWizardSheet(
         val recorded = if (sendMax) sweepSats else amt
         scope.launch {
             try {
+                // A PayNym payment code (PM…) → derive a fresh BIP-47 send address (advances the per-code counter).
+                var dest = toAddress.trim()
+                if (com.astrolexis.pyblock.data.crypto.PaymentCode.looksLikePaymentCode(dest)) {
+                    dest = com.astrolexis.pyblock.data.crypto.PaymentCode.nextWalletSendAddress(ctx, dest)
+                        ?: throw Exception("Couldn't derive a PayNym address from that code.")
+                }
                 if (ricochet) {
-                    val outcome = BlakeSpend.ricochet(ctx, toAddress.trim(), amt, sendMax, hops, effectiveFee.toLong(), only)
-                    com.astrolexis.pyblock.data.wallet.RicochetHistory.add(ctx, outcome, hops, recorded, toAddress.trim(), "mainnet")
-                    BlakeSentStore.add(outcome.txids.lastOrNull() ?: "", recorded, toAddress.trim(), coinKeys, true)
+                    val outcome = BlakeSpend.ricochet(ctx, dest, amt, sendMax, hops, effectiveFee.toLong(), only)
+                    com.astrolexis.pyblock.data.wallet.RicochetHistory.add(ctx, outcome, hops, recorded, dest, "mainnet")
+                    BlakeSentStore.add(outcome.txids.lastOrNull() ?: "", recorded, dest, coinKeys, true)
                     result = WizardResult(outcome.txids, true)
                 } else {
-                    val txid = BlakeSpend.send(ctx, toAddress.trim(), amt, sendMax, effectiveFee.toLong(), only)
-                    BlakeSentStore.add(txid, recorded, toAddress.trim(), coinKeys, false)
+                    val txid = BlakeSpend.send(ctx, dest, amt, sendMax, effectiveFee.toLong(), only)
+                    BlakeSentStore.add(txid, recorded, dest, coinKeys, false)
                     result = WizardResult(listOf(txid), false)
                 }
                 BlakeBalanceStore.refresh(ctx)
@@ -511,6 +517,8 @@ private fun amountSubtitle(unit: SendUnit, sendMax: Boolean, sats: Long, overspe
 /** Light client-side plausibility (base58 P2PKH / bech32) — full validation is at build. */
 private fun isPlausibleAddress(s: String): Boolean {
     val a = s.trim()
+    // A BIP-47 PayNym payment code ("PM…") is a valid recipient — resolved to an address at send.
+    if (com.astrolexis.pyblock.data.crypto.PaymentCode.looksLikePaymentCode(a)) return true
     if (a.length < 26) return false
     if (a.startsWith("1") || a.startsWith("3")) return a.length <= 35
     if (a.lowercase().startsWith("bc1")) return a.length <= 62
