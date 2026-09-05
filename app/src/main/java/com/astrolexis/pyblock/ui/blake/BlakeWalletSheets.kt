@@ -513,6 +513,8 @@ fun SettingsSheet(operational: Boolean, rc: String?, height: Int, onClose: () ->
     val ctx = androidx.compose.ui.platform.LocalContext.current
     LaunchedEffect(Unit) { com.astrolexis.pyblock.data.wallet.NewAddressPref.init(ctx) }
     val newMode by com.astrolexis.pyblock.data.wallet.NewAddressPref.mode.collectAsState()
+    var showContacts by remember { mutableStateOf(false) }
+    val contacts by com.astrolexis.pyblock.data.wallet.BlakeContactsStore.contacts.collectAsState()
     sheetBox("SETTINGS", Blake.pp, onClose) {
         kv("NETWORK", if (operational) "operational" else "${rc ?: "RC"} · testing", if (operational) Blake.ok else Blake.warn)
         kv("TIMECHAIN", "#$height", Blake.fg)
@@ -535,12 +537,19 @@ fun SettingsSheet(operational: Boolean, rc: String?, height: Int, onClose: () ->
                 com.astrolexis.pyblock.data.wallet.NewAddressPref.Mode.LEGACY -> "Legacy (1…) ▸"
             }, style = Blake.mono(11f), color = Blake.pp)
         }
+        Spacer(Modifier.height(10.dp))
+        Row(Modifier.fillMaxWidth().clickableNoRipple { showContacts = true }, verticalAlignment = Alignment.CenterVertically) {
+            Text("CONTACTS", style = Blake.mono(10f), color = Blake.faint, letterSpacing = 1.sp)
+            Spacer(Modifier.weight(1f))
+            Text("${contacts.size} saved ▸", style = Blake.mono(11f), color = Blake.pp)
+        }
         Spacer(Modifier.height(14.dp))
         Text("BLAKE2b is Bitcoin under a BLAKE2b proof-of-work. Coins are read from the PyBLØCK node; only mature mined coinbase is spendable (non-replayable).",
             style = Blake.mono(9f), color = Blake.faint)
         Spacer(Modifier.height(14.dp))
         sheetBtn("CLOSE", Blake.ppDim) { onClose() }
     }
+    if (showContacts) ContactsSheet(onPick = null, onClose = { showContacts = false })
 }
 
 // ---- helpers ----

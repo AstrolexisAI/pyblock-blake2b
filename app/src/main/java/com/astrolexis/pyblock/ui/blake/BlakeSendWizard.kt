@@ -113,6 +113,7 @@ fun SendWizardSheet(
     var feeRate by remember { mutableStateOf(2) }
     var customFeeText by remember { mutableStateOf("") }
     var scanning by remember { mutableStateOf(false) }
+    var showContacts by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var result by remember { mutableStateOf<WizardResult?>(null) }
@@ -242,7 +243,8 @@ fun SendWizardSheet(
                     Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(20.dp)) {
                         when (step) {
                             1 -> StepTo(toAddress, { toAddress = it }, coinKeys, selectedSats, spendable, locked,
-                                onScan = { scanning = true }, onPaste = { toAddress = sanitizeAddress(clip.getText()?.text ?: "") })
+                                onScan = { scanning = true }, onPaste = { toAddress = sanitizeAddress(clip.getText()?.text ?: "") },
+                                onContacts = { showContacts = true })
                             2 -> StepAmount(amountText, { amountText = it }, unit, { u ->
                                     if (u != unit) { val s = amt; unit = u; if (s > 0 && !sendMax) amountText = if (u == SendUnit.BTC) Blake.btc(s) else "$s" } },
                                     sendMax, { sendMax = it }, amt, sweepSats, overspend, coinKeys, selectedSats, spendable, ccy,
@@ -276,13 +278,17 @@ fun SendWizardSheet(
             }
         }
     }
+
+    if (showContacts) {
+        ContactsSheet(onPick = { picked -> toAddress = picked; showContacts = false }, onClose = { showContacts = false })
+    }
 }
 
 // ---- Step 1 · TO ----
 @Composable
 private fun StepTo(
     addr: String, onAddr: (String) -> Unit, coinKeys: Set<String>, selectedSats: Long,
-    spendable: Long, locked: Long, onScan: () -> Unit, onPaste: () -> Unit,
+    spendable: Long, locked: Long, onScan: () -> Unit, onPaste: () -> Unit, onContacts: () -> Unit,
 ) {
     ReplayWarning()
     Spacer(Modifier.height(16.dp))
@@ -290,6 +296,8 @@ private fun StepTo(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("SEND TO", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
             Spacer(Modifier.weight(1f))
+            Text("☰ CONTACTS", style = Blake.mono(11f), color = Blake.pp, modifier = Modifier.clickableNoRipple(onContacts))
+            Spacer(Modifier.width(12.dp))
             Text("⛶ SCAN", style = Blake.mono(11f), color = Blake.pp, modifier = Modifier.clickableNoRipple(onScan))
             Spacer(Modifier.width(12.dp))
             Text("PASTE", style = Blake.mono(11f), color = Blake.pp, modifier = Modifier.clickableNoRipple(onPaste))
@@ -302,6 +310,11 @@ private fun StepTo(
         if (addr.isNotEmpty() && !ok) {
             Spacer(Modifier.height(6.dp))
             Text("That doesn't look like a valid address.", style = Blake.mono(8f), color = Blake.danger)
+        } else {
+            com.astrolexis.pyblock.data.wallet.BlakeContactsStore.labelFor(addr)?.let { name ->
+                Spacer(Modifier.height(6.dp))
+                Text("☰ $name", style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.ok)
+            }
         }
     }
     Spacer(Modifier.height(16.dp))
