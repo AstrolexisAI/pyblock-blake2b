@@ -174,7 +174,8 @@ fun SendWizardSheet(
                 }
                 BlakeBalanceStore.refresh(ctx)
             } catch (e: Exception) {
-                val raw = e.message ?: "Send failed"
+                android.util.Log.e("BlakeSend", "send failed: ${e::class.java.simpleName}: ${e.message}", e)
+                val raw = e.message ?: "Send failed (${e::class.java.simpleName})"
                 error = if (raw.contains("min relay", ignoreCase = true))
                     "Fee too low for the BLAKE2b network — pick a higher fee (2 sat/vB or more) and try again." else raw
             } finally { busy = false }

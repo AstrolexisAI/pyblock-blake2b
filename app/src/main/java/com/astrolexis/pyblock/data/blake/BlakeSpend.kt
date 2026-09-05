@@ -76,8 +76,11 @@ object BlakeSpend {
     /** Sign every input a WIF owns, both legacy AND segwit (each descriptor only matches its own
      *  script type + opts, so this safely covers a mixed input set). */
     private fun signAll(psbt: org.bitcoindevkit.Psbt, wifs: Set<String>) {
+        // Both signers use trustWitnessUtxo=true: a P2PKH signer with trustWitnessUtxo=false throws
+        // MissingNonWitnessUtxo when the PSBT also contains a SegWit input (witnessUtxo-only), even
+        // though it doesn't sign it. Legacy inputs still sign via their nonWitnessUtxo — unaffected.
         for (wif in wifs) {
-            singleSigner(wif, "pkh").sign(psbt, legacySignOpts)     // legacy P2PKH inputs
+            singleSigner(wif, "pkh").sign(psbt, witnessSignOpts)    // legacy P2PKH inputs
             singleSigner(wif, "wpkh").sign(psbt, witnessSignOpts)   // native SegWit P2WPKH inputs
         }
     }
