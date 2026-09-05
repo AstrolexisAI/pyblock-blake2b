@@ -385,6 +385,8 @@ fun AddressDetailSheet(
 @Composable
 fun CoinsSheet(utxos: List<BlakeApi.Utxo>, tip: Int, onSpend: (Set<String>) -> Unit, onOpen: (BlakeApi.Utxo) -> Unit, onClose: () -> Unit) {
     var selected by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var spendExpanded by remember { mutableStateOf(true) }
+    var lockedExpanded by remember { mutableStateOf(false) }
     val unlockedIds by com.astrolexis.pyblock.data.blake.UnlockStore.ids.collectAsState()
     sheetBox("COIN CONTROL", Blake.pp, onClose) {
         if (utxos.isEmpty()) { Text("No coins.", style = Blake.mono(10f), color = Blake.faint); return@sheetBox }
@@ -400,7 +402,10 @@ fun CoinsSheet(utxos: List<BlakeApi.Utxo>, tip: Int, onSpend: (Set<String>) -> U
             }
         }
         Spacer(Modifier.height(10.dp))
-        sorted.forEach { u ->
+        val spendableCoins = sorted.filter { BlakeFork.isEffectivelySpendable(it, tip) }
+        val lockedCoins = sorted.filter { !BlakeFork.isEffectivelySpendable(it, tip) }
+        // One row renderer, reused under both collapsible sections.
+        val renderRow: @Composable (BlakeApi.Utxo) -> Unit = { u ->
             val reason = BlakeFork.lockReason(u, tip)
             val unlocked = u.id in unlockedIds
             val spendable = BlakeFork.isEffectivelySpendable(u, tip)
@@ -411,7 +416,6 @@ fun CoinsSheet(utxos: List<BlakeApi.Utxo>, tip: Int, onSpend: (Set<String>) -> U
                     spendable && BlakeChains.SEND_ENABLED -> Modifier.clickableNoRipple {
                         selected = if (on) selected - u.id else selected + u.id
                     }
-                    // Replay-locked (pre-fork/received) → tappable to open the detail + UNLOCK.
                     BlakeFork.isReplayLocked(u, tip) -> Modifier.clickableNoRipple { onOpen(u) }
                     else -> Modifier
                 }),
@@ -429,6 +433,22 @@ fun CoinsSheet(utxos: List<BlakeApi.Utxo>, tip: Int, onSpend: (Set<String>) -> U
                 }
                 Text("#${u.height}", style = Blake.mono(9f), color = Blake.faint)
             }
+        }
+        // Collapsible section header (tap to fold/unfold) with count + total.
+        val sectionHeader: @Composable (String, Int, Long, androidx.compose.ui.graphics.Color, Boolean, () -> Unit) -> Unit = { title, n, sats, color, expanded, toggle ->
+            Row(Modifier.fillMaxWidth().padding(vertical = 6.dp).clickableNoRipple(toggle), verticalAlignment = Alignment.CenterVertically) {
+                Text("${if (expanded) "▾" else "▸"} $title · $n", style = Blake.mono(10f, FontWeight.ExtraBold), color = color, letterSpacing = 1.sp)
+                Spacer(Modifier.weight(1f))
+                Text("${Blake.btc(sats)} ${Blake.RUNE}", style = Blake.mono(10f), color = Blake.faint)
+            }
+        }
+        if (spendableCoins.isNotEmpty()) {
+            sectionHeader("SPENDABLE", spendableCoins.size, spendableCoins.sumOf { it.value }, Blake.ok, spendExpanded) { spendExpanded = !spendExpanded }
+            if (spendExpanded) { Spacer(Modifier.height(6.dp)); spendableCoins.forEach { renderRow(it) } }
+        }
+        if (lockedCoins.isNotEmpty()) {
+            sectionHeader("LOCKED", lockedCoins.size, lockedCoins.sumOf { it.value }, Blake.warn, lockedExpanded) { lockedExpanded = !lockedExpanded }
+            if (lockedExpanded) { Spacer(Modifier.height(6.dp)); lockedCoins.forEach { renderRow(it) } }
         }
         if (selected.isNotEmpty() && BlakeChains.SEND_ENABLED) {
             val selSats = sorted.filter { it.id in selected }.sumOf { it.value }
