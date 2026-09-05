@@ -157,10 +157,14 @@ object BlakeApi {
 
     // ---- Broadcast (send/ricochet — gated) ----
 
-    sealed class PushErr : Exception() {
-        object Disabled : PushErr()
-        object BadResponse : PushErr()
-        data class Rejected(val errors: List<String>) : PushErr()
+    sealed class PushErr(msg: String) : Exception(msg) {
+        object Disabled : PushErr("BLAKE2b broadcasting isn't enabled.")
+        object BadResponse : PushErr("The BLAKE2b server gave an unexpected response — try again in a moment.")
+        // Carry the node's actual reason instead of swallowing it (was surfacing a bare "Send failed").
+        class Rejected(val errors: List<String>) : PushErr(
+            if (errors.isEmpty()) "The BLAKE2b network rejected the transaction."
+            else "Network rejected the transaction: " + errors.joinToString("; ")
+        )
     }
 
     @Serializable private data class PushResult(val txid: String? = null, val accepted: Boolean? = null)

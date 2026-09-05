@@ -42,6 +42,7 @@ object BlakeSpend {
     sealed class Err(msg: String) : Exception(msg) {
         object Disabled : Err("BLAKE2b sending isn't enabled yet.")
         object NoSpendable : Err("No spendable BLAKE2b coins: only mature (100-conf) mined coins can be sent; shared pre-fork coins are replay-locked.")
+        object InsufficientSpendable : Err("Not enough spendable BLAKE2b for that amount + fee. Only mature mined coins count toward the sendable balance — pre-fork/received coins are replay-locked. Try MAX, a smaller amount, or unlock coins.")
         object BadAddress : Err("That isn't a valid Bitcoin address.")
         object BuildFailed : Err("Couldn't build the BLAKE2b transaction.")
         object NotSigned : Err("Couldn't sign the BLAKE2b transaction.")
@@ -151,7 +152,7 @@ object BlakeSpend {
 
         val selected: List<Coin> = when {
             onlyCoins != null -> coins
-            else -> select(coins, amountSats, sendMax, feeRateSatVb) ?: throw Err.NoSpendable
+            else -> select(coins, amountSats, sendMax, feeRateSatVb) ?: throw Err.InsufficientSpendable
         }
         val selectedKeys = selected.map { it.key }.toSet()
 
@@ -168,7 +169,12 @@ object BlakeSpend {
             val signer = singleSigner(wif, "pkh")
             signer.sign(psbt, legacySignOpts)
         }
-        val tx = runCatching { psbt.extractTx() }.getOrNull() ?: throw Err.NotSigned
+        // Finalize EXPLICITLY (mirrors iOS + the SHA-256 app's BdkNode). Relying on the
+        // per-signer tryFinalize and calling extractTx() directly broadcast an un-finalized
+        // PSBT (empty scriptSig) → node reject "Operation not valid with the current stack size".
+        val fin = psbt.finalize()
+        if (!fin.couldFinalize) throw Err.NotSigned
+        val tx = fin.psbt.extractTx()
 
         // HARD GUARD: every input MUST be one of the selected mature-coinbase coins.
         val txInKeys = tx.input().map { metaKey(it.previousOutput.txid.toString(), it.previousOutput.vout.toInt()) }.toSet()
@@ -221,7 +227,7 @@ object BlakeSpend {
         val staged = amountSats + n.toLong() * hopFee
         val selected: List<Coin> = when {
             onlyCoins != null -> coins
-            else -> select(coins, staged, sendMax, feeRateSatVb) ?: throw Err.NoSpendable
+            else -> select(coins, staged, sendMax, feeRateSatVb) ?: throw Err.InsufficientSpendable
         }
         val selectedKeys = selected.map { it.key }.toSet()
 
@@ -233,7 +239,9 @@ object BlakeSpend {
                   else builder.addRecipient(hopChain[0].script, Amount.fromSat(staged.toULong()))
         val psbt0 = builder.finish(hostSigner)
         for (wif in selected.map { it.wif }.toSet()) singleSigner(wif, "pkh").sign(psbt0, legacySignOpts)
-        val tx0 = runCatching { psbt0.extractTx() }.getOrNull() ?: throw Err.NotSigned
+        val fin0 = psbt0.finalize()
+        if (!fin0.couldFinalize) throw Err.NotSigned
+        val tx0 = fin0.psbt.extractTx()
 
         // HARD GUARD: tx0 inputs must be a subset of the selected mature-coinbase coins.
         val txInKeys = tx0.input().map { metaKey(it.previousOutput.txid.toString(), it.previousOutput.vout.toInt()) }.toSet()
@@ -258,7 +266,9 @@ object BlakeSpend {
             hb = hb.drainTo(dest)
             val psbt = hb.finish(hopChain[i].signer)
             hopChain[i].signer.sign(psbt, witnessSignOpts)
-            val tx = runCatching { psbt.extractTx() }.getOrNull() ?: throw Err.NotSigned
+            val fin = psbt.finalize()
+            if (!fin.couldFinalize) throw Err.NotSigned
+            val tx = fin.psbt.extractTx()
             val out0 = tx.output().firstOrNull() ?: throw Err.BuildFailed
             totalFee += prevOut.value.toSat().toLong() - out0.value.toSat().toLong()
             builtTxs.add(tx)
