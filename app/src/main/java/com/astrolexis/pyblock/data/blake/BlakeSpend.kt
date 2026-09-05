@@ -220,6 +220,79 @@ object BlakeSpend {
         return txid
     }
 
+    // ---- BIP-47 notification tx ----
+
+    /** Wire-order prev-txid (32B, reversed from the display txid) ‖ vout (4B LE) = 36 bytes —
+     *  exactly the bytes [PaymentCode.parseNotificationTx] reads back from the serialized input,
+     *  and what [PaymentCode.blindedNotificationPayload] keys the blinding mask on. */
+    private fun outpointWireBytes(c: Coin): ByteArray {
+        val wire = hexToBytes(c.outpoint.txid.toString()).reversedArray()
+        val v = c.outpoint.vout.toInt()
+        val vle = byteArrayOf(v.toByte(), (v ushr 8).toByte(), (v ushr 16).toByte(), (v ushr 24).toByte())
+        return wire + vle
+    }
+
+    /**
+     * Send a one-time BIP-47 notification tx to [peerCode] so the recipient can DETECT (and later
+     * spend) the stealth payments we send them. Without it a PayNym payment is invisible to the
+     * receiver — they never learn our payment code to scan for it. Mirrors iOS `BlakeSpend`.
+     *
+     * The largest spendable coin is the SOLE input, so it lands at input index 0 — the BIP-47
+     * "designated input". Its pubkey (revealed in the scriptSig/witness) is what the receiver
+     * reads; its private key blinds the payload — they MUST be the same key. Outputs: dust to the
+     * peer's notification address + an 80-byte OP_RETURN (our blinded code) + change → self.
+     */
+    suspend fun sendNotification(ctx: Context, peerCode: String, feeRateSatVb: Long): String {
+        if (!BlakeChains.SEND_ENABLED) throw Err.Disabled
+
+        val notifAddr = com.astrolexis.pyblock.data.crypto.PaymentCode.notificationAddressForPeer(peerCode)
+            ?: throw Err.BadAddress
+        val recipient: Script = runCatching { Address(notifAddr, Network.BITCOIN).scriptPubkey() }.getOrNull()
+            ?: throw Err.BadAddress
+
+        val tip = BlakeApi.status()?.blockHeight ?: 0
+        if (tip <= 0) throw Err.NoSpendable
+
+        val coins = gatherCoins(ctx, tip)
+        if (coins.isEmpty()) throw Err.NoSpendable
+
+        // Single designated input = largest spendable coin (guaranteed input 0).
+        val designated = coins.maxByOrNull { it.valueSats }!!
+        val (priv, _) = VanityCrypto.decodeWif(designated.wif) ?: throw Err.NotSigned
+
+        val payload = com.astrolexis.pyblock.data.crypto.PaymentCode
+            .blindedNotificationPayload(ctx, peerCode, priv, outpointWireBytes(designated))
+            ?: throw Err.BuildFailed
+
+        val dust = 546L
+        // The notification's dust + OP_RETURN + fee must fit inside the designated coin.
+        if (designated.valueSats < dust + maxOf(1, feeRateSatVb) * 200) throw Err.InsufficientSpendable
+
+        val feeRate = FeeRate.fromSatPerVb(maxOf(1, feeRateSatVb).toULong())
+        val hostSigner = singleSigner(designated.wif, if (isSegwitScript(designated.scriptHex)) "wpkh" else "pkh")
+
+        var builder = TxBuilder().feeRate(feeRate).manuallySelectedOnly()
+        if (isSegwitScript(designated.scriptHex)) builder = builder.onlyWitnessUtxo()
+        builder = builder.addForeignUtxo(designated.outpoint, coinInput(designated), coinWeight(designated))
+        builder = builder.addRecipient(recipient, Amount.fromSat(dust.toULong()))
+        builder = builder.addData(payload)                    // OP_RETURN 6a 4c 50 + 80B blinded code
+        val psbt = builder.finish(hostSigner)                 // change → designated's own address
+
+        signAll(psbt, setOf(designated.wif))
+        val fin = psbt.finalize()
+        if (!fin.couldFinalize) throw Err.NotSigned
+        val tx = fin.psbt.extractTx()
+
+        // HARD GUARD: the sole input must be our designated mature-coinbase coin.
+        val txInKeys = tx.input().map { metaKey(it.previousOutput.txid.toString(), it.previousOutput.vout.toInt()) }.toSet()
+        if (txInKeys != setOf(designated.key)) throw Err.UnexpectedInput
+
+        val txid = BlakeApi.pushTx(bytesToHex(tx.serialize()))
+        BlakeBalanceStore.markSpent(setOf(designated.key))
+        com.astrolexis.pyblock.data.crypto.PaymentCode.markNotified(ctx, peerCode)
+        return txid
+    }
+
     // ---- Ricochet (multi-hop sweep) ----
 
     /** Sweep mature post-fork coinbase through [hops] ephemeral wpkh self-spends before the

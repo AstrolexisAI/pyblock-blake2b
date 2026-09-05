@@ -53,6 +53,7 @@ import com.astrolexis.pyblock.data.blake.BlakeChains
 import com.astrolexis.pyblock.data.blake.BlakeFork
 import com.astrolexis.pyblock.data.blake.BlakePrice
 import com.astrolexis.pyblock.data.blake.BlakeStatus
+import com.astrolexis.pyblock.data.blake.UnlockStore
 import com.astrolexis.pyblock.data.wallet.VanityWallet
 import com.astrolexis.pyblock.data.wallet.WalletStore
 import com.astrolexis.pyblock.ui.components.clickableNoRipple
@@ -85,6 +86,9 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
     val statusHeight by BlakeStatus.blockHeight.collectAsState()
 
     var showDetails by remember { mutableStateOf(false) }
+    var spendExpanded by remember { mutableStateOf(false) }
+    var lockedExpanded by remember { mutableStateOf(false) }
+    var pendingUnlock by remember { mutableStateOf<BlakeApi.Utxo?>(null) }   // coin awaiting replay-risk confirm
     var sheet by remember { mutableStateOf<Sheet?>(null) }
     var refreshing by remember { mutableStateOf(false) }
 
@@ -125,6 +129,13 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
     val total = BlakeBalanceStore.totalSats()
     val spendable = BlakeBalanceStore.spendableSats()
     val locked = BlakeBalanceStore.lockedSats()
+    val pendingSpentIds = BlakeBalanceStore.pendingSpentIds.collectAsState().value
+    val spendableUtxos = BlakeBalanceStore.allUtxos()
+        .filter { BlakeFork.isEffectivelySpendable(it, tip) && it.id !in pendingSpentIds }
+        .sortedByDescending { it.value }
+    val lockedUtxos = BlakeBalanceStore.allUtxos()
+        .filter { !BlakeFork.isEffectivelySpendable(it, tip) }
+        .sortedByDescending { it.value }
 
     Box(Modifier.fillMaxSize().background(Blake.bg)) {
       PullToRefreshBox(isRefreshing = refreshing, onRefresh = {
@@ -153,6 +164,14 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
                         Spacer(Modifier.size(3.dp))
                         Text("LIVE", style = Blake.mono(8f, FontWeight.ExtraBold), color = Blake.ok, letterSpacing = 1.sp)
                     }
+                    // Syncing spins INLINE next to LIVE (fixed-width slot) so it never adds a row
+                    // and shifts the card while refreshing.
+                    Spacer(Modifier.size(6.dp))
+                    val spin by rememberInfiniteTransition(label = "sync").animateFloat(
+                        0f, 360f, infiniteRepeatable(tween(1000, easing = androidx.compose.animation.core.LinearEasing), RepeatMode.Restart), label = "spin")
+                    Box(Modifier.width(12.dp)) {
+                        if (loading) Text("⟳", style = Blake.mono(9f), color = Blake.pp, modifier = Modifier.graphicsLayer { rotationZ = spin })
+                    }
                     Spacer(Modifier.weight(1f))
                     Text("⚙", style = Blake.mono(14f), color = Blake.ppDim, modifier = Modifier.clickableNoRipple { sheet = Sheet.Settings })
                 }
@@ -174,7 +193,6 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
                         Text(parts.joinToString(" · ") + " · pending", style = Blake.mono(9f), color = Blake.warn)
                     }
                 }
-                if (loading) Text("⟳ scanning…", style = Blake.mono(9f), color = Blake.pp)
             }
 
             // Send actions
@@ -232,11 +250,29 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
                     Column {
                         Spacer(Modifier.height(14.dp))
                         Column(Modifier.fillMaxWidth().blakeCard()) {
-                            breakdownRow("SPENDABLE", spendable, Blake.ok)
+                            // Tap a header to expand its coins inline — unlock a replay-locked coin
+                            // (or re-lock one you unlocked) without leaving the wallet screen.
+                            breakdownRow("SPENDABLE", spendable, spendableUtxos.size, Blake.ok, spendExpanded) { spendExpanded = !spendExpanded }
+                            if (spendExpanded) {
+                                if (spendableUtxos.isEmpty())
+                                    Text("No mature mined coins yet.", style = Blake.mono(8f), color = Blake.faint, modifier = Modifier.padding(start = 12.dp, top = 4.dp))
+                                else spendableUtxos.forEach { u ->
+                                    coinBreakdownRow(u, tip, locked = false, onUnlock = {}, onRelock = { UnlockStore.relock(u.id) }, onInfo = { sheet = Sheet.Utxo(u) })
+                                }
+                            }
                             Spacer(Modifier.height(8.dp))
-                            breakdownRow("LOCKED", locked, Blake.warn)
+                            Box(Modifier.fillMaxWidth().height(1.dp).background(Blake.line))
+                            Spacer(Modifier.height(8.dp))
+                            breakdownRow("LOCKED", locked, lockedUtxos.size, Blake.warn, lockedExpanded) { lockedExpanded = !lockedExpanded }
+                            if (lockedExpanded) {
+                                if (lockedUtxos.isEmpty())
+                                    Text("Nothing locked.", style = Blake.mono(8f), color = Blake.faint, modifier = Modifier.padding(start = 12.dp, top = 4.dp))
+                                else lockedUtxos.forEach { u ->
+                                    coinBreakdownRow(u, tip, locked = true, onUnlock = { pendingUnlock = u }, onRelock = { UnlockStore.relock(u.id) }, onInfo = { sheet = Sheet.Utxo(u) })
+                                }
+                            }
                             Spacer(Modifier.height(6.dp))
-                            Text("Spendable = mature mined coins. Locked = immature or pre-fork (replay-exposed).",
+                            Text("Spendable = mature mined coins. Locked = immature or pre-fork (replay-exposed). Tap a row to unlock.",
                                 style = Blake.mono(7f), color = Blake.faint)
                         }
                         Spacer(Modifier.height(20.dp))
@@ -332,6 +368,22 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
             onClose = { sentDetail = null },
         )
     }
+
+    // Replay-risk confirm before unlocking a locked coin (mirrors iOS confirmationDialog).
+    pendingUnlock?.let { u ->
+        androidx.compose.ui.window.Dialog(onDismissRequest = { pendingUnlock = null }) {
+            Column(Modifier.background(Blake.ink).border(1.dp, Blake.line, RectangleShape).padding(20.dp)) {
+                Text("UNLOCK THIS COIN?", style = Blake.mono(14f, FontWeight.ExtraBold), color = Blake.danger, letterSpacing = 2.sp)
+                Spacer(Modifier.height(8.dp))
+                Text("Replay-exposed coins can also move on the Bitcoin (SHA-256) chain — spending here may affect/lose that balance. Only unlock if you understand this.",
+                    style = Blake.mono(10f), color = Blake.faint)
+                Spacer(Modifier.height(14.dp))
+                sheetBtn("🔓 UNLOCK — I ACCEPT THE RISK", Blake.danger, filled = true) { UnlockStore.unlock(u.id); pendingUnlock = null }
+                Spacer(Modifier.height(8.dp))
+                sheetBtn("CANCEL", Blake.ppDim) { pendingUnlock = null }
+            }
+        }
+    }
 }
 
 private sealed class Sheet {
@@ -346,17 +398,52 @@ private sealed class Sheet {
 }
 
 @Composable
-private fun breakdownRow(label: String, sats: Long, accent: androidx.compose.ui.graphics.Color) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+private fun breakdownRow(label: String, sats: Long, count: Int, accent: androidx.compose.ui.graphics.Color,
+                        expanded: Boolean, onToggle: () -> Unit) {
+    Row(Modifier.fillMaxWidth().clickableNoRipple(onToggle), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(6.dp).background(accent, CircleShape))
         Spacer(Modifier.size(6.dp))
         Text(label, style = Blake.mono(8f), color = Blake.faint, letterSpacing = 1.sp)
+        Spacer(Modifier.size(4.dp))
+        Text("($count)", style = Blake.mono(8f), color = Blake.faint)
+        Spacer(Modifier.size(4.dp))
+        Text(if (expanded) "▲" else "▼", style = Blake.mono(7f), color = Blake.ppDim)
         Spacer(Modifier.weight(1f))
         Column(horizontalAlignment = Alignment.End) {
             Text("${Blake.btc(sats)} ${Blake.RUNE}", style = Blake.mono(10f, FontWeight.ExtraBold), color = accent)
             BlakePrice.fiatLabel(sats)?.let { Text(it, style = Blake.mono(8f), color = Blake.faint) }
         }
     }
+}
+
+/** One coin inside an expanded SPENDABLE/LOCKED bucket. Replay-locked → UNLOCK; unlocked → LOCK. */
+@Composable
+private fun coinBreakdownRow(u: BlakeApi.Utxo, tip: Int, locked: Boolean,
+                            onUnlock: () -> Unit, onRelock: () -> Unit, onInfo: () -> Unit) {
+    val unlocked = UnlockStore.isUnlocked(u.id)
+    val replayLocked = BlakeFork.isReplayLocked(u, tip)
+    Row(Modifier.fillMaxWidth().padding(start = 12.dp, top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text("◈", style = Blake.mono(9f), color = if (locked) Blake.warn else Blake.ok)
+        Spacer(Modifier.size(8.dp))
+        Column(Modifier.weight(1f)) {
+            Text("${Blake.btc(u.value)} ${Blake.RUNE}", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.fg)
+            Text(if (locked) (BlakeFork.lockReason(u, tip) ?: "locked")
+                 else if (unlocked) "unlocked · replay risk accepted" else "mature mined",
+                 style = Blake.mono(7f), color = Blake.faint)
+        }
+        if (replayLocked) {
+            if (unlocked) miniBtn("🔒 LOCK", Blake.warn, onRelock)
+            else miniBtn("🔓 UNLOCK", Blake.danger, onUnlock)
+            Spacer(Modifier.size(8.dp))
+        }
+        Text("ⓘ", style = Blake.mono(11f), color = Blake.ppDim, modifier = Modifier.clickableNoRipple(onInfo))
+    }
+}
+
+@Composable
+private fun miniBtn(title: String, color: androidx.compose.ui.graphics.Color, onClick: () -> Unit) {
+    Text(title, style = Blake.mono(8f, FontWeight.ExtraBold), color = color, letterSpacing = 0.5.sp,
+        modifier = Modifier.border(1.dp, color, RectangleShape).padding(horizontal = 7.dp, vertical = 4.dp).clickableNoRipple(onClick))
 }
 
 @Composable

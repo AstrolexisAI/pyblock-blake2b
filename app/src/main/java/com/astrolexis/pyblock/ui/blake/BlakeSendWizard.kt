@@ -155,11 +155,20 @@ fun SendWizardSheet(
         // Run OFF the main thread: the BDK tx build/sign (esp. SegWit) is CPU-heavy and was blocking
         // the UI thread → ANR (button stuck on BROADCASTING). Compose state writes are thread-safe.
         scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            var notifiedNow = false     // a first-time PayNym notification tx went out this attempt
             try {
                 // A PayNym payment code (PM…) → derive a fresh BIP-47 send address (advances the per-code counter).
                 var dest = toAddress.trim()
-                if (com.astrolexis.pyblock.data.crypto.PaymentCode.looksLikePaymentCode(dest)) {
-                    dest = com.astrolexis.pyblock.data.crypto.PaymentCode.nextWalletSendAddress(ctx, dest)
+                val peerCode = if (com.astrolexis.pyblock.data.crypto.PaymentCode.looksLikePaymentCode(dest)) dest else null
+                if (peerCode != null) {
+                    // BIP-47: the FIRST-EVER payment to a peer needs an on-chain notification tx so the
+                    // recipient learns our payment code and can detect (and spend) the stealth payment.
+                    // One per peer, ever — [hasNotified]/[markNotified] guard it.
+                    if (!com.astrolexis.pyblock.data.crypto.PaymentCode.hasNotified(ctx, peerCode)) {
+                        BlakeSpend.sendNotification(ctx, peerCode, effectiveFee.toLong())
+                        notifiedNow = true
+                    }
+                    dest = com.astrolexis.pyblock.data.crypto.PaymentCode.nextWalletSendAddress(ctx, peerCode)
                         ?: throw Exception("Couldn't derive a PayNym address from that code.")
                 }
                 if (ricochet) {
@@ -176,8 +185,16 @@ fun SendWizardSheet(
             } catch (e: Exception) {
                 android.util.Log.e("BlakeSend", "send failed: ${e::class.java.simpleName}: ${e.message}", e)
                 val raw = e.message ?: "Send failed (${e::class.java.simpleName})"
-                error = if (raw.contains("min relay", ignoreCase = true))
-                    "Fee too low for the BLAKE2b network — pick a higher fee (2 sat/vB or more) and try again." else raw
+                error = when {
+                    // The notification tx broadcast, but it consumed the only spendable coin so the
+                    // payment itself couldn't be built. It's not a failure — the peer is now announced;
+                    // the user just needs another coin (wait for the change to confirm, or receive more).
+                    notifiedNow && (e is BlakeSpend.Err.InsufficientSpendable || e is BlakeSpend.Err.NoSpendable) ->
+                        "✓ PayNym announced on-chain. That used your last spendable coin — once the change confirms (or you receive more), send the payment again and the recipient will detect it."
+                    raw.contains("min relay", ignoreCase = true) ->
+                        "Fee too low for the BLAKE2b network — pick a higher fee (2 sat/vB or more) and try again."
+                    else -> raw
+                }
             } finally { busy = false }
         }
     }
