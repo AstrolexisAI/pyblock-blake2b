@@ -58,7 +58,29 @@ object BlakeSpend {
         val wif: String,
         val valueSats: Long,
         val key: String,        // "txid:vout"
+        val scriptHex: String,  // this UTXO's scriptPubKey (0014… = P2WPKH segwit, else P2PKH legacy)
     )
+
+    /** A native-SegWit v0 P2WPKH output script is OP_0 <20-byte-push> = "0014"+40 hex. */
+    private fun isSegwitScript(h: String) = h.length == 44 && h.startsWith("0014")
+
+    /** The correct PSBT input for a coin by its own script type (supports mixed wallets). */
+    private fun coinInput(c: Coin): Input =
+        if (isSegwitScript(c.scriptHex))
+            segwitInput(TxOut(Amount.fromSat(c.valueSats.toULong()), Script(hexToBytes(c.scriptHex))))
+        else legacyInput(c.prevTx)
+
+    /** Conservative satisfaction weight: P2WPKH ~107 wu, legacy P2PKH ~428 wu. */
+    private fun coinWeight(c: Coin): ULong = if (isSegwitScript(c.scriptHex)) 107uL else 428uL
+
+    /** Sign every input a WIF owns, both legacy AND segwit (each descriptor only matches its own
+     *  script type + opts, so this safely covers a mixed input set). */
+    private fun signAll(psbt: org.bitcoindevkit.Psbt, wifs: Set<String>) {
+        for (wif in wifs) {
+            singleSigner(wif, "pkh").sign(psbt, legacySignOpts)     // legacy P2PKH inputs
+            singleSigner(wif, "wpkh").sign(psbt, witnessSignOpts)   // native SegWit P2WPKH inputs
+        }
+    }
 
     private fun metaKey(txid: String, vout: Int) = "$txid:$vout"
 
@@ -114,7 +136,7 @@ object BlakeSpend {
                 if (!BlakeFork.isEffectivelySpendable(u, tip)) continue
                 val prev = runCatching { Transaction(hexToBytes(u.hex)) }.getOrNull() ?: continue
                 val outpoint = OutPoint(Txid.fromString(u.txid), u.vout.toUInt())
-                coins.add(Coin(outpoint, prev, wif, u.value, metaKey(u.txid, u.vout)))
+                coins.add(Coin(outpoint, prev, wif, u.value, metaKey(u.txid, u.vout), u.scriptHex))
             }
         }
         return coins
@@ -156,19 +178,18 @@ object BlakeSpend {
         }
         val selectedKeys = selected.map { it.key }.toSet()
 
-        val hostWif = selected.maxByOrNull { it.valueSats }!!.wif
-        val hostSigner = singleSigner(hostWif, "pkh")
+        // Host wallet (change → its own address) must match the largest coin's script type so
+        // change is P2WPKH for a segwit host, P2PKH for a legacy host.
+        val hostCoin = selected.maxByOrNull { it.valueSats }!!
+        val hostSigner = singleSigner(hostCoin.wif, if (isSegwitScript(hostCoin.scriptHex)) "wpkh" else "pkh")
 
         var builder = TxBuilder().feeRate(feeRate).manuallySelectedOnly()
-        for (c in selected) builder = builder.addForeignUtxo(c.outpoint, legacyInput(c.prevTx), 428uL)
+        for (c in selected) builder = builder.addForeignUtxo(c.outpoint, coinInput(c), coinWeight(c))
         builder = if (sendMax) builder.drainTo(recipient)
                   else builder.addRecipient(recipient, Amount.fromSat(amountSats.toULong()))
         val psbt = builder.finish(hostSigner)     // change (if any) → host's own address
 
-        for (wif in selected.map { it.wif }.toSet()) {
-            val signer = singleSigner(wif, "pkh")
-            signer.sign(psbt, legacySignOpts)
-        }
+        signAll(psbt, selected.map { it.wif }.toSet())
         // Finalize EXPLICITLY (mirrors iOS + the SHA-256 app's BdkNode). Relying on the
         // per-signer tryFinalize and calling extractTx() directly broadcast an un-finalized
         // PSBT (empty scriptSig) → node reject "Operation not valid with the current stack size".
@@ -231,14 +252,14 @@ object BlakeSpend {
         }
         val selectedKeys = selected.map { it.key }.toSet()
 
-        val hostWif = selected.maxByOrNull { it.valueSats }!!.wif
-        val hostSigner = singleSigner(hostWif, "pkh")
+        val hostCoin = selected.maxByOrNull { it.valueSats }!!
+        val hostSigner = singleSigner(hostCoin.wif, if (isSegwitScript(hostCoin.scriptHex)) "wpkh" else "pkh")
         var builder = TxBuilder().feeRate(feeRate).manuallySelectedOnly()
-        for (c in selected) builder = builder.addForeignUtxo(c.outpoint, legacyInput(c.prevTx), 428uL)
+        for (c in selected) builder = builder.addForeignUtxo(c.outpoint, coinInput(c), coinWeight(c))
         builder = if (sendMax) builder.drainTo(hopChain[0].script)
                   else builder.addRecipient(hopChain[0].script, Amount.fromSat(staged.toULong()))
         val psbt0 = builder.finish(hostSigner)
-        for (wif in selected.map { it.wif }.toSet()) singleSigner(wif, "pkh").sign(psbt0, legacySignOpts)
+        signAll(psbt0, selected.map { it.wif }.toSet())
         val fin0 = psbt0.finalize()
         if (!fin0.couldFinalize) throw Err.NotSigned
         val tx0 = fin0.psbt.extractTx()

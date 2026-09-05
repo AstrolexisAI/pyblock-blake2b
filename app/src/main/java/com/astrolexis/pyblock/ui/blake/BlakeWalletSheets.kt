@@ -19,6 +19,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -165,16 +167,18 @@ internal fun kv(k: String, v: String, accent: androidx.compose.ui.graphics.Color
 fun AddressControlSheet(
     wallets: List<VanityWallet>,
     onGenerate: () -> Unit,
-    onImport: (String) -> Boolean,
     onCopy: (String) -> Unit,
     balanceFor: (String) -> Long,
     onClose: () -> Unit,
 ) {
     val ctx = androidx.compose.ui.platform.LocalContext.current
+    val scope = rememberCoroutineScope()
     var receiveFor by remember { mutableStateOf<VanityWallet?>(null) }
     var importing by remember { mutableStateOf(false) }
     var scanning by remember { mutableStateOf(false) }
     var wif by remember { mutableStateOf("") }
+    var probing by remember { mutableStateOf(false) }
+    var chooseTypeWif by remember { mutableStateOf<String?>(null) }   // set when neither/both funded → ask
 
     val rf = receiveFor
     if (rf != null) { ReceiveSheet(rf, onCopy) { receiveFor = null }; return }
@@ -203,7 +207,26 @@ fun AddressControlSheet(
             Spacer(Modifier.height(6.dp))
             Text("⛶ SCAN A WIF QR", style = Blake.mono(10f), color = Blake.pp, modifier = Modifier.clickableNoRipple { scanning = true })
             Spacer(Modifier.height(8.dp))
-            sheetBtn("ADD KEY", Blake.ok) { if (wif.isNotBlank() && onImport(wif.trim())) { wif = ""; importing = false } }
+            sheetBtn(if (probing) "CHECKING…" else "ADD KEY", Blake.ok) {
+                val w = wif.trim()
+                if (w.isBlank() || probing) return@sheetBtn
+                probing = true
+                scope.launch {
+                    val p = probeWif(w)
+                    probing = false
+                    when {
+                        p == null -> android.widget.Toast.makeText(ctx, "Invalid WIF", android.widget.Toast.LENGTH_SHORT).show()
+                        // Only one side funded → import it automatically.
+                        p.segwitFunded && !p.legacyFunded -> { importWifTyped(ctx, w, true); wif = ""; importing = false; android.widget.Toast.makeText(ctx, "Imported (segwit)", android.widget.Toast.LENGTH_SHORT).show() }
+                        p.legacyFunded && !p.segwitFunded -> { importWifTyped(ctx, w, false); wif = ""; importing = false; android.widget.Toast.makeText(ctx, "Imported (legacy)", android.widget.Toast.LENGTH_SHORT).show() }
+                        // Uncompressed WIF → legacy only (no segwit option).
+                        p.segwitAddr == null -> { importWifTyped(ctx, w, false); wif = ""; importing = false; android.widget.Toast.makeText(ctx, "Imported", android.widget.Toast.LENGTH_SHORT).show() }
+                        // Neither or both funded → ask the user which type.
+                        else -> chooseTypeWif = w
+                    }
+                    if (wif.isEmpty()) com.astrolexis.pyblock.data.blake.BlakeBalanceStore.refresh(ctx)  // auto-imported → refresh
+                }
+            }
         }
         if (wallets.isNotEmpty()) {
             Spacer(Modifier.height(10.dp))
@@ -221,6 +244,31 @@ fun AddressControlSheet(
                     Text(mid(w.address), style = Blake.mono(9f), color = Blake.faint)
                 }
                 Text("${Blake.btc(balanceFor(w.address))} ${Blake.RUNE}", style = Blake.mono(11f), color = Blake.pp)
+            }
+        }
+    }
+
+    // Neither (or both) address held a balance → let the user pick the type to import.
+    chooseTypeWif?.let { w ->
+        androidx.compose.ui.window.Dialog(onDismissRequest = { chooseTypeWif = null }) {
+            Column(Modifier.background(Blake.ink).border(1.dp, Blake.line, RectangleShape).padding(20.dp)) {
+                Text("IMPORT AS", style = Blake.mono(14f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 2.sp)
+                Spacer(Modifier.height(8.dp))
+                Text("No balance found on either address. Pick the type to import.", style = Blake.mono(10f), color = Blake.faint)
+                Spacer(Modifier.height(16.dp))
+                sheetBtn("SEGWIT · bc1q", Blake.pp, filled = true) {
+                    importWifTyped(ctx, w, true); chooseTypeWif = null; wif = ""; importing = false
+                    scope.launch { com.astrolexis.pyblock.data.blake.BlakeBalanceStore.refresh(ctx) }
+                    android.widget.Toast.makeText(ctx, "Imported (segwit)", android.widget.Toast.LENGTH_SHORT).show()
+                }
+                Spacer(Modifier.height(8.dp))
+                sheetBtn("LEGACY · 1…", Blake.pp) {
+                    importWifTyped(ctx, w, false); chooseTypeWif = null; wif = ""; importing = false
+                    scope.launch { com.astrolexis.pyblock.data.blake.BlakeBalanceStore.refresh(ctx) }
+                    android.widget.Toast.makeText(ctx, "Imported (legacy)", android.widget.Toast.LENGTH_SHORT).show()
+                }
+                Spacer(Modifier.height(8.dp))
+                sheetBtn("CANCEL", Blake.ppDim) { chooseTypeWif = null }
             }
         }
     }
@@ -393,26 +441,46 @@ private fun exportBackup(ctx: android.content.Context, wallets: List<VanityWalle
 fun createRandomWallet(ctx: android.content.Context): Boolean {
     val priv = VanityCrypto.hardenedRandom32(ByteArray(0))
     val pub = VanityCrypto.compressedPubkey(priv) ?: return false
-    val addr = VanityCrypto.p2pkhAddress(pub)
+    val addr = VanityCrypto.p2wpkhAddress(pub)          // new wallets default to native SegWit "bc1q…"
     val wif = VanityCrypto.wifCompressed(priv)
     return WalletStore.add(
         ctx,
         VanityWallet(id = UUID.randomUUID().toString(), label = "", address = addr,
-            compressed = true, birthday = BlakeFork.FORK_HEIGHT, pubkeyHex = pub.toHex()),
+            compressed = true, birthday = BlakeFork.FORK_HEIGHT, pubkeyHex = pub.toHex(), segwit = true),
         wif,
     )
 }
 
-/** Import a WIF as a new BLAKE2b wallet (own vault). Returns false on invalid key. */
-fun importWif(ctx: android.content.Context, wif: String): Boolean {
+/** Import a WIF with the caller-chosen address type. Returns false on invalid key. */
+fun importWifTyped(ctx: android.content.Context, wif: String, segwit: Boolean): Boolean {
     val (priv, compressed) = VanityCrypto.decodeWif(wif) ?: return false
-    val pub = if (compressed) VanityCrypto.compressedPubkey(priv) else VanityCrypto.uncompressedPubkey(priv)
-    pub ?: return false
-    val addr = VanityCrypto.p2pkhAddress(pub)
+    val addr: String; val pubHex: String
+    if (segwit) {
+        val cpub = VanityCrypto.compressedPubkey(priv) ?: return false   // segwit = compressed only
+        addr = VanityCrypto.p2wpkhAddress(cpub); pubHex = cpub.toHex()
+    } else {
+        val pub = (if (compressed) VanityCrypto.compressedPubkey(priv) else VanityCrypto.uncompressedPubkey(priv)) ?: return false
+        addr = VanityCrypto.p2pkhAddress(pub); pubHex = pub.toHex()
+    }
     return WalletStore.add(
         ctx,
         VanityWallet(id = UUID.randomUUID().toString(), label = "imported", address = addr,
-            compressed = compressed, birthday = BlakeFork.FORK_HEIGHT, pubkeyHex = pub.toHex()),
+            compressed = compressed, birthday = BlakeFork.FORK_HEIGHT, pubkeyHex = pubHex, segwit = segwit),
         wif.trim(),
     )
+}
+
+/** The candidate addresses (legacy + segwit) for a WIF and which of them currently hold a balance,
+ *  so import can auto-pick the funded one (or ask if neither/both). segwitAddr is null for an
+ *  uncompressed "5…" WIF (native SegWit is compressed-only). */
+data class ImportProbe(val legacyAddr: String, val segwitAddr: String?, val legacyFunded: Boolean, val segwitFunded: Boolean)
+
+suspend fun probeWif(wif: String): ImportProbe? {
+    val (priv, compressed) = VanityCrypto.decodeWif(wif.trim()) ?: return null
+    val legacyPub = (if (compressed) VanityCrypto.compressedPubkey(priv) else VanityCrypto.uncompressedPubkey(priv)) ?: return null
+    val legacyAddr = VanityCrypto.p2pkhAddress(legacyPub)
+    val segwitAddr = if (compressed) VanityCrypto.compressedPubkey(priv)?.let { VanityCrypto.p2wpkhAddress(it) } else null
+    val legFunded = (com.astrolexis.pyblock.data.blake.BlakeApi.walletUtxos(legacyAddr)?.first?.sumOf { it.value } ?: 0L) > 0L
+    val segFunded = segwitAddr != null && (com.astrolexis.pyblock.data.blake.BlakeApi.walletUtxos(segwitAddr)?.first?.sumOf { it.value } ?: 0L) > 0L
+    return ImportProbe(legacyAddr, segwitAddr, legFunded, segFunded)
 }

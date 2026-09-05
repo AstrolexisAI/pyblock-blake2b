@@ -310,12 +310,6 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
         Sheet.Addresses -> AddressControlSheet(
             wallets = wallets,
             onGenerate = { onLaunchVanity(); sheet = null },
-            onImport = { wif ->
-                val ok = importWif(ctx, wif)
-                toast(ctx, if (ok) "Imported" else "Invalid WIF")
-                if (ok) scope.launch { BlakeBalanceStore.refresh(ctx) }
-                ok
-            },
             onCopy = { clip.setText(AnnotatedString(it)); toast(ctx, "Address copied") },
             balanceFor = { BlakeBalanceStore.balanceForAddress(it) },
             onClose = { sheet = null },
