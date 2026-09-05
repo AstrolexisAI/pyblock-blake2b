@@ -176,7 +176,9 @@ object BlakeApi {
 
     /** Broadcast a raw signed BLAKE2b tx via the server (→ Node B). Returns the txid. */
     suspend fun pushTx(rawHex: String): String = withContext(Dispatchers.IO) {
-        val bodyJson = json.encodeToString(mapOf("tx" to rawHex))
+        // pushtx.php expects the key "rawtx" (iOS sends this). Sending "tx" made the server see an
+        // empty rawtx → "invalid rawtx (expect even-length hex)" → every Android broadcast failed.
+        val bodyJson = json.encodeToString(mapOf("rawtx" to rawHex, "chain" to "blake2b"))
         val req = Request.Builder().url("$BASE/api/pushtx.php?chain=blake2b")
             .post(bodyJson.toRequestBody(JSON_MEDIA)).build()
         client.newCall(req).execute().use { resp ->

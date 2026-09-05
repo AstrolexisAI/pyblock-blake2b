@@ -12,6 +12,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -73,16 +76,17 @@ fun SendWizardSheet(
 ) {
     val ctx = LocalContext.current
     val density = LocalDensity.current
-    // WindowInsets are unreliable inside a Compose Dialog (often report 0), so read the real
-    // status-bar / nav-bar heights from platform resources — always non-zero, keeps the header
-    // below the notch and the BACK/NEXT footer above the gesture bar on every screen.
+    val view = LocalView.current
+    // Compose WindowInsets read 0 inside a Dialog, and navigation_bar_height resource is 0 under
+    // gesture nav. Read the REAL root-window system-bar insets (works with gestures) and apply a
+    // floor, so the header clears the status bar and BACK/NEXT clears the gesture bar everywhere.
     val topInsetDp = remember {
-        val id = ctx.resources.getIdentifier("status_bar_height", "dimen", "android")
-        with(density) { (if (id > 0) ctx.resources.getDimensionPixelSize(id) else 0).toDp() }
+        val real = ViewCompat.getRootWindowInsets(view)?.getInsets(WindowInsetsCompat.Type.systemBars())?.top ?: 0
+        with(density) { maxOf(real, 24.dp.roundToPx()).toDp() }
     }
     val botInsetDp = remember {
-        val id = ctx.resources.getIdentifier("navigation_bar_height", "dimen", "android")
-        with(density) { (if (id > 0) ctx.resources.getDimensionPixelSize(id) else 0).toDp() }
+        val real = ViewCompat.getRootWindowInsets(view)?.getInsets(WindowInsetsCompat.Type.systemBars())?.bottom ?: 0
+        with(density) { maxOf(real, 40.dp.roundToPx()).toDp() }
     }
     val scope = rememberCoroutineScope()
     val clip = LocalClipboardManager.current
