@@ -65,7 +65,12 @@ import kotlinx.coroutines.launch
  * general Send (auto-select) and Coin Control ([coinKeys] set). Gated behind [BlakeChains].
  */
 private enum class SendUnit { BTC, SATS }
-private data class WizardResult(val txids: List<String>, val ricochet: Boolean)
+private data class WizardResult(
+    val txids: List<String>, val ricochet: Boolean,
+    val amountSats: Long = 0, val sentMax: Boolean = false,
+    val recipient: String = "",       // address actually paid (or resolved stealth address)
+    val contactValue: String = "",    // what to save as a contact — PM code for a PayNym, else the address
+)
 
 @Composable
 fun SendWizardSheet(
@@ -172,15 +177,16 @@ fun SendWizardSheet(
                     dest = com.astrolexis.pyblock.data.crypto.PaymentCode.nextWalletSendAddress(ctx, peerCode)
                         ?: throw Exception("Couldn't derive a PayNym address from that code.")
                 }
+                val contactValue = peerCode ?: dest
                 if (ricochet) {
                     val outcome = BlakeSpend.ricochet(ctx, dest, amt, sendMax, hops, effectiveFee.toLong(), only)
                     com.astrolexis.pyblock.data.wallet.RicochetHistory.add(ctx, outcome, hops, recorded, dest, "mainnet")
                     BlakeSentStore.add(outcome.txids.lastOrNull() ?: "", recorded, dest, coinKeys, true)
-                    result = WizardResult(outcome.txids, true)
+                    result = WizardResult(outcome.txids, true, recorded, sendMax, dest, contactValue)
                 } else {
                     val txid = BlakeSpend.send(ctx, dest, amt, sendMax, effectiveFee.toLong(), only)
                     BlakeSentStore.add(txid, recorded, dest, coinKeys, false)
-                    result = WizardResult(listOf(txid), false)
+                    result = WizardResult(listOf(txid), false, recorded, sendMax, dest, contactValue)
                 }
                 BlakeBalanceStore.refresh(ctx)
             } catch (e: Exception) {
@@ -461,7 +467,13 @@ private fun StepReview(
     Column(Modifier.fillMaxWidth().blakeCard()) {
         Text("REVIEW — CONFIRM TO BROADCAST", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.warn, letterSpacing = 1.sp)
         Spacer(Modifier.height(12.dp))
-        ReviewRow("TO", toAddress, 9f)
+        val contactName = com.astrolexis.pyblock.data.wallet.BlakeContactsStore.labelFor(toAddress)
+        if (contactName != null) {
+            ReviewRow("TO", "☰ $contactName")
+            ReviewRow("", toAddress, 9f, faint = true)
+        } else {
+            ReviewRow("TO", toAddress, 9f)
+        }
         ReviewRow("AMOUNT", if (sendMax) "MAX · ${Blake.btc(sweepSats)} ${Blake.RUNE}" else "${Blake.btc(amt)} ${Blake.RUNE}")
         ReviewRow("", "${"%,d".format(if (sendMax) sweepSats else amt)} sats", 9f, faint = true)
         BlakePrice.fiatLabel(if (sendMax) sweepSats else amt)?.let { ReviewRow("≈ FIAT", "$it $ccy") }
@@ -518,7 +530,16 @@ private fun SendResultScreen(r: WizardResult, onCopy: (String) -> Unit, onClose:
     val scale by animateFloatAsState(if (pop) 1f else 0.3f, tween(450), label = "pop")
     val alpha by animateFloatAsState(if (pop) 1f else 0f, tween(450), label = "popa")
     androidx.compose.runtime.LaunchedEffect(Unit) { pop = true; com.astrolexis.pyblock.ui.Haptics.tap() }
-    Column(Modifier.fillMaxSize().padding(20.dp)) {
+
+    val contacts by com.astrolexis.pyblock.data.wallet.BlakeContactsStore.contacts.collectAsState()
+    val contactName = contacts.firstOrNull { it.value == r.contactValue }?.label
+    val isPaymentCode = com.astrolexis.pyblock.data.wallet.BlakeContact.looksLikePaymentCode(r.contactValue)
+    var copiedTxid by remember { mutableStateOf<String?>(null) }
+    var saving by remember { mutableStateOf(false) }
+    var saved by remember { mutableStateOf(false) }
+    var contactNameInput by remember { mutableStateOf("") }
+
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("✓", style = Blake.mono(26f, FontWeight.ExtraBold), color = Blake.ok,
                 modifier = Modifier.graphicsLayer { scaleX = scale; scaleY = scale; this.alpha = alpha })
@@ -526,21 +547,78 @@ private fun SendResultScreen(r: WizardResult, onCopy: (String) -> Unit, onClose:
             Text(if (r.ricochet) "RICOCHET SENT" else "SENT", style = Blake.mono(18f, FontWeight.ExtraBold), color = Blake.ok, letterSpacing = 2.sp)
         }
         Spacer(Modifier.height(12.dp))
+
+        // Amount + fiat + recipient summary
+        Column(Modifier.fillMaxWidth().blakeCard()) {
+            Text("${if (r.sentMax) "" else "−"}${Blake.btc(r.amountSats)} ${Blake.RUNE}",
+                style = Blake.mono(24f, FontWeight.ExtraBold), color = Blake.pp)
+            BlakePrice.fiatLabel(r.amountSats)?.let {
+                Text("≈ $it", style = Blake.mono(9f), color = Blake.faint)
+            }
+            Spacer(Modifier.height(4.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("to ", style = Blake.mono(9f), color = Blake.faint)
+                if (contactName != null) Text("☰ $contactName", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.ok)
+                else Text(shortAddr(r.recipient), style = Blake.mono(10f), color = Blake.fg, maxLines = 1)
+            }
+        }
+        Spacer(Modifier.height(12.dp))
         Text(if (r.ricochet) "${r.txids.size}-tx chain broadcast to BLAKE2b." else "Broadcast to BLAKE2b.",
             style = Blake.mono(10f), color = Blake.ppDim)
         Spacer(Modifier.height(12.dp))
         r.txids.forEachIndexed { i, t ->
-            Column(Modifier.fillMaxWidth().padding(bottom = 8.dp).blakeCard(10.dp).clickableNoRipple { onCopy(t) }) {
-                Text(if (r.ricochet) (if (i == 0) "source" else if (i == r.txids.size - 1) "→ recipient" else "hop $i") else "txid",
-                    style = Blake.mono(8f), color = Blake.faint)
+            Column(Modifier.fillMaxWidth().padding(bottom = 8.dp).blakeCard(10.dp)
+                .clickableNoRipple { onCopy(t); copiedTxid = t }) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(if (r.ricochet) (if (i == 0) "source" else if (i == r.txids.size - 1) "→ recipient" else "hop $i") else "txid",
+                        style = Blake.mono(8f), color = Blake.faint)
+                    Spacer(Modifier.weight(1f))
+                    Text(if (copiedTxid == t) "✓ copied" else "copy", style = Blake.mono(8f), color = if (copiedTxid == t) Blake.ok else Blake.pp)
+                }
                 Text(t, style = Blake.mono(10f), color = Blake.pp, maxLines = 1)
             }
         }
-        Spacer(Modifier.height(6.dp))
+
+        // Save the recipient as a contact (skip if it already is one).
+        if (contactName == null && r.contactValue.isNotEmpty()) {
+            Spacer(Modifier.height(4.dp))
+            when {
+                saved -> Text("✓ saved to contacts", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.ok)
+                saving -> Column(Modifier.fillMaxWidth().blakeCard()) {
+                    Text(if (isPaymentCode) "SAVE PAYNYM AS CONTACT" else "SAVE RECIPIENT AS CONTACT",
+                        style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 1.sp)
+                    Spacer(Modifier.height(8.dp))
+                    BasicTextField(contactNameInput, { contactNameInput = it }, singleLine = true,
+                        textStyle = Blake.mono(13f).copy(color = Blake.fg), cursorBrush = SolidColor(Blake.pp),
+                        decorationBox = { inner ->
+                            Box(Modifier.fillMaxWidth().border(1.dp, Blake.line, RectangleShape).padding(10.dp)) {
+                                if (contactNameInput.isEmpty()) Text("Name (e.g. Stefa)", style = Blake.mono(13f), color = Blake.faint)
+                                inner()
+                            }
+                        })
+                    Spacer(Modifier.height(10.dp))
+                    Row {
+                        Text("SAVE", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.bg, letterSpacing = 1.sp, textAlign = TextAlign.Center,
+                            modifier = Modifier.weight(1f).background(Blake.pp).padding(vertical = 10.dp)
+                                .clickableNoRipple { com.astrolexis.pyblock.data.wallet.BlakeContactsStore.add(contactNameInput, r.contactValue); saved = true })
+                        Spacer(Modifier.width(10.dp))
+                        Text("CANCEL", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 1.sp, textAlign = TextAlign.Center,
+                            modifier = Modifier.weight(1f).border(1.dp, Blake.line, RectangleShape).padding(vertical = 10.dp).clickableNoRipple { saving = false })
+                    }
+                }
+                else -> Text(if (isPaymentCode) "＋ SAVE PAYNYM AS CONTACT" else "＋ SAVE RECIPIENT AS CONTACT",
+                    style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 1.sp, textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().border(1.dp, Blake.pp, RectangleShape).padding(vertical = 11.dp).clickableNoRipple { saving = true })
+            }
+        }
+
+        Spacer(Modifier.height(10.dp))
         Text("CLOSE", style = Blake.mono(13f, FontWeight.ExtraBold), color = Blake.bg, letterSpacing = 1.sp, textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth().background(Blake.pp).padding(vertical = 12.dp).clickableNoRipple(onClose))
     }
 }
+
+private fun shortAddr(s: String): String = if (s.length <= 22) s else s.take(12) + "…" + s.takeLast(6)
 
 // ---- Helpers ----
 private fun amountSubtitle(unit: SendUnit, sendMax: Boolean, sats: Long, overspend: Boolean, ccy: String): String {
