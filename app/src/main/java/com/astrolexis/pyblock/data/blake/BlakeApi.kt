@@ -60,6 +60,7 @@ object BlakeApi {
         val stratum: String? = null,
         val difficulty: Double? = null,
         @SerialName("protocol") val protocolName: String? = null,
+        val confirmed: Boolean? = null,
         val timestamp: Double? = null,
     )
     @Serializable private data class BlocksResp(val blocks: List<Block>? = null)
@@ -154,7 +155,9 @@ object BlakeApi {
     suspend fun blocks(): List<Block> =
         (get("/api.php?mode=blocks&chain=bip110") {
             runCatching { json.decodeFromString<BlocksResp>(it) }.getOrNull()
-        }?.blocks ?: emptyList()).sortedByDescending { it.height }
+        }?.blocks ?: emptyList())
+            .filter { it.confirmed != false }   // drop orphaned blocks (reorged out — not real rewards)
+            .sortedByDescending { it.height }
 
     /** Per-block detail incl. the coinbase split. Returns null until the server exposes
      *  `mode=block` (then the block detail dialog shows the split). */
