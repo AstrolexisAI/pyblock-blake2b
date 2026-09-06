@@ -102,8 +102,11 @@ fun BlakePoolScreen() {
                     Row(Modifier.fillMaxWidth().padding(bottom = 8.dp).blakeCard(12.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text("#${b.height}", style = Blake.mono(13f, FontWeight.ExtraBold), color = Blake.pp)
-                            Text("${b.stratum?.uppercase() ?: "—"} · ${b.finderMasked ?: "—"}",
-                                style = Blake.mono(9f), color = Blake.faint, maxLines = 1)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(b.stratum?.uppercase() ?: "—", style = Blake.mono(9f, FontWeight.ExtraBold),
+                                    color = stratumColor(b.stratum), letterSpacing = 0.5.sp)
+                                Text(" · ${b.finderMasked ?: "—"}", style = Blake.mono(9f), color = Blake.faint, maxLines = 1)
+                            }
                         }
                         Text(b.reward?.let { "%.4f".format(it) } ?: "—", style = Blake.mono(12f), color = Blake.fg)
                     }
@@ -113,6 +116,15 @@ fun BlakePoolScreen() {
         }
       }
     }
+}
+
+/** Colour each block by the stratum that found it, so the mix reads at a glance. */
+private fun stratumColor(s: String?): androidx.compose.ui.graphics.Color = when (s?.lowercase()) {
+    "lotto" -> Blake.pp
+    "chirp" -> Blake.ok
+    "carousel" -> Blake.warn
+    "datum" -> Blake.hero
+    else -> Blake.faint
 }
 
 private fun hashrate(th: Double?): String {

@@ -131,10 +131,13 @@ object BlakeApi {
     suspend fun status(): Status? =
         get("/api/chain_status.php?chain=blake2b") { runCatching { json.decodeFromString<Status>(it) }.getOrNull() }
 
+    /** Recent mined blocks, NEWEST FIRST. The endpoint returns them oldest-first, so a naive
+     *  take(N) showed the fork's earliest blocks (all `lotto`) instead of recent activity — sort
+     *  by height descending so the UI shows the latest blocks and their real stratum mix. */
     suspend fun blocks(): List<Block> =
-        get("/api.php?mode=blocks&chain=bip110") {
+        (get("/api.php?mode=blocks&chain=bip110") {
             runCatching { json.decodeFromString<BlocksResp>(it) }.getOrNull()
-        }?.blocks ?: emptyList()
+        }?.blocks ?: emptyList()).sortedByDescending { it.height }
 
     suspend fun chirpPool(): ChirpPool? =
         get("/chirp_api.php?chain=blake2b&mode=pool") { runCatching { json.decodeFromString<ChirpPool>(it) }.getOrNull() }
