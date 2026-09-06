@@ -77,8 +77,50 @@ object BlakeApi {
     data class BlockDetail(
         val height: Int? = null,
         val reward: Double? = null,
+        val stratum: String? = null,
+        val architect: String? = null,   // node-runner / template supplier (from the coinbase scriptsig)
         val coinbase: List<CoinbaseOut>? = null,
     )
+
+    // ---- WAVICLES (DATUM pool) ----
+    @Serializable data class WaviclesStats(
+        val ok: Boolean? = null,
+        val hashrate: WHashrate? = null,
+        val gateways: Int? = null,
+        val pool: WPool? = null,
+        val wavicles: WWav? = null,
+        val window: WWindow? = null,
+        val blocks: List<WBlock> = emptyList(),
+    )
+    @Serializable data class WHashrate(@SerialName("pool_ghs") val poolGhs: Double? = null)
+    @Serializable data class WDatum(val host: String? = null, val port: Int? = null, val pubkey: String? = null)
+    @Serializable data class WPool(
+        val address: String? = null,
+        @SerialName("fee_bps") val feeBps: Int? = null,
+        @SerialName("min_payout") val minPayout: Int? = null,
+        @SerialName("window_multiple") val windowMultiple: Int? = null,
+        val datum: WDatum? = null,
+    )
+    @Serializable data class WWav(
+        @SerialName("carry_total_sats") val carryTotalSats: Long? = null,
+        @SerialName("last_snapshot") val lastSnapshot: String? = null,
+    )
+    @Serializable data class WWindow(
+        @SerialName("fill_percent") val fillPercent: Double? = null,
+        val identities: Int? = null,
+        @SerialName("sample_value") val sampleValue: Long? = null,
+        @SerialName("sample_fee_sats") val sampleFeeSats: Long? = null,
+        @SerialName("sample_pool_sats") val samplePoolSats: Long? = null,
+        val miners: List<WMiner> = emptyList(),
+    )
+    @Serializable data class WMiner(
+        val identity: String? = null,
+        @SerialName("share_percent") val sharePercent: Double? = null,
+        @SerialName("payout_sats") val payoutSats: Long? = null,
+        @SerialName("last_share_s") val lastShareS: Int? = null,
+        val payable: Boolean? = null,
+    )
+    @Serializable data class WBlock(val height: Int? = null)
 
     @Serializable
     data class Utxo(
@@ -168,6 +210,10 @@ object BlakeApi {
 
     suspend fun chirpPool(): ChirpPool? =
         get("/chirp_api.php?chain=blake2b&mode=pool") { runCatching { json.decodeFromString<ChirpPool>(it) }.getOrNull() }
+
+    /** WAVICLES (DATUM pool) live dashboard. null on failure; ok=false → pool offline. */
+    suspend fun wavicles(): WaviclesStats? =
+        get("/wavicles_api.php?mode=stats") { runCatching { json.decodeFromString<WaviclesStats>(it) }.getOrNull() }
 
     /** Connected CHIRP participants. null on a fetch failure (so callers keep last-good instead
      *  of blanking); empty list only on a genuine empty response. */

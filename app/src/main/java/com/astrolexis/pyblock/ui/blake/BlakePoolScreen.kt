@@ -135,6 +135,7 @@ private fun stratumColor(s: String?, tip: Int): androidx.compose.ui.graphics.Col
     return when (s?.lowercase()) {
         "chirp" -> Blake.ok
         "carousel", "lotto" -> Blake.warn
+        "wavicles" -> Blake.wave
         "datum" -> Blake.hero
         else -> Blake.faint
     }
@@ -164,6 +165,10 @@ private fun BlockDetailDialog(b: BlakeApi.Block, tip: Int, onClose: () -> Unit) 
         kv("CONFIRMATIONS", if (confs > 0) "$confs" else "—", Blake.fg)
         kv("DIFFICULTY", b.difficulty?.let { fmtDiff(it) } ?: "—", Blake.fg)
         b.protocolName?.let { kv("PROTOCOL", it, Blake.fg) }
+        detail?.architect?.takeIf { it.isNotBlank() }?.let {
+            kv(if (b.stratum?.lowercase() == "wavicles") "BUILT BY" else "ARCHITECT",
+               if (b.stratum?.lowercase() == "wavicles") "$it's node" else it, Blake.fg)
+        }
         kv("TIME", b.timestamp?.let { relTime(it) } ?: "—", Blake.fg)
         Spacer(Modifier.height(10.dp))
         Text("HASH", style = Blake.mono(8f), color = Blake.faint, letterSpacing = 1.sp)

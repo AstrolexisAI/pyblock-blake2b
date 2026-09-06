@@ -34,6 +34,7 @@ object Blake {
     val ok = Color(0xFF2FD968)      // live/eligible
     val warn = Color(0xFFE0B035)    // paused/RC/warning
     val danger = Color(0xFFE0556A)  // dropped/error
+    val wave = Color(0xFF35C7E0)    // WAVICLES (DATUM pool) accent — cyan/water
     val line = Color(0xFFB96BFF).copy(alpha = 0.16f)   // hairline borders
     val line2 = Color(0xFFB96BFF).copy(alpha = 0.08f)  // separators
 
