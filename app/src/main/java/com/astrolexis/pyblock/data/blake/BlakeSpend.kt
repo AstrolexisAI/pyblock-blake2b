@@ -80,9 +80,13 @@ object BlakeSpend {
         // Both signers use trustWitnessUtxo=true: a P2PKH signer with trustWitnessUtxo=false throws
         // MissingNonWitnessUtxo when the PSBT also contains a SegWit input (witnessUtxo-only), even
         // though it doesn't sign it. Legacy inputs still sign via their nonWitnessUtxo — unaffected.
+        // Each descriptor is built defensively: a PyBLØCK vanity wallet can hold an UNCOMPRESSED
+        // key, and wpkh(<uncompressed WIF>) is invalid — BDK/miniscript throws "uncompressed keys
+        // cannot be used in … descriptors". That must NOT abort the whole send: skip the wpkh signer
+        // (an uncompressed key only owns legacy P2PKH inputs, which the pkh signer covers).
         for (wif in wifs) {
-            singleSigner(wif, "pkh").sign(psbt, witnessSignOpts)    // legacy P2PKH inputs
-            singleSigner(wif, "wpkh").sign(psbt, witnessSignOpts)   // native SegWit P2WPKH inputs
+            runCatching { singleSigner(wif, "pkh").sign(psbt, witnessSignOpts) }    // legacy P2PKH inputs
+            runCatching { singleSigner(wif, "wpkh").sign(psbt, witnessSignOpts) }   // native SegWit (compressed keys only)
         }
     }
 
