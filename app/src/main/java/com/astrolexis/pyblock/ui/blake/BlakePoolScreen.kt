@@ -174,7 +174,7 @@ private fun BlockDetailDialog(b: BlakeApi.Block, tip: Int, onClose: () -> Unit) 
         Spacer(Modifier.height(14.dp))
         Text("COINBASE SPLIT", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
         Spacer(Modifier.height(8.dp))
-        val outs = detail?.coinbase
+        val outs = detail?.coinbase?.filter { (it.sats ?: 0L) > 0L }
         if (!outs.isNullOrEmpty()) {
             val total = outs.sumOf { it.sats ?: 0L }
             outs.forEach { o ->
