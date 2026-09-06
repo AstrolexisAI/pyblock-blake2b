@@ -1,0 +1,49 @@
+name: Verify reproducible build
+
+# Rebuilds the app on a clean runner and publishes the unsigned APK's SHA-256, so
+# anyone can check a published release against a build nobody could tamper with.
+# Needs no secrets: it never signs anything.
+
+on:
+  push:
+    branches: [main, master]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Pinned exactly as README-REPRODUCIBLE.md §2 requires. A different JDK build
+      # can produce a different APK, which is the whole thing we are proving.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17.0.20+8'
+
+      - name: Install the pinned SDK packages
+        run: |
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          sdkmanager "platforms;android-35" "build-tools;35.0.0" >/dev/null
+
+      - name: Build (unsigned — no keystore on CI by design)
+        run: ./gradlew --no-daemon clean assembleRelease
+
+      - name: Report the hash
+        run: |
+          APK=app/build/outputs/apk/release/app-release-unsigned.apk
+          SUM=$(sha256sum "$APK" | cut -d' ' -f1)
+          echo "### Unsigned APK" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "sha256  $SUM" >> $GITHUB_STEP_SUMMARY
+          echo "bytes   $(stat -c%s "$APK")" >> $GITHUB_STEP_SUMMARY
+          echo "commit  $GITHUB_SHA" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-release-unsigned
+          path: app/build/outputs/apk/release/app-release-unsigned.apk
