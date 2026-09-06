@@ -74,7 +74,7 @@ fun BlakeWaviclesScreen() {
           scope.launch { refreshing = true; load(); refreshing = false }
       }, modifier = Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
-            Text("🌊 WAVICLES", style = Blake.mono(24f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 2.sp)
+            Text("WAVICLES", style = Blake.mono(24f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 3.sp)
             Spacer(Modifier.height(6.dp))
             Text("DATUM · bring your own node · 0.4% fee", style = Blake.mono(10f), color = Blake.ppDim)
             Spacer(Modifier.height(22.dp))

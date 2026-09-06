@@ -24,7 +24,7 @@ import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.ShowChart
-import androidx.compose.material.icons.filled.Waves
+import androidx.compose.material.icons.filled.Grain
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -63,7 +63,7 @@ private val BTABS = listOf(
     BTab("wallet", "WALLET", Icons.Filled.AccountBalanceWallet),
     BTab("chat", "CHAT", Icons.Filled.Forum),
     BTab("chirp", "CHIRP", Icons.Filled.Groups),
-    BTab("wavicles", "WAVICLES", Icons.Filled.Waves),
+    BTab("wavicles", "WAVICLES", Icons.Filled.Grain),
 )
 
 @Composable
