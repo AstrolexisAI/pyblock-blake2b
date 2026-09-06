@@ -11,6 +11,12 @@ object BlakeFork {
     const val FORK_HEIGHT = 961_640
     const val COINBASE_MATURITY = 100
 
+    /** At this height CAROUSEL becomes the flagship pool mode (the "new lotto"). Before it LOTTO is
+     *  primary; at/after it CAROUSEL is. Drives the flagship colour so the UI swaps automatically as
+     *  the timechain crosses the boundary — no rebuild. Mirrors iOS. */
+    const val CAROUSEL_SWITCH_HEIGHT = 970_000
+    fun primaryStratum(tip: Int): String = if (tip >= CAROUSEL_SWITCH_HEIGHT) "carousel" else "lotto"
+
     fun confirmations(u: BlakeApi.Utxo, tip: Int): Int =
         if (tip > 0) maxOf(0, tip - u.height + 1) else 0
 

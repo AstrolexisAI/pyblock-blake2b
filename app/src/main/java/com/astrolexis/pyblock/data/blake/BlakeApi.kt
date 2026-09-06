@@ -58,9 +58,26 @@ object BlakeApi {
         @SerialName("finder_masked") val finderMasked: String? = null,
         val reward: Double? = null,
         val stratum: String? = null,
+        val difficulty: Double? = null,
+        @SerialName("protocol") val protocolName: String? = null,
         val timestamp: Double? = null,
     )
     @Serializable private data class BlocksResp(val blocks: List<Block>? = null)
+
+    /** One coinbase output — how the block reward was split (carousel/chirp share the coinbase
+     *  across many miners). Populated by the server's per-block endpoint. */
+    @Serializable
+    data class CoinbaseOut(
+        val address: String? = null,
+        val sats: Long? = null,
+        val share: Double? = null,   // 0..1 fraction, if the pool reports it
+    )
+    @Serializable
+    data class BlockDetail(
+        val height: Int? = null,
+        val reward: Double? = null,
+        val coinbase: List<CoinbaseOut>? = null,
+    )
 
     @Serializable
     data class Utxo(
@@ -138,6 +155,13 @@ object BlakeApi {
         (get("/api.php?mode=blocks&chain=bip110") {
             runCatching { json.decodeFromString<BlocksResp>(it) }.getOrNull()
         }?.blocks ?: emptyList()).sortedByDescending { it.height }
+
+    /** Per-block detail incl. the coinbase split. Returns null until the server exposes
+     *  `mode=block` (then the block detail dialog shows the split). */
+    suspend fun blockDetail(height: Int): BlockDetail? =
+        get("/api.php?mode=block&chain=bip110&height=$height") {
+            runCatching { json.decodeFromString<BlockDetail>(it) }.getOrNull()?.takeIf { d -> d.coinbase != null }
+        }
 
     suspend fun chirpPool(): ChirpPool? =
         get("/chirp_api.php?chain=blake2b&mode=pool") { runCatching { json.decodeFromString<ChirpPool>(it) }.getOrNull() }
