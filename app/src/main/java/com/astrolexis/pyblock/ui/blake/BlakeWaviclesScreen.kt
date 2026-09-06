@@ -1,5 +1,6 @@
 package com.astrolexis.pyblock.ui.blake
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -28,7 +29,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
@@ -74,7 +79,11 @@ fun BlakeWaviclesScreen() {
           scope.launch { refreshing = true; load(); refreshing = false }
       }, modifier = Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
-            Text("WAVICLES", style = Blake.mono(24f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 3.sp)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                DagazRune(24.dp, Blake.wave)
+                Spacer(Modifier.width(10.dp))
+                Text("WAVICLES", style = Blake.mono(24f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 3.sp)
+            }
             Spacer(Modifier.height(6.dp))
             Text("DATUM · bring your own node · 0.4% fee", style = Blake.mono(10f), color = Blake.ppDim)
             Spacer(Modifier.height(22.dp))
@@ -207,6 +216,21 @@ private fun kvRow(label: String, value: String, color: androidx.compose.ui.graph
         Text(label, style = Blake.mono(9f), color = Blake.faint, letterSpacing = 1.sp)
         Spacer(Modifier.weight(1f))
         Text(value, style = Blake.mono(12f, FontWeight.ExtraBold), color = color)
+    }
+}
+
+/** The WAVICLES rune ᛞ (Dagaz — day↔night duality → wave↔particle) drawn as a vector: two
+ *  vertical staves joined by a crossing X. Our own mark, no emoji. Mirrors iOS BlakeDagaz. */
+@Composable
+fun DagazRune(size: Dp, color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier.size(size)) {
+        val lw = (this.size.minDimension * 0.13f).coerceAtLeast(2f)
+        val x0 = lw / 2f; val x1 = this.size.width - lw / 2f
+        val h = this.size.height
+        drawLine(color, Offset(x0, 0f), Offset(x0, h), lw, StrokeCap.Round)   // left stave
+        drawLine(color, Offset(x1, 0f), Offset(x1, h), lw, StrokeCap.Round)   // right stave
+        drawLine(color, Offset(x0, 0f), Offset(x1, h), lw, StrokeCap.Round)   // ╲
+        drawLine(color, Offset(x0, h), Offset(x1, 0f), lw, StrokeCap.Round)   // ╱
     }
 }
 

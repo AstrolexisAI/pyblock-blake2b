@@ -171,8 +171,13 @@ private fun BlakeTabBar(nav: NavHostController, current: String?) {
                         .background(if (selected) Blake.pp.copy(alpha = 0.14f) else androidx.compose.ui.graphics.Color.Transparent, RoundedCornerShape(20.dp))
                         .padding(horizontal = 14.dp, vertical = 8.dp),
                 ) {
-                    Icon(tab.icon, contentDescription = tab.label,
-                        tint = if (selected) Blake.pp else Blake.ppDim, modifier = Modifier.size(20.dp))
+                    // WAVICLES uses our own Dagaz rune (drawn), not a system icon.
+                    if (tab.route == "wavicles") {
+                        DagazRune(20.dp, if (selected) Blake.pp else Blake.ppDim)
+                    } else {
+                        Icon(tab.icon, contentDescription = tab.label,
+                            tint = if (selected) Blake.pp else Blake.ppDim, modifier = Modifier.size(20.dp))
+                    }
                     Spacer(Modifier.size(3.dp))
                     Text(tab.label, style = Blake.mono(8f, FontWeight.ExtraBold),
                         color = if (selected) Blake.pp else Blake.ppDim, letterSpacing = 1.sp)

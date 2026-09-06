@@ -314,7 +314,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
                                             style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.warn)
                                         val tag = labels[r.id]?.takeIf { it.isNotBlank() }
                                         val contactName = com.astrolexis.pyblock.data.wallet.BlakeContactsStore.labelFor(r.toAddress)
-                                        if (tag != null) Text("🏷 $tag", style = Blake.mono(8f, FontWeight.ExtraBold), color = Blake.pp, maxLines = 1)
+                                        if (tag != null) Text("◈ $tag", style = Blake.mono(8f, FontWeight.ExtraBold), color = Blake.pp, maxLines = 1)
                                         else if (contactName != null) Text("to ☰ $contactName", style = Blake.mono(8f, FontWeight.ExtraBold), color = Blake.ok, maxLines = 1)
                                         Text("to ${r.toAddress.take(10)}…${r.toAddress.takeLast(8)}", style = Blake.mono(8f), color = Blake.faint)
                                     }
@@ -329,7 +329,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
                                     Column(Modifier.weight(1f)) {
                                         Text("+ ${Blake.btc(u.value)} ${Blake.RUNE}", style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.ok)
                                         labels[u.id]?.takeIf { it.isNotBlank() }?.let {
-                                            Text("🏷 $it", style = Blake.mono(8f, FontWeight.ExtraBold), color = Blake.pp, maxLines = 1)
+                                            Text("◈ $it", style = Blake.mono(8f, FontWeight.ExtraBold), color = Blake.pp, maxLines = 1)
                                         }
                                         Text("${if (u.coinbase) "mined · " else ""}block #${u.height}", style = Blake.mono(8f), color = Blake.faint)
                                     }
@@ -388,7 +388,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
                 Text("Replay-exposed coins can also move on the Bitcoin (SHA-256) chain — spending here may affect/lose that balance. Only unlock if you understand this.",
                     style = Blake.mono(10f), color = Blake.faint)
                 Spacer(Modifier.height(14.dp))
-                sheetBtn("🔓 UNLOCK — I ACCEPT THE RISK", Blake.danger, filled = true) { UnlockStore.unlock(u.id); pendingUnlock = null }
+                sheetBtn("UNLOCK — I ACCEPT THE RISK", Blake.danger, filled = true) { UnlockStore.unlock(u.id); pendingUnlock = null }
                 Spacer(Modifier.height(8.dp))
                 sheetBtn("CANCEL", Blake.ppDim) { pendingUnlock = null }
             }
@@ -442,8 +442,8 @@ private fun coinBreakdownRow(u: BlakeApi.Utxo, tip: Int, locked: Boolean,
                  style = Blake.mono(7f), color = Blake.faint)
         }
         if (replayLocked) {
-            if (unlocked) miniBtn("🔒 LOCK", Blake.warn, onRelock)
-            else miniBtn("🔓 UNLOCK", Blake.danger, onUnlock)
+            if (unlocked) miniBtn("LOCK", Blake.warn, onRelock)
+            else miniBtn("UNLOCK", Blake.danger, onUnlock)
             Spacer(Modifier.size(8.dp))
         }
         Text("ⓘ", style = Blake.mono(11f), color = Blake.ppDim, modifier = Modifier.clickableNoRipple(onInfo))

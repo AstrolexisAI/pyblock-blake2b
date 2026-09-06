@@ -111,7 +111,7 @@ fun ContactsSheet(onPick: ((String) -> Unit)?, onClose: () -> Unit) {
                     Text("PAYNYM", style = Blake.mono(7f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 1.sp)
                     Spacer(Modifier.width(10.dp))
                 }
-                Text("🗑", style = Blake.mono(12f), color = Blake.ppDim,
+                Text("✕", style = Blake.mono(12f), color = Blake.ppDim,
                     modifier = Modifier.clickableNoRipple { BlakeContactsStore.remove(c) })
             }
             Box(Modifier.fillMaxWidth().height(1.dp).background(Blake.line))

@@ -129,9 +129,9 @@ fun UtxoDetailSheet(u: BlakeApi.Utxo, tip: Int, onCopy: (String) -> Unit, onClos
         // Unlock / re-lock — only for replay-locked coins (immature coinbase can't be unlocked).
         if (replayLocked) {
             if (unlocked) {
-                sheetBtn("🔒 RE-LOCK", Blake.warn) { com.astrolexis.pyblock.data.blake.UnlockStore.relock(u.id) }
+                sheetBtn("RE-LOCK", Blake.warn) { com.astrolexis.pyblock.data.blake.UnlockStore.relock(u.id) }
             } else {
-                sheetBtn("🔓 UNLOCK — REPLAY RISK", Blake.danger) { warn = true }
+                sheetBtn("UNLOCK — REPLAY RISK", Blake.danger) { warn = true }
             }
             Spacer(Modifier.height(8.dp))
         }
@@ -434,14 +434,14 @@ fun CoinsSheet(utxos: List<BlakeApi.Utxo>, tip: Int, onSpend: (Set<String>) -> U
                     else -> Modifier
                 }),
                 verticalAlignment = Alignment.CenterVertically) {
-                Text(when { on -> "◉"; !spendable -> "🔒"; unlocked -> "🔓"; else -> "○" },
+                Text(when { on -> "◉"; !spendable -> "⊘"; unlocked -> "◍"; else -> "○" },
                     style = Blake.mono(12f), color = if (on) Blake.pp else Blake.faint)
                 Spacer(Modifier.width(8.dp))
                 Column(Modifier.weight(1f)) {
                     Text("${Blake.btc(u.value)} ${Blake.RUNE}", style = Blake.mono(12f, FontWeight.ExtraBold),
                         color = if (reason == null) Blake.ok else if (unlocked) Blake.pp else Blake.warn)
                     labels[u.id]?.takeIf { it.isNotBlank() }?.let {
-                        Text("🏷 $it", style = Blake.mono(8f, FontWeight.ExtraBold), color = Blake.pp, maxLines = 1)
+                        Text("◈ $it", style = Blake.mono(8f, FontWeight.ExtraBold), color = Blake.pp, maxLines = 1)
                     }
                     Text(if (unlocked) "unlocked · replay risk"
                          else if (!spendable && BlakeFork.isReplayLocked(u, tip)) "${reason ?: "received"} · tap to unlock"
