@@ -94,9 +94,22 @@ fun UtxoDetailSheet(u: BlakeApi.Utxo, tip: Int, onCopy: (String) -> Unit, onClos
     val unlocked = u.id in unlockedIds
     val replayLocked = BlakeFork.isReplayLocked(u, tip)
     var warn by remember { mutableStateOf(false) }
+    var labelText by remember(u.id) { mutableStateOf(com.astrolexis.pyblock.data.blake.BlakeLabelStore.labelFor(u.id) ?: "") }
     sheetBox("COIN", Blake.pp, onClose) {
         Text("${Blake.btc(u.value)} ${Blake.RUNE}", style = Blake.mono(24f, FontWeight.ExtraBold), color = Blake.pp)
         Text("${"%,d".format(u.value)} sats", style = Blake.mono(10f), color = Blake.faint)
+        Spacer(Modifier.height(12.dp))
+        Text("LABEL", style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
+        Spacer(Modifier.height(4.dp))
+        androidx.compose.foundation.text.BasicTextField(labelText, {
+            labelText = it; com.astrolexis.pyblock.data.blake.BlakeLabelStore.set(u.id, it)
+        }, singleLine = true, textStyle = Blake.mono(12f).copy(color = Blake.fg), cursorBrush = SolidColor(Blake.pp),
+            decorationBox = { inner ->
+                Box(Modifier.fillMaxWidth().border(1.dp, Blake.line, RectangleShape).padding(10.dp)) {
+                    if (labelText.isEmpty()) Text("Name this coin (e.g. coinbase July)", style = Blake.mono(12f), color = Blake.faint)
+                    inner()
+                }
+            })
         Spacer(Modifier.height(12.dp))
         val reason = BlakeFork.lockReason(u, tip)
         val statusText = when {
@@ -388,6 +401,7 @@ fun CoinsSheet(utxos: List<BlakeApi.Utxo>, tip: Int, onSpend: (Set<String>) -> U
     var spendExpanded by remember { mutableStateOf(true) }
     var lockedExpanded by remember { mutableStateOf(false) }
     val unlockedIds by com.astrolexis.pyblock.data.blake.UnlockStore.ids.collectAsState()
+    val labels by com.astrolexis.pyblock.data.blake.BlakeLabelStore.labels.collectAsState()
     sheetBox("COIN CONTROL", Blake.pp, onClose) {
         if (utxos.isEmpty()) { Text("No coins.", style = Blake.mono(10f), color = Blake.faint); return@sheetBox }
         val sorted = utxos.sortedByDescending { it.value }
@@ -426,6 +440,9 @@ fun CoinsSheet(utxos: List<BlakeApi.Utxo>, tip: Int, onSpend: (Set<String>) -> U
                 Column(Modifier.weight(1f)) {
                     Text("${Blake.btc(u.value)} ${Blake.RUNE}", style = Blake.mono(12f, FontWeight.ExtraBold),
                         color = if (reason == null) Blake.ok else if (unlocked) Blake.pp else Blake.warn)
+                    labels[u.id]?.takeIf { it.isNotBlank() }?.let {
+                        Text("🏷 $it", style = Blake.mono(8f, FontWeight.ExtraBold), color = Blake.pp, maxLines = 1)
+                    }
                     Text(if (unlocked) "unlocked · replay risk"
                          else if (!spendable && BlakeFork.isReplayLocked(u, tip)) "${reason ?: "received"} · tap to unlock"
                          else (reason ?: (if (u.coinbase) "mined · spendable" else "received")),

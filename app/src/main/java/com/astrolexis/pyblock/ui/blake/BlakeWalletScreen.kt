@@ -113,6 +113,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
         BlakePrice.init(ctx)
         com.astrolexis.pyblock.data.blake.BlakeSentStore.init(ctx)
         com.astrolexis.pyblock.data.blake.UnlockStore.init(ctx)
+        com.astrolexis.pyblock.data.blake.BlakeLabelStore.init(ctx)
         com.astrolexis.pyblock.data.wallet.BlakeContactsStore.init(ctx)
         BlakeBalanceStore.refresh(ctx)      // seed
         BlakeBalanceStore.startLive(ctx)    // live push (WebSocket) — no time-based polling
@@ -126,6 +127,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
     // recompute derived off rates too
     rates.size
     com.astrolexis.pyblock.data.blake.UnlockStore.ids.collectAsState().value   // recompose on unlock/relock
+    val labels by com.astrolexis.pyblock.data.blake.BlakeLabelStore.labels.collectAsState()   // recompose on label edits
 
     val total = BlakeBalanceStore.totalSats()
     val spendable = BlakeBalanceStore.spendableSats()
@@ -310,6 +312,10 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
                                     Column(Modifier.weight(1f)) {
                                         Text("− ${Blake.btc(r.amountSats)} ${Blake.RUNE}${if (r.ricochet) " · ricochet" else ""}",
                                             style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.warn)
+                                        val tag = labels[r.id]?.takeIf { it.isNotBlank() }
+                                        val contactName = com.astrolexis.pyblock.data.wallet.BlakeContactsStore.labelFor(r.toAddress)
+                                        if (tag != null) Text("🏷 $tag", style = Blake.mono(8f, FontWeight.ExtraBold), color = Blake.pp, maxLines = 1)
+                                        else if (contactName != null) Text("to ☰ $contactName", style = Blake.mono(8f, FontWeight.ExtraBold), color = Blake.ok, maxLines = 1)
                                         Text("to ${r.toAddress.take(10)}…${r.toAddress.takeLast(8)}", style = Blake.mono(8f), color = Blake.faint)
                                     }
                                     Text(if (pending) "pending" else "sent", style = Blake.mono(9f), color = if (pending) Blake.warn else Blake.ppDim)
@@ -322,6 +328,9 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
                                     .clickableNoRipple { sheet = Sheet.Utxo(u) }, verticalAlignment = Alignment.CenterVertically) {
                                     Column(Modifier.weight(1f)) {
                                         Text("+ ${Blake.btc(u.value)} ${Blake.RUNE}", style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.ok)
+                                        labels[u.id]?.takeIf { it.isNotBlank() }?.let {
+                                            Text("🏷 $it", style = Blake.mono(8f, FontWeight.ExtraBold), color = Blake.pp, maxLines = 1)
+                                        }
                                         Text("${if (u.coinbase) "mined · " else ""}block #${u.height}", style = Blake.mono(8f), color = Blake.faint)
                                     }
                                     val conf = BlakeFork.confirmations(u, tip)
@@ -467,6 +476,7 @@ private fun SentDetailDialog(
 ) {
     var copied by remember { mutableStateOf(false) }
     LaunchedEffect(copied) { if (copied) { delay(2000); copied = false } }
+    var labelText by remember(r.id) { mutableStateOf(com.astrolexis.pyblock.data.blake.BlakeLabelStore.labelFor(r.id) ?: "") }
     sheetBox(if (r.ricochet) "RICOCHET SENT" else "SENT", Blake.pp, onClose) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(7.dp).background(if (pending) Blake.warn else Blake.ok, CircleShape))
@@ -477,6 +487,19 @@ private fun SentDetailDialog(
         Spacer(Modifier.height(14.dp))
         Text("− ${Blake.btc(r.amountSats)} ${Blake.RUNE}", style = Blake.mono(24f, FontWeight.ExtraBold), color = Blake.warn)
         Text("${"%,d".format(r.amountSats)} sats", style = Blake.mono(10f), color = Blake.faint)
+        Spacer(Modifier.height(14.dp))
+        Text("LABEL", style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
+        Spacer(Modifier.height(4.dp))
+        androidx.compose.foundation.text.BasicTextField(labelText, {
+            labelText = it; com.astrolexis.pyblock.data.blake.BlakeLabelStore.set(r.id, it)
+        }, singleLine = true, textStyle = Blake.mono(12f).copy(color = Blake.fg),
+            cursorBrush = androidx.compose.ui.graphics.SolidColor(Blake.pp),
+            decorationBox = { inner ->
+                Box(Modifier.fillMaxWidth().border(1.dp, Blake.line, RectangleShape).padding(10.dp)) {
+                    if (labelText.isEmpty()) Text("Name this transaction (e.g. pago Stefa)", style = Blake.mono(12f), color = Blake.faint)
+                    inner()
+                }
+            })
         Spacer(Modifier.height(14.dp))
         Text("TO", style = Blake.mono(9f), color = Blake.faint, letterSpacing = 1.sp)
         Text(r.toAddress, style = Blake.mono(10f), color = Blake.fg)
