@@ -115,6 +115,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
         com.astrolexis.pyblock.data.blake.UnlockStore.init(ctx)
         com.astrolexis.pyblock.data.blake.BlakeLabelStore.init(ctx)
         com.astrolexis.pyblock.data.wallet.BlakeContactsStore.init(ctx)
+        com.astrolexis.pyblock.data.wallet.RicochetHistory.ensureLoaded(ctx)   // para saber si hay ricochets pasados (sus hop keys deben seguir alcanzables)
         BlakeBalanceStore.refresh(ctx)      // seed
         BlakeBalanceStore.startLive(ctx)    // live push (WebSocket) — no time-based polling
         // Slow safety refresh for price/status + a balance backstop if the socket drops.
@@ -128,6 +129,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
     rates.size
     com.astrolexis.pyblock.data.blake.UnlockStore.ids.collectAsState().value   // recompose on unlock/relock
     val labels by com.astrolexis.pyblock.data.blake.BlakeLabelStore.labels.collectAsState()   // recompose on label edits
+    val ricochetRecords by com.astrolexis.pyblock.data.wallet.RicochetHistory.records.collectAsState()
 
     val total = BlakeBalanceStore.totalSats()
     val spendable = BlakeBalanceStore.spendableSats()
@@ -205,7 +207,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
                     Text("↗ SEND", style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.bg, letterSpacing = 1.sp, textAlign = TextAlign.Center,
                         modifier = Modifier.weight(1f).background(Blake.pp).padding(vertical = 12.dp)
                             .clickableNoRipple { if (spendable <= 0) toast(ctx, "No spendable coins yet.") else sheet = Sheet.Send() })
-                    if (BlakeChains.RICOCHET_ENABLED) {
+                    if (BlakeChains.RICOCHET_ENABLED || ricochetRecords.isNotEmpty()) {   // historial: las hop keys de ricochets pasados deben seguir alcanzables
                         Text("⟿ RICOCHETS", style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 1.sp, textAlign = TextAlign.Center,
                             modifier = Modifier.weight(1f).border(1.dp, Blake.pp, RectangleShape).padding(vertical = 12.dp)
                                 .clickableNoRipple { sheet = Sheet.Ricochets })

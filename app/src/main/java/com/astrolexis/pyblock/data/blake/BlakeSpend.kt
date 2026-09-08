@@ -145,11 +145,65 @@ object BlakeSpend {
                 // Mature post-fork coinbase (safe) OR a replay-locked coin the user chose to unlock.
                 if (!BlakeFork.isEffectivelySpendable(u, tip)) continue
                 val prev = runCatching { Transaction(hexToBytes(u.hex)) }.getOrNull() ?: continue
+                // FUND-CRITICAL: `coinbase`, `height`, `value` and `scriptHex` are all SERVER-supplied,
+                // and the whole replay-safety model rests on them. Verify every claim against the
+                // prev-tx we already hold (no extra request) and fail closed — see verifyClaims.
+                if (!verifyClaims(u, prev, tip)) continue
                 val outpoint = OutPoint(Txid.fromString(u.txid), u.vout.toUInt())
                 coins.add(Coin(outpoint, prev, wif, u.value, metaKey(u.txid, u.vout), u.scriptHex))
             }
         }
         return coins
+    }
+
+    /**
+     * Verify the server's claims about a UTXO against the previous transaction it also gave us.
+     *
+     * FUND-CRITICAL. The wallet may only spend MATURE POST-FORK COINBASE, because those exist solely
+     * on the BLAKE2b fork, so a SIGHASH_ALL spend of them is `missing-inputs` on the SHA-256 chain —
+     * non-replayable. That guarantee is enforced with [BlakeApi.Utxo.coinbase] and `height`, which
+     * the SERVER supplies. A server that marked a PRE-FORK (chain-shared) coin as a post-fork
+     * coinbase would make the wallet sign a spend that is ALSO valid on mainnet, silently moving the
+     * user's real BTC — and it would never surface the replay-risk confirm, because such a coin
+     * never looks replay-locked.
+     *
+     * The prev-tx is already in hand for signing, so all of it is checkable offline:
+     *  - the prev-tx must be the one the outpoint names (guards a swapped `hex`),
+     *  - the spent output's value + script must match (the SegWit path signs over the server's
+     *    `value`/`scriptHex` with trustWitnessUtxo, so BDK does not check these for us),
+     *  - and a coin admitted as SAFE must really be a coinbase whose BIP-34 height is post-fork.
+     *
+     * Returns false ⇒ the coin is dropped from the spendable set (fail closed).
+     */
+    private fun verifyClaims(u: BlakeApi.Utxo, prev: Transaction, tip: Int): Boolean {
+        // 1. The prev-tx must actually be the transaction this outpoint names.
+        if (prev.computeTxid().toString() != u.txid) return false
+
+        // 2. The output being spent must match the value and script we were told.
+        val outs = prev.output()
+        if (u.vout < 0 || u.vout >= outs.size) return false
+        val out = outs[u.vout]
+        if (out.value.toSat().toLong() != u.value) return false
+        if (bytesToHex(out.scriptPubkey.toBytes()).lowercase() != u.scriptHex.lowercase()) return false
+
+        // 3. Only coins admitted as SAFE (mature post-fork coinbase) need the coinbase proof. A coin
+        //    the user explicitly UNLOCKED is knowingly replay-exposed and makes no coinbase claim.
+        if (!BlakeFork.isSpendable(u, tip)) return true
+        if (!prev.isCoinbase()) return false
+        val h = bip34Height(prev) ?: return false
+        return h >= BlakeFork.FORK_HEIGHT
+    }
+
+    /** The block height a coinbase commits to in its own scriptSig (BIP-34: the first push).
+     *  null if absent or malformed — the caller treats that as "unverifiable" and fails closed. */
+    private fun bip34Height(tx: Transaction): Int? {
+        val sig = tx.input().firstOrNull()?.scriptSig?.toBytes() ?: return null
+        if (sig.isEmpty()) return null
+        val len = sig[0].toInt() and 0xff
+        if (len < 1 || len > 5 || sig.size <= len) return null      // push opcode 0x01…0x05
+        var h = 0
+        for (i in 0 until len) h = h or ((sig[1 + i].toInt() and 0xff) shl (8 * i))   // little-endian
+        return h
     }
 
     /** Greedy largest-first coins covering `need` + a worst-case legacy fee, or all (max). */
