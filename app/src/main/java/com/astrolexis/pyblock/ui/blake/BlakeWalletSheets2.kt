@@ -117,9 +117,16 @@ fun PaynymSheet(onCopy: (String) -> Unit, paste: () -> String, onClose: () -> Un
             Text(myCode, style = Blake.mono(9f), color = Blake.pp, modifier = Modifier.fillMaxWidth().clickableNoRipple { onCopy(myCode) })
             Spacer(Modifier.height(8.dp))
             sheetBtn("COPY CODE", Blake.pp, filled = true) { onCopy(myCode) }
+        } else {
+            // Empty means the identity store could not be read. Say so loudly: a blank card invites
+            // the user to assume a glitch, when the risk is receiving to addresses they can't derive.
+            Text("⚠ PAYNYM UNAVAILABLE", style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.danger, letterSpacing = 1.sp)
+            Spacer(Modifier.height(6.dp))
+            Text("Your PayNym identity could not be read from secure storage, so your code can't be shown. Do NOT share a new code — unlock the device and reopen the app. If this persists after a restore, your identity may not have transferred; check before receiving PayNym payments.",
+                style = Blake.mono(9f), color = Blake.warn)
         }
         Spacer(Modifier.height(6.dp))
-        Text("Share once. Anyone can pay you repeatedly to fresh addresses — no reuse.", style = Blake.mono(8f), color = Blake.faint)
+        if (myCode.isNotEmpty()) Text("Share once. Anyone can pay you repeatedly to fresh addresses — no reuse.", style = Blake.mono(8f), color = Blake.faint)
 
         Spacer(Modifier.height(16.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {

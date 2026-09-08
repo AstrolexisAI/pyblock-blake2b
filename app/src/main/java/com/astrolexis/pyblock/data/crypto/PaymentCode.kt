@@ -53,14 +53,28 @@ object PaymentCode {
     fun mine(ctx: Context): Identity {
         cached?.let { return it }
         val p = SecurePrefs.open(ctx, PREFS, "${PREFS}_legacy", resetOnCorruption = false)
-        p.getString(KEY_ID, null)?.hexToBytes()?.takeIf { it.size == 64 }?.let {
-            return Identity(it.copyOfRange(0, 32), it.copyOfRange(32, 64)).also { id -> cached = id }
+        val stored = p.getString(KEY_ID, null)
+        if (stored != null) {
+            // A value EXISTS. If it doesn't decode to 64 bytes it is corrupt — fail loud rather than
+            // overwrite it: those bytes may still be recoverable, and replacing them makes every
+            // not-yet-detected stealth payment to the old code permanently underivable.
+            val raw = stored.hexToBytes()
+            if (raw == null || raw.size != 64) throw IdentityUnavailableException()
+            return Identity(raw.copyOfRange(0, 32), raw.copyOfRange(32, 64)).also { id -> cached = id }
         }
+        // Genuinely the first run — nothing to lose. commit() (not apply()) so the key is durable
+        // BEFORE we hand it out; an async flush lost to a process kill would mint a different
+        // identity on the next launch. Same rule WalletStore.add already follows for wallet keys.
         val id = newIdentity()
-        p.edit().putString(KEY_ID, (id.priv + id.chainCode).toHexStr()).apply()
+        if (!p.edit().putString(KEY_ID, (id.priv + id.chainCode).toHexStr()).commit()) {
+            throw IdentityUnavailableException()
+        }
         cached = id
         return id
     }
+
+    /** The identity exists but could not be read/written intact. Never resolved by regenerating. */
+    class IdentityUnavailableException : Exception("PayNym identity unavailable — not regenerating.")
 
     /** The "PM8T…" Base58Check payment code (version 0x47, 80-byte payload). */
     fun encode(id: Identity): String {
