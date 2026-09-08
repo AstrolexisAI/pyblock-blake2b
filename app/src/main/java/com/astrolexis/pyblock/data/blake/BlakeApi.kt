@@ -139,6 +139,7 @@ object BlakeApi {
         val id: String get() = "$txid:$vout"
     }
     @Serializable private data class UtxosResp(
+        val ok: Boolean? = null,
         val utxos: List<Utxo>? = null,
         @SerialName("tip_height") val tipHeight: Int? = null,
         val warming: Boolean? = null,
@@ -230,8 +231,15 @@ object BlakeApi {
         val r = get("/api/wallet_utxos.php?chain=blake2b&addresses=${enc(address)}") {
             runCatching { json.decodeFromString<UtxosResp>(it) }.getOrNull()
         } ?: return null
-        if (r.warming == true) return null
-        return (r.utxos ?: emptyList()) to (r.tipHeight ?: 0)
+        // FUND-SAFETY: only an `ok:true` body is authoritative. The server returns ok:false for
+        // warming, an oversized address, or an internal error; a hard error is HTTP 400. This used to
+        // trust `utxos ?: emptyList()`, so a body WITHOUT the key — which is what a php-fpm fatal
+        // produced, since the endpoint sends its headers before doing the work — became an empty list
+        // and the wallet showed ZERO for every address (the 2026-09-08 incident). Both the missing key
+        // and ok:false now fail closed, so the caller keeps its last-good balance.
+        if (r.ok != true || r.warming == true) return null
+        val utxos = r.utxos ?: return null
+        return utxos to (r.tipHeight ?: 0)
     }
 
     // ---- Broadcast (send/ricochet — gated) ----
