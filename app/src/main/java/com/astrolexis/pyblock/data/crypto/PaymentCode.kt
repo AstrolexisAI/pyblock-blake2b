@@ -180,10 +180,37 @@ object PaymentCode {
 
     // MARK: - Stealth address derivation (BIP-47 v1)
 
+    /**
+     * Which ECDH pairing produced a stealth address.
+     *
+     * BIP-47 specifies that the SENDER's scalar is `a0`, the index-0 child of their payment-code
+     * node, paired on the receiving side with `A0`. PyBLOCK builds up to 0.2.3 used the node key
+     * itself (`a` / `A`). Both sides were consistent, so PyBLOCK-to-PyBLOCK payments worked, but a
+     * payment to or from Samourai/Sparrow landed at an address neither wallet watched.
+     *
+     * New payments are always [BIP47]. [LEGACY] is kept so coins already sitting at the old
+     * addresses stay derivable, findable and spendable forever.
+     */
+    enum class Scheme { BIP47, LEGACY }
+
+    /** The sender's ECDH scalar under [scheme]. */
+    private fun senderScalar(mine: Identity, scheme: Scheme): ByteArray? = when (scheme) {
+        Scheme.LEGACY -> mine.priv
+        Scheme.BIP47 -> ckdPriv(mine.priv, mine.pub, mine.chainCode, 0)      // a0
+    }
+
+    /** The peer point the receiver pairs with, under [scheme]. */
+    private fun peerPoint(theirPub: ByteArray, theirCc: ByteArray, scheme: Scheme): ByteArray? = when (scheme) {
+        Scheme.LEGACY -> theirPub
+        Scheme.BIP47 -> ckdPub(theirPub, theirCc, 0)                          // A0
+    }
+
     /** SENDER: P2PKH address to pay for payment #[index] to (theirPub, theirCc). */
-    fun sendAddress(mine: Identity, theirPub: ByteArray, theirCc: ByteArray, index: Int): String? {
+    fun sendAddress(mine: Identity, theirPub: ByteArray, theirCc: ByteArray, index: Int,
+                    scheme: Scheme = Scheme.BIP47): String? {
         val bI = ckdPub(theirPub, theirCc, index) ?: return null
-        val s = sharedS(mine.priv, bI) ?: return null
+        val a = senderScalar(mine, scheme) ?: return null
+        val s = sharedS(a, bI) ?: return null
         val pI = pointAdd(bI, s) ?: return null          // B_i + s·G
         return VanityCrypto.p2pkhAddress(pI)
     }
@@ -191,9 +218,11 @@ object PaymentCode {
     data class ReceiveKey(val wif: String, val address: String, val pubkeyHex: String)
 
     /** RECEIVER: the spendable key for incoming payment #[index] from (theirPub). */
-    fun receiveKey(mine: Identity, theirPub: ByteArray, theirCc: ByteArray, index: Int): ReceiveKey? {
+    fun receiveKey(mine: Identity, theirPub: ByteArray, theirCc: ByteArray, index: Int,
+                   scheme: Scheme = Scheme.BIP47): ReceiveKey? {
         val bI = ckdPriv(mine.priv, mine.pub, mine.chainCode, index) ?: return null
-        val s = sharedS(bI, theirPub) ?: return null
+        val peer = peerPoint(theirPub, theirCc, scheme) ?: return null
+        val s = sharedS(bI, peer) ?: return null
         val pIpriv = try { secp.privKeyTweakAdd(bI, s) } catch (e: Exception) { return null }  // b_i + s
         val pub = VanityCrypto.compressedPubkey(pIpriv) ?: return null
         return ReceiveKey(VanityCrypto.wifCompressed(pIpriv), VanityCrypto.p2pkhAddress(pub), pub.toHexStr())
@@ -205,9 +234,10 @@ object PaymentCode {
      *  passes index = number of "paid" receipts already sent to this peer, which
      *  stays in lockstep with what the receiver reconciles against (no mutable
      *  counter, and a cancelled send never skips an index). */
-    fun deriveSendAddress(ctx: Context, peerCode: String, index: Int): String? {
+    fun deriveSendAddress(ctx: Context, peerCode: String, index: Int,
+                          scheme: Scheme = Scheme.BIP47): String? {
         val (pub, cc) = decode(peerCode) ?: return null
-        return sendAddress(mine(ctx), pub, cc, index)
+        return sendAddress(mine(ctx), pub, cc, index, scheme)
     }
 
     /** True if a string looks like a BIP-47 payment code. */
@@ -216,13 +246,25 @@ object PaymentCode {
     /** Wallet/QR flow (no chat receipt): derive a fresh address using a stored
      *  per-code counter, then advance it so a re-send derives a new one. The
      *  recipient detects it via blind-scan. */
-    fun nextWalletSendAddress(ctx: Context, peerCode: String): String? {
-        val p = ctx.getSharedPreferences(IDX_PREFS, Context.MODE_PRIVATE)
-        val key = "walletsend.$peerCode"
-        val i = maxOf(0, p.getInt(key, 0))
+    /** Wallet/QR flow: the address to pay next, and the index it used. Does NOT advance the
+     *  counter — [didSendWallet] does, and only once the transaction is actually broadcast. An
+     *  index burnt by a cancelled review would push later payments past the recipient's look-ahead
+     *  window, where their wallet stops looking. */
+    fun nextWalletSendAddress(ctx: Context, peerCode: String): Pair<String, Int>? {
+        val i = walletSendIndex(ctx, peerCode)
         val addr = deriveSendAddress(ctx, peerCode, i) ?: return null
-        p.edit().putInt(key, i + 1).apply()
-        return addr
+        return addr to i
+    }
+
+    fun walletSendIndex(ctx: Context, peerCode: String): Int =
+        maxOf(0, idxPrefs(ctx).getInt("walletsend.$peerCode", 0))
+
+    /** Record that the wallet-flow payment at [index] was broadcast, so the next one derives a
+     *  fresh address. Monotonic: a stale call can never move the counter backwards. */
+    fun didSendWallet(ctx: Context, peerCode: String, index: Int) {
+        val key = "walletsend.$peerCode"
+        val p = idxPrefs(ctx)
+        if (index + 1 > p.getInt(key, 0)) p.edit().putInt(key, index + 1).apply()
     }
 
     // MARK: - Receiving from a peer's payment code (receipt-triggered)
@@ -232,7 +274,7 @@ object PaymentCode {
     fun nextReceiveKey(ctx: Context, peerCode: String): IncomingKey? {
         val (pub, cc) = decode(peerCode) ?: return null
         val i = receivedCount(ctx, peerCode)
-        val k = receiveKey(mine(ctx), pub, cc, i) ?: return null
+        val k = receiveKey(mine(ctx), pub, cc, i, Scheme.BIP47) ?: return null
         return IncomingKey(k.wif, k.address, k.pubkeyHex, i)
     }
 
@@ -247,18 +289,39 @@ object PaymentCode {
 
     /** Peek the incoming key at a SPECIFIC index without advancing state — used by the
      *  look-ahead scan to check candidate addresses on-chain before they're claimed. */
-    fun receiveKeyAt(ctx: Context, peerCode: String, index: Int): IncomingKey? {
+    fun receiveKeyAt(ctx: Context, peerCode: String, index: Int,
+                     scheme: Scheme = Scheme.BIP47): IncomingKey? {
         val (pub, cc) = decode(peerCode) ?: return null
-        val k = receiveKey(mine(ctx), pub, cc, index) ?: return null
+        val k = receiveKey(mine(ctx), pub, cc, index, scheme) ?: return null
         return IncomingKey(k.wif, k.address, k.pubkeyHex, index)
     }
 
-    /** The next [gap] unclaimed incoming addresses (receivedCount … +gap-1) — a BIP-47
-     *  look-ahead window to scan on-chain, so a payment is found even if its notification
-     *  DM was lost. */
-    fun lookaheadAddresses(ctx: Context, peerCode: String, gap: Int): List<Pair<Int, String>> {
-        val start = receivedCount(ctx, peerCode)
-        return (start until start + gap).mapNotNull { i -> receiveKeyAt(ctx, peerCode, i)?.let { i to it.address } }
+    /** One address to check on-chain, and what it takes to spend it. */
+    data class Candidate(val index: Int, val address: String, val scheme: Scheme)
+
+    /** Hard ceiling on how far a sweep will ever derive. Bounds the addresses a single scan asks
+     *  the node for, whatever a runaway counter says. */
+    const val MAX_SCAN_INDEX = 60
+
+    /**
+     * Addresses to check on-chain for payments from [peerCode].
+     *
+     * [full] widens the sweep to BOTH derivation schemes starting at index 0. That is what finds a
+     * coin paid under the pre-0.2.4 scheme, or one at an index the counter already ran past. Each
+     * batch costs the node a UTXO-set scan, so the routine background pass leaves it off and the
+     * user's explicit "check for payments" (and the one-time sweep after upgrading) turn it on.
+     */
+    fun candidates(ctx: Context, peerCode: String, gap: Int, full: Boolean): List<Candidate> {
+        val received = receivedCount(ctx, peerCode)
+        val end = minOf(received + gap, MAX_SCAN_INDEX)
+        val start = if (full) 0 else minOf(received, end)
+        val schemes = if (full) Scheme.entries else listOf(Scheme.BIP47)
+        val out = ArrayList<Candidate>()
+        for (scheme in schemes) for (i in start until end) {
+            val k = receiveKeyAt(ctx, peerCode, i, scheme) ?: continue
+            out.add(Candidate(i, k.address, scheme))
+        }
+        return out
     }
 
     private fun idxPrefs(ctx: Context) = ctx.getSharedPreferences(IDX_PREFS, Context.MODE_PRIVATE)
@@ -478,20 +541,39 @@ object PaymentCode {
      *  indices — the correctness gate. false ⇒ DO NOT ship. */
     fun selfTest(ctx: Context): Boolean {
         val alice = newIdentity(); val bob = newIdentity()
-        for (i in 0 until 4) {
-            val sent = sendAddress(alice, bob.pub, bob.chainCode, i)
-            val recv = receiveKey(bob, alice.pub, alice.chainCode, i)
+        // Send and receive must agree under BOTH schemes: the current one for new payments, the
+        // legacy one because coins are already sitting at addresses derived that way.
+        for (scheme in Scheme.entries) for (i in 0 until 4) {
+            val sent = sendAddress(alice, bob.pub, bob.chainCode, i, scheme)
+            val recv = receiveKey(bob, alice.pub, alice.chainCode, i, scheme)
             if (sent == null || recv == null || sent != recv.address) return false
         }
-        // Cross-platform vector: fixed identities must derive fixed addresses, so
-        // iOS↔Android agree (else a payment lands where the peer can't spend).
-        // These exact values are asserted identically in the iOS PaymentCode.swift.
+        return identityKeySelfTest() && schemeVectorSelfTest() && interopTestBIP47() &&
+            notificationSelfTest() && notificationSendSelfTest(ctx)
+    }
+
+    /** Cross-platform + cross-version pin. Fixed identities must derive fixed addresses so iOS and
+     *  Android agree (a payment has to land where the peer can spend it), and the LEGACY vectors
+     *  must never move: they are the addresses coins are already sitting at. The two schemes must
+     *  also produce different addresses, or the dual scan would be pointless. These exact values
+     *  are asserted identically in the iOS PaymentCode.swift. */
+    fun schemeVectorSelfTest(): Boolean {
         val fa = Identity(ByteArray(32) { 0x11 }, ByteArray(32) { 0x22 })
         val fb = Identity(ByteArray(32) { 0x33 }, ByteArray(32) { 0x44 })
-        val expected = arrayOf("1Jfmg4Mjv8D8R1qATFGptrt3ewFMaie44m", "1JqHx2fwjRuu8pdZAwqZnqELTSq72gbq7P",
+        // Pre-0.2.4 derivation (ECDH with the payment-code node key itself).
+        val legacy = arrayOf("1Jfmg4Mjv8D8R1qATFGptrt3ewFMaie44m", "1JqHx2fwjRuu8pdZAwqZnqELTSq72gbq7P",
             "134f5JPNEQnfwYpGRrNL6jdbfz7A2THPdy", "1Assi9LXuvidasUz8ZyNqkeAXHVHhHc6EJ")
-        for (i in 0 until 4) if (sendAddress(fa, fb.pub, fb.chainCode, i) != expected[i]) return false
-        return identityKeySelfTest() && interopTestBIP47() && notificationSelfTest() && notificationSendSelfTest(ctx)
+        // Spec derivation (ECDH with a0 / A0).
+        val spec = arrayOf("1NGaVgMe8YqdBcMSNnimrEfEii3nu3KNmb", "12dK8HJJwhEiYFWeV8nVDtFjPC9zxyUsty",
+            "1APnXSp6E1USBYcaU5f6VyyW1dsA1WFF8V", "166qwqGWggo7T2ssSShyt291FjHtPqnx21")
+        for (i in 0 until 4) {
+            val l = sendAddress(fa, fb.pub, fb.chainCode, i, Scheme.LEGACY) ?: return false
+            val b = sendAddress(fa, fb.pub, fb.chainCode, i, Scheme.BIP47) ?: return false
+            if (l != legacy[i] || b != spec[i] || l == b) return false
+            if (receiveKey(fb, fa.pub, fa.chainCode, i, Scheme.LEGACY)?.address != l) return false
+            if (receiveKey(fb, fa.pub, fa.chainCode, i, Scheme.BIP47)?.address != b) return false
+        }
+        return true
     }
 
     /** The paper-backup key must round-trip EXACTLY (export → parse → same 64 bytes) and must
@@ -579,21 +661,51 @@ object PaymentCode {
             ntx.payload.size == 80
     }
 
-    /** Ecosystem-interop gate: the canonical BIP-47 spec vectors (Alice→Bob). Proves a PyBLØCK
-     *  PayNym derives the SAME stealth addresses as Samourai/Sparrow/other BIP-47 wallets, so
-     *  payments interoperate across the ecosystem. Alice's a0 + Bob's payment code are the
-     *  published vector values (independently verified against the spec). */
+    /**
+     * Ecosystem-interop gate: the canonical BIP-47 spec vectors, run through the PRODUCTION
+     * derivation. Bob's real payment-code node key (recomputed from the published test mnemonic)
+     * is loaded as an ordinary Identity, so exactly the code a live wallet runs is exercised.
+     *
+     * The previous version of this test fed Alice's already-derived a0 in AS the node key, which
+     * skipped the one step that was wrong. It passed for months while production was off-spec and
+     * could neither pay nor be paid by Samourai or Sparrow.
+     */
     fun interopTestBIP47(): Boolean {
-        val aliceA0 = "8d6a8ecd8ee5e0042ad0cb56e3a971c760b5145c3917a8e7beaf0ed92d7a520c".hexToBytes() ?: return false
-        val alice = Identity(aliceA0, ByteArray(32)) // chaincode unused for send
-        val bob = decode("PM8TJS2JxQ5ztXUpBBRnpTbcUXbUHy2T1abfrb3KkAAtMEGNbey4oumH7Hc578WgQJhPjBxteQ5GHHToTYHE3A1w6p7tU6KSoFmWBVbFGjKPisZDbP97") ?: return false
-        val vectors = arrayOf(
+        val bobPriv = "b7f3d1104fc72d8226b9d78ce9340aa8be76d979390c22cf491104775813a642".hexToBytes() ?: return false
+        val bobCc = "1db1243aaa57c7fbea3072249c1bd4dab9482b4fee4d25e1c69707e8144dc137".hexToBytes() ?: return false
+        val bob = Identity(bobPriv, bobCc)
+
+        // 1. That key really is the vector's Bob: it encodes to his published payment code.
+        if (encode(bob) != "PM8TJS2JxQ5ztXUpBBRnpTbcUXbUHy2T1abfrb3KkAAtMEGNbey4oumH7Hc578WgQJhPjBxteQ5GHHToTYHE3A1w6p7tU6KSoFmWBVbFGjKPisZDbP97") return false
+
+        // 2. His notification address (index 0 of his own code) — the published value.
+        val b0 = ckdPub(bob.pub, bob.chainCode, 0) ?: return false
+        if (VanityCrypto.p2pkhAddress(b0) != "1ChvUUvht2hUQufHBXF8NgLhW8SwE2ecGV") return false
+
+        val alice = decode("PM8TJTLJbPRGxSbc8EJi42Wrr6QbNSaSSVJ5Y3E4pbCYiTHUskHg13935Ubb7q8tx9GVbh2UuRnBc3WSyJHhUrw8KhprKnn9eDznYGieTzFcwQRya4GA")
+            ?: return false
+
+        // 3. RECEIVE: Bob being paid by Alice must derive the ten published payment addresses, each
+        //    with a key he can spend. This is the path an incoming Samourai/Sparrow payment takes.
+        val paid = arrayOf(
             "141fi7TY3h936vRUKh1qfUZr8rSBuYbVBK", "12u3Uued2fuko2nY4SoSFGCoGLCBUGPkk6",
             "1FsBVhT5dQutGwaPePTYMe5qvYqqjxyftc", "1CZAmrbKL6fJ7wUxb99aETwXhcGeG3CpeA",
             "1KQvRShk6NqPfpr4Ehd53XUhpemBXtJPTL", "1KsLV2F47JAe6f8RtwzfqhjVa8mZEnTM7t",
             "1DdK9TknVwvBrJe7urqFmaxEtGF2TMWxzD", "16DpovNuhQJH7JUSZQFLBQgQYS4QB9Wy8e",
             "17qK2RPGZMDcci2BLQ6Ry2PDGJErrNojT5", "1GxfdfP286uE24qLZ9YRP3EWk2urqXgC4s")
-        for (i in vectors.indices) if (sendAddress(alice, bob.first, bob.second, i) != vectors[i]) return false
+        for (i in paid.indices) {
+            if (receiveKey(bob, alice.first, alice.second, i)?.address != paid[i]) return false
+        }
+
+        // 4. SEND: the same production path in the other direction, against values computed by an
+        //    independent implementation of the spec from the same published key material.
+        val sending = arrayOf(
+            "17SSoP6pwU1yq6fTATEQ7gLMDWiycm68VT", "1KNFAqYPoiy29rTQF44YT3v9tvRJYi15Xf",
+            "1HQkbVeZoLoDpkZi1MB6AgaCs5ZbxTBdZA", "14GfiZb1avg3HSiacMLaoG5xdfPjc1Unvm",
+            "15yHVDiYJn146EKHuJiN79L9S2EZAjGVaK")
+        for (i in sending.indices) {
+            if (sendAddress(bob, alice.first, alice.second, i) != sending[i]) return false
+        }
         return true
     }
 }

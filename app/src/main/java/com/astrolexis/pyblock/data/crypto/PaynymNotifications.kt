@@ -19,6 +19,18 @@ import java.util.UUID
 object PaynymNotifications {
     private const val PREFS = "pyblock_paynym_extsenders"
     private const val KEY = "senders_v1"
+    /** Set once the post-upgrade dual-scheme sweep has run. Before that, every pass is a full one,
+     *  so a coin paid under the pre-0.2.4 derivation is found without the user doing anything. */
+    private const val KEY_FULLSWEEP = "fullsweep_v2_done"
+    /** Look-ahead window. Matches iOS: a shorter window on one platform loses payments the other
+     *  would have found. */
+    const val GAP = 20
+
+    /** Internal: the chat sweep widens its own peer windows in the same pass. */
+    fun fullSweepPending(ctx: Context) =
+        !ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_FULLSWEEP, false)
+    private fun markFullSweepDone(ctx: Context) =
+        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(KEY_FULLSWEEP, true).apply()
 
     private fun load(ctx: Context): MutableSet<String> =
         ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getStringSet(KEY, emptySet())?.toMutableSet() ?: mutableSetOf()
@@ -37,8 +49,10 @@ object PaynymNotifications {
 
     /** Look-ahead candidates (index → address) for every known sender (ext senders + contacts)
      *  — exposed so the app-wide sweep can batch them into ONE wallet_utxos call. */
-    fun candidates(ctx: Context, gap: Int = 8): Map<String, List<Pair<Int, String>>> =
-        knownSenders(ctx).associateWith { code -> PaymentCode.lookaheadAddresses(ctx, code, gap) }
+    fun candidates(ctx: Context, gap: Int = GAP, full: Boolean = false): Map<String, List<PaymentCode.Candidate>> {
+        val wide = full || fullSweepPending(ctx)
+        return knownSenders(ctx).associateWith { code -> PaymentCode.candidates(ctx, code, gap, wide) }
+    }
 
     @Volatile private var lastScanMs = 0L
 
@@ -47,20 +61,22 @@ object PaynymNotifications {
      *  confirmed-UTXO batch; prefer [scanWith] when the caller already has one. TTL-guarded: the
      *  RECEIVE sheet fires this on every open, and the background sweep already covers the same
      *  window — rapid re-opens must not each trigger a server-side UTXO-set scan. */
-    suspend fun scan(ctx: Context, gap: Int = 8) {
+    suspend fun scan(ctx: Context, gap: Int = GAP, full: Boolean = false) {
         val now = android.os.SystemClock.elapsedRealtime()
-        if (now - lastScanMs < 45_000) return
+        // An explicit user check must never be swallowed by the background pass's TTL.
+        if (!full && now - lastScanMs < 45_000) return
         lastScanMs = now
         val notifAddr = PaymentCode.notificationAddress(ctx) ?: return
-        val addrs = listOf(notifAddr) + candidates(ctx, gap).values.flatten().map { it.second }
-        scanWith(ctx, ConfirmedUtxos.forAddresses(addrs), gap)
+        val addrs = listOf(notifAddr) + candidates(ctx, gap, full).values.flatten().map { it.address }
+        scanWith(ctx, ConfirmedUtxos.forAddresses(addrs), gap, full)
     }
 
     /** Same pass, reusing an already-fetched confirmed-UTXO map (must cover the
      *  notification address + every known sender's look-ahead window). Checks BOTH
      *  0-conf (wallet_mempool) and CONFIRMED (wallet_utxos) — a payment that
      *  confirmed and left the mempool is otherwise invisible to the app. */
-    suspend fun scanWith(ctx: Context, confirmed: Map<String, List<Utxo>>, gap: Int = 8) {
+    suspend fun scanWith(ctx: Context, confirmed: Map<String, List<Utxo>>, gap: Int = GAP, full: Boolean = false) {
+        val wide = full || fullSweepPending(ctx)
         val notifAddr = PaymentCode.notificationAddress(ctx) ?: return
         val discovered = load(ctx)            // notification-tx-discovered senders
         val before = discovered.toSet()
@@ -83,7 +99,7 @@ object PaynymNotifications {
         // Codes not already covered by [confirmed] (contacts + this-pass discoveries) — fetch theirs.
         val newCodes = known - before
         val utxos = if (newCodes.isEmpty()) confirmed else confirmed +
-            ConfirmedUtxos.forAddresses(newCodes.flatMap { c -> PaymentCode.lookaheadAddresses(ctx, c, gap).map { it.second } })
+            ConfirmedUtxos.forAddresses(newCodes.flatMap { c -> PaymentCode.candidates(ctx, c, gap, wide).map { it.address } })
 
         // 2) import funded payments from each known sender — confirmed vs the batch
         //    over the whole window; 0-conf mempool probe only at the frontier index
@@ -93,20 +109,28 @@ object PaynymNotifications {
         PaynymClaims.mutex.withLock {
             for (code in known) {
                 val frontier = PaymentCode.receivedCount(ctx, code)
-                for ((index, address) in PaymentCode.lookaheadAddresses(ctx, code, gap)) {
-                    val funded = utxos[address].orEmpty().isNotEmpty() ||
-                        (index == frontier &&
-                            (try { ApiClient.api.walletMempool(address).txs.isNotEmpty() } catch (e: Exception) { false }))
+                for (cand in PaymentCode.candidates(ctx, code, gap, wide)) {
+                    val funded = utxos[cand.address].orEmpty().isNotEmpty() ||
+                        (cand.scheme == PaymentCode.Scheme.BIP47 && cand.index == frontier &&
+                            (try { ApiClient.api.walletMempool(cand.address).txs.isNotEmpty() } catch (e: Exception) { false }))
                     if (!funded) continue
-                    val k = PaymentCode.receiveKeyAt(ctx, code, index) ?: continue
+                    val k = PaymentCode.receiveKeyAt(ctx, code, cand.index, cand.scheme) ?: continue
+                    // The receive counter tracks the CURRENT scheme only. A legacy hit at a high
+                    // index must not push the frontier past unclaimed spec-scheme indices below it:
+                    // that would hide real coins from every later narrow sweep.
+                    val advance = cand.scheme == PaymentCode.Scheme.BIP47
                     if (WalletStore.wallets.value.any { it.address == k.address }) {
-                        PaymentCode.didReceive(ctx, code, index)
+                        if (advance) PaymentCode.didReceive(ctx, code, cand.index)
                     } else {
-                        val w = VanityWallet(UUID.randomUUID().toString(), "PayNym ← external", k.address, true, PaymentCode.RECEIVE_BIRTHDAY)
-                        if (WalletStore.add(ctx, w, k.wif)) PaymentCode.didReceive(ctx, code, index)
+                        val label = if (cand.scheme == PaymentCode.Scheme.LEGACY) "PayNym ← external (legacy)" else "PayNym ← external"
+                        val w = VanityWallet(UUID.randomUUID().toString(), label, k.address, true, PaymentCode.RECEIVE_BIRTHDAY)
+                        if (WalletStore.add(ctx, w, k.wif) && advance) PaymentCode.didReceive(ctx, code, cand.index)
                     }
                 }
             }
         }
+        // A pass that got all the way here has covered both schemes from index 0 for every known
+        // sender, so later passes can go back to the narrow window.
+        if (wide) markFullSweepDone(ctx)
     }
 }

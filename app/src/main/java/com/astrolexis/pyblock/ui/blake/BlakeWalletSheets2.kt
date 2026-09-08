@@ -262,7 +262,8 @@ fun PaynymSheet(onCopy: (String) -> Unit, paste: () -> String, onClose: () -> Un
                     Text(mid(c.code), style = Blake.mono(8f), color = Blake.faint)
                 }
                 Text("CHECK", style = Blake.mono(9f), color = Blake.pp, modifier = Modifier.clickableNoRipple {
-                    scope.launch { PaynymNotifications.scan(ctx); msg = "Checked ${c.displayName}." }
+                    // An explicit check sweeps both derivation schemes from index 0.
+                    scope.launch { PaynymNotifications.scan(ctx, full = true); msg = "Checked ${c.displayName}." }
                 })
             }
         }

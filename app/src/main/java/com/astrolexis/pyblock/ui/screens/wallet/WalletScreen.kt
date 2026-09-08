@@ -100,6 +100,10 @@ class WalletViewModel(app: Application) : AndroidViewModel(app) {
                     com.astrolexis.pyblock.data.crypto.PaymentCode.markNotified(ctx, paynymCode)
                 }
                 val txid = node(meta).send(to, sats, feeSatVb, sendMax, selectedKeys)
+                // The payment is on the wire: only NOW does the PayNym send index advance. Burning
+                // an index on a cancelled review would eventually push a payment past the
+                // recipient's look-ahead window, where their wallet stops looking for it.
+                if (paynymCode != null) com.astrolexis.pyblock.data.crypto.PaymentCode.didSendWallet(ctx, paynymCode, com.astrolexis.pyblock.data.crypto.PaymentCode.walletSendIndex(ctx, paynymCode))
                 sentSats = if (sendMax) bal else sats
                 sendResult = getApplication<Application>().getString(R.string.wallet_send_result_ok, txid.take(20))
                 // Hand a receipt back to the chat, if this pay came from a DM.
@@ -290,7 +294,9 @@ private fun ReceiveScreen(vm: WalletViewModel, wallets: List<VanityWallet>, onBa
     var picked by remember { mutableStateOf<VanityWallet?>(null) }
     var showHelp by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
-        com.astrolexis.pyblock.data.crypto.PaynymNotifications.scan(ctx)
+        // Opening RECEIVE is the user asking "did anything arrive?" — sweep both derivation
+        // schemes from index 0 rather than just the frontier window.
+        com.astrolexis.pyblock.data.crypto.PaynymNotifications.scan(ctx, full = true)
         // Explain PayNym once, the first time — so a new user knows how receiving works
         // and doesn't think a payment "never arrived".
         val p = ctx.getSharedPreferences("pyblock_prefs", android.content.Context.MODE_PRIVATE)
@@ -1064,7 +1070,9 @@ private fun SendPane(vm: WalletViewModel, w: VanityWallet, node: BdkNode,
                         // Capture the PM code FIRST (it's overwritten) for the BIP-47 notification.
                         if (isPaynym) {
                             peerCode = to
-                            com.astrolexis.pyblock.data.crypto.PaymentCode.nextWalletSendAddress(ctx, to)?.let { to = it }
+                            // Derive only — the counter advances when the send is broadcast.
+                            com.astrolexis.pyblock.data.crypto.PaymentCode.nextWalletSendAddress(ctx, to)
+                                ?.let { (addr, _) -> to = addr }
                         }
                         confirming = true
                     }

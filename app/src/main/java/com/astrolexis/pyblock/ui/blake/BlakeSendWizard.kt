@@ -166,6 +166,7 @@ fun SendWizardSheet(
                 // A PayNym payment code (PM…) → derive a fresh BIP-47 send address (advances the per-code counter).
                 var dest = toAddress.trim()
                 val peerCode = if (com.astrolexis.pyblock.data.crypto.PaymentCode.looksLikePaymentCode(dest)) dest else null
+                var paynymIdx: Int? = null
                 if (peerCode != null) {
                     // BIP-47: the FIRST-EVER payment to a peer needs an on-chain notification tx so the
                     // recipient learns our payment code and can detect (and spend) the stealth payment.
@@ -174,8 +175,9 @@ fun SendWizardSheet(
                         BlakeSpend.sendNotification(ctx, peerCode, effectiveFee.toLong())
                         notifiedNow = true
                     }
-                    dest = com.astrolexis.pyblock.data.crypto.PaymentCode.nextWalletSendAddress(ctx, peerCode)
+                    val next = com.astrolexis.pyblock.data.crypto.PaymentCode.nextWalletSendAddress(ctx, peerCode)
                         ?: throw Exception("Couldn't derive a PayNym address from that code.")
+                    dest = next.first; paynymIdx = next.second
                 }
                 val contactValue = peerCode ?: dest
                 if (ricochet) {
@@ -188,6 +190,11 @@ fun SendWizardSheet(
                     BlakeSentStore.add(txid, recorded, dest, coinKeys, false)
                     result = WizardResult(listOf(txid), false, recorded, sendMax, dest, contactValue)
                 }
+                // Broadcast landed: only now does the PayNym index move on. An index burnt by a
+                // cancelled send would eventually push a payment past the recipient's look-ahead
+                // window, where their wallet stops looking for it.
+                if (peerCode != null && paynymIdx != null)
+                    com.astrolexis.pyblock.data.crypto.PaymentCode.didSendWallet(ctx, peerCode, paynymIdx)
                 BlakeBalanceStore.refresh(ctx)
             } catch (e: Exception) {
                 android.util.Log.e("BlakeSend", "send failed: ${e::class.java.simpleName}: ${e.message}", e)

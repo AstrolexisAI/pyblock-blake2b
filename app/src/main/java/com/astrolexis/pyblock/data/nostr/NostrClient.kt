@@ -241,13 +241,18 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
             // kind-0 profile advertises a code (that set is unbounded).
             val convs = _state.value.conversations.keys
             val peers = _state.value.peerPaynyms.filterKeys { it in convs || it in interestPeers }
-            val peerCands = peers.mapValues { (_, code) -> PaymentCode.lookaheadAddresses(ctx, code, 8) }
+            // Widen to both derivation schemes from index 0 while the one-time post-upgrade sweep
+            // is still pending, so a coin paid under the pre-0.2.4 scheme surfaces on its own.
+            val wide = PaynymNotifications.fullSweepPending(ctx)
+            val peerCands = peers.mapValues { (_, code) ->
+                PaymentCode.candidates(ctx, code, PaynymNotifications.GAP, wide)
+            }
             val extCands = PaynymNotifications.candidates(ctx)
             val notifAddr = PaymentCode.notificationAddress(ctx)
             WalletStore.ensureLoaded(ctx)
             val candidates = buildList {
-                addAll(peerCands.values.flatten().map { it.second })
-                addAll(extCands.values.flatten().map { it.second })
+                addAll(peerCands.values.flatten().map { it.address })
+                addAll(extCands.values.flatten().map { it.address })
                 notifAddr?.let { add(it) }
             }
             val walletAddrs = WalletStore.wallets.value.map { it.address }
@@ -279,10 +284,24 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
                 for ((peer, cands) in peerCands) {
                     val code = peers[peer] ?: continue
                     val frontier = PaymentCode.receivedCount(ctx, code)
-                    val top = cands.filter { (i, a) ->
-                        confirmed[a].orEmpty().isNotEmpty() || (i == frontier && mempoolFunded(a))
-                    }.maxOfOrNull { it.first }
+                    val top = cands.filter {
+                        it.scheme == PaymentCode.Scheme.BIP47 &&
+                            (confirmed[it.address].orEmpty().isNotEmpty() ||
+                                (it.index == frontier && mempoolFunded(it.address)))
+                    }.maxOfOrNull { it.index }
                     if (top != null) claimIncomingPaynym(peer, upTo = top + 1)
+                    // Legacy-scheme hits are imported directly. The frontier counts spec-scheme
+                    // receipts, so claiming "up to" a legacy index would mint spec wallets for
+                    // indices nobody paid and push the frontier past coins still unclaimed.
+                    for (c in cands) {
+                        if (c.scheme != PaymentCode.Scheme.LEGACY) continue
+                        if (confirmed[c.address].orEmpty().isEmpty()) continue
+                        if (WalletStore.wallets.value.any { it.address == c.address }) continue
+                        val k = PaymentCode.receiveKeyAt(ctx, code, c.index, c.scheme) ?: continue
+                        val w = VanityWallet(java.util.UUID.randomUUID().toString(),
+                            "PayNym ← ${name(peer)} (legacy)", k.address, true, PaymentCode.RECEIVE_BIRTHDAY)
+                        WalletStore.add(ctx, w, k.wif)
+                    }
                 }
             }
             // External-sender discovery + claims (takes the claim lock itself).
@@ -487,15 +506,16 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
      *  payment whose `pyblock:paid` DM never arrived is found, claim keys up to it.
      *  Registers the peer so future sweeps cover their window, and falls back to
      *  the shared TTL-guarded sweep when the cache had nothing. */
-    suspend fun scanPaynymLookahead(peer: String, gap: Int = 8) {
+    suspend fun scanPaynymLookahead(peer: String, gap: Int = PaynymNotifications.GAP) {
         val code = _state.value.peerPaynyms[peer] ?: return
         interestPeers.add(peer)
-        val cands = PaymentCode.lookaheadAddresses(ctx, code, gap)
+        val cands = PaymentCode.candidates(ctx, code, gap, full = false)
         val confirmed = lastConfirmedUtxos
         val frontier = PaymentCode.receivedCount(ctx, code)
-        val top = cands.filter { (i, a) ->
-            confirmed[a].orEmpty().isNotEmpty() || (i == frontier && mempoolFunded(a))
-        }.maxOfOrNull { it.first }
+        val top = cands.filter {
+            confirmed[it.address].orEmpty().isNotEmpty() ||
+                (it.index == frontier && mempoolFunded(it.address))
+        }.maxOfOrNull { it.index }
         if (top != null) PaynymClaims.mutex.withLock { claimIncomingPaynym(peer, upTo = top + 1) }
         else scanAllPaynymLookahead()   // cache had nothing for this peer → shared sweep picks it up
     }

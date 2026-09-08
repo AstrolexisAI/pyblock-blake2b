@@ -128,4 +128,8 @@ dependencies {
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     testImplementation("junit:junit:4.13.2")
+    // secp256k1 for the JVM so the BIP-47 derivation vectors can be run by `./gradlew test`
+    // instead of only by the startup check on a device. Test-only; not in the APK.
+    testImplementation("fr.acinq.secp256k1:secp256k1-kmp-jvm:0.18.0")
+    testImplementation("fr.acinq.secp256k1:secp256k1-kmp-jni-jvm-darwin:0.18.0")
 }
