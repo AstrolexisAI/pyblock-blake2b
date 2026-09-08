@@ -699,6 +699,8 @@
     <string name="backup_header_subtitle">"WALLET · PAPER BACKUP"</string>
     <string name="backup_warning_banner">"!  PRIVATE KEYS INSIDE — anyone who reads this can spend your bitcoin. Keep it offline &amp; safe."</string>
     <string name="backup_your_paynym">"YOUR PAYNYM"</string>
+    <string name="backup_paynym_key">"PAYNYM IDENTITY KEY — PRIVATE"</string>
+    <string name="backup_paynym_key_note">"Restores your PayNym on a new device. Without it, coins paid to your PayNym cannot be recovered."</string>
     <string name="backup_funded_addresses">"FUNDED ADDRESSES (%1$d)"</string>
     <string name="backup_no_funded">"No funded addresses. Fund one, then export again to back up its key."</string>
     <string name="backup_balance_sats">"%1$s sats"</string>

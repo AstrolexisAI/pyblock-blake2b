@@ -470,7 +470,10 @@ private fun AddressControl(vm: WalletViewModel, wallets: List<VanityWallet>, onO
                     }
                     val code = com.astrolexis.pyblock.data.crypto.PaymentCode.myCode(ctx)
                     val date = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
-                    val file = com.astrolexis.pyblock.data.wallet.BackupPdf.generate(ctx, entries, code, com.astrolexis.pyblock.data.crypto.PaynymName.cosmic(code), date)
+                    // The PRIVATE identity key goes on the sheet too — without it, PayNym-received
+                    // coins cannot be recovered on a new device (there is no seed behind them).
+                    val pnKey = runCatching { com.astrolexis.pyblock.data.crypto.PaymentCode.myIdentityKey(ctx) }.getOrNull()
+                    val file = com.astrolexis.pyblock.data.wallet.BackupPdf.generate(ctx, entries, code, com.astrolexis.pyblock.data.crypto.PaynymName.cosmic(code), date, pnKey)
                     kotlinx.coroutines.withContext(Dispatchers.Main) {
                         exporting = false
                         if (file != null) {

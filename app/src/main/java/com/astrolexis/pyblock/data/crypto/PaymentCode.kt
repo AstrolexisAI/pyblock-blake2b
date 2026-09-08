@@ -90,6 +90,85 @@ object PaymentCode {
     // unavailable, degrade to "" (feature temporarily off) rather than crash the UI.
     fun myCode(ctx: Context): String = runCatching { encode(mine(ctx)) }.getOrDefault("")
 
+    // MARK: - Identity backup / restore (paper backup + export / import)
+    //
+    // There is no seed phrase: the PayNym identity is 64 standalone bytes, and EVERY stealth address
+    // the user has ever been paid at derives from them. Lose the device without those bytes written
+    // down and the coins at those addresses are unrecoverable — no wallet or service can re-derive
+    // them. So the identity is exportable as one checksummed string that goes on the paper backup
+    // next to the WIFs, and can be imported back onto a new device.
+    //
+    // Format: "PYNYM1" + Base58Check(version 0x23, [0x01] + priv(32) + chainCode(32)).
+    // Byte-identical to iOS — a key written down on one platform restores on the other.
+
+    const val IDENTITY_KEY_TAG = "PYNYM1"
+
+    /** The private, restorable form of an identity. Treat exactly like a WIF. */
+    fun exportIdentityKey(id: Identity): String =
+        IDENTITY_KEY_TAG + base58Check(0x23.toByte(), byteArrayOf(0x01) + id.priv + id.chainCode)
+
+    /** MY identity key for the paper backup, or null when it can't be read. Never mints one —
+     *  a backup must record the REAL identity or state that it couldn't. */
+    fun myIdentityKey(ctx: Context): String? = storedIdentity(ctx)?.let { exportIdentityKey(it) }
+
+    /** Parse a "PYNYM1…" identity key. null on a bad tag, bad checksum, wrong length or a scalar
+     *  outside [1, n-1] — a mistyped key must never be accepted and replace the real one. */
+    fun parseIdentityKey(s: String): Identity? {
+        val t = s.trim().replace(" ", "").replace("\n", "").replace("\r", "")
+        if (t.length <= IDENTITY_KEY_TAG.length) return null
+        if (t.take(IDENTITY_KEY_TAG.length).uppercase() != IDENTITY_KEY_TAG) return null
+        val raw = base58CheckDecode(t.substring(IDENTITY_KEY_TAG.length)) ?: return null
+        if (raw.size != 66 || raw[0] != 0x23.toByte() || raw[1] != 0x01.toByte()) return null
+        val priv = raw.copyOfRange(2, 34)
+        if (!runCatching { secp.secKeyVerify(priv) }.getOrDefault(false)) return null
+        return Identity(priv, raw.copyOfRange(34, 66))
+    }
+
+    /** True when this device already holds an identity — i.e. an import would REPLACE it. */
+    fun identityExists(ctx: Context): Boolean = storedIdentity(ctx) != null
+
+    /** Read the stored identity WITHOUT creating one. [mine] mints on first run; the backup and
+     *  import paths must never do that as a side effect of looking. */
+    private fun storedIdentity(ctx: Context): Identity? {
+        cached?.let { return it }
+        return runCatching {
+            val raw = SecurePrefs.open(ctx, PREFS, "${PREFS}_legacy", resetOnCorruption = false)
+                .getString(KEY_ID, null)?.hexToBytes()
+            if (raw == null || raw.size != 64) null
+            else Identity(raw.copyOfRange(0, 32), raw.copyOfRange(32, 64))
+        }.getOrNull()
+    }
+
+    /** Import an identity, REPLACING whatever this device holds. Destructive and fund-critical —
+     *  only call after an explicit, informed user confirmation.
+     *
+     *  When the imported key differs from the stored one, the per-peer receive counters and the
+     *  "already notified" flags describe the OLD identity. Leaving a receive index at, say, 4 would
+     *  make the scan start at index 4 of the RESTORED identity and skip payments 0…3 — real coins
+     *  the user would never see. So they are cleared and receiving starts again from 0. Send
+     *  counters are kept: a higher send index only ever means a fresher address, never a lost coin. */
+    fun importIdentity(ctx: Context, id: Identity): Boolean {
+        val current = storedIdentity(ctx)
+        val same = current != null &&
+            current.priv.contentEquals(id.priv) && current.chainCode.contentEquals(id.chainCode)
+        val ok = runCatching {
+            SecurePrefs.open(ctx, PREFS, "${PREFS}_legacy", resetOnCorruption = false)
+                .edit().putString(KEY_ID, (id.priv + id.chainCode).toHexStr()).commit()
+        }.getOrDefault(false)
+        if (!ok) return false
+        cached = id
+        if (!same) resetPerPeerState(ctx)
+        return true
+    }
+
+    /** Drop every per-peer receive index and notification flag (see [importIdentity]). */
+    private fun resetPerPeerState(ctx: Context) {
+        val p = idxPrefs(ctx)
+        val e = p.edit()
+        for (k in p.all.keys) if (k.startsWith("recv.") || k.startsWith("notified.")) e.remove(k)
+        e.apply()
+    }
+
     /** Parse a peer's "PM8T…" code → (33-byte pubkey, 32-byte chaincode). */
     fun decode(code: String): Pair<ByteArray, ByteArray>? {
         val data = base58CheckDecode(code) ?: return null
@@ -412,7 +491,38 @@ object PaymentCode {
         val expected = arrayOf("1Jfmg4Mjv8D8R1qATFGptrt3ewFMaie44m", "1JqHx2fwjRuu8pdZAwqZnqELTSq72gbq7P",
             "134f5JPNEQnfwYpGRrNL6jdbfz7A2THPdy", "1Assi9LXuvidasUz8ZyNqkeAXHVHhHc6EJ")
         for (i in 0 until 4) if (sendAddress(fa, fb.pub, fb.chainCode, i) != expected[i]) return false
-        return interopTestBIP47() && notificationSelfTest() && notificationSendSelfTest(ctx)
+        return identityKeySelfTest() && interopTestBIP47() && notificationSelfTest() && notificationSendSelfTest(ctx)
+    }
+
+    /** The paper-backup key must round-trip EXACTLY (export → parse → same 64 bytes) and must
+     *  reject tampering: one flipped character has to fail the checksum rather than restore a
+     *  different identity. This is the gate on the only path back from a lost device. */
+    fun identityKeySelfTest(): Boolean {
+        repeat(8) {
+            val id = newIdentity()
+            val k = exportIdentityKey(id)
+            if (!k.startsWith(IDENTITY_KEY_TAG)) return false
+            val back = parseIdentityKey(k) ?: return false
+            if (!back.priv.contentEquals(id.priv) || !back.chainCode.contentEquals(id.chainCode)) return false
+            // Whitespace/newlines from a scanned or hand-typed key must not matter.
+            val padded = parseIdentityKey("  $k\n") ?: return false
+            if (!padded.priv.contentEquals(id.priv)) return false
+            // A single mutated character must be rejected outright.
+            val i = IDENTITY_KEY_TAG.length + 3
+            val chars = k.toCharArray()
+            chars[i] = if (chars[i] == 'A') 'B' else 'A'
+            if (parseIdentityKey(String(chars)) != null) return false
+            // A payment code is not an identity key, and vice versa.
+            if (parseIdentityKey(encode(id)) != null) return false
+            if (decode(k) != null) return false
+        }
+        // Fixed cross-platform vector: a key written down on iOS must restore on Android and vice
+        // versa. The identical string is asserted in the iOS PaymentCode.swift.
+        val fixed = Identity(ByteArray(32) { it.toByte() }, ByteArray(32) { (it + 32).toByte() })
+        if (exportIdentityKey(fixed) != "PYNYM12YDXcFmXAdNzFohe7to2fyviapfBUYKQ7yuf3Sdofq6pifY7zE2GHjGvDBa48MLvC7e2oLETdrh2y2deHA14Y8CSwg1keLDH") return false
+        val rt = parseIdentityKey(exportIdentityKey(fixed)) ?: return false
+        if (!rt.priv.contentEquals(fixed.priv) || !rt.chainCode.contentEquals(fixed.chainCode)) return false
+        return true
     }
 
     /** SEND-side round trip: blind MY code toward a peer with a designated input key +

@@ -47,7 +47,11 @@ object BackupPdf {
         this.color = color; style = Paint.Style.STROKE; strokeWidth = w; isAntiAlias = true
     }
 
-    fun generate(ctx: Context, entries: List<Entry>, paynym: String?, cosmic: String?, dateText: String): File? = try {
+    /** [paynym] is the shareable PM8T… code; [paynymKey] is the PRIVATE PYNYM1… identity key that
+     *  restores the PayNym on a new device. Pass both for a full-wallet backup — the PayNym has no
+     *  seed behind it, so a sheet without the identity key cannot bring those coins back. */
+    fun generate(ctx: Context, entries: List<Entry>, paynym: String?, cosmic: String?, dateText: String,
+                 paynymKey: String? = null): File? = try {
         val doc = PdfDocument()
         val contentW = PAGE_W - MARGIN * 2
         var pageNum = 1
@@ -88,15 +92,28 @@ object BackupPdf {
             MARGIN + 8, y + 8, paint(8f, RED, true))
         y += warnH + 16
 
-        // PayNym block
-        if (paynym != null) {
-            val h = 108f
+        // PayNym block — public code (shareable) plus, when available, the PRIVATE identity key.
+        // Losing that key with no copy makes every coin ever paid to this PayNym unrecoverable, so
+        // it belongs on the paper backup with the same weight as a WIF.
+        if (paynym != null || paynymKey != null) {
+            val h = if (paynymKey != null) 212f else 108f
             box(MARGIN, y, contentW, h, GREEN, 1f)
-            qrBitmap(paynym, 84)?.let { c.drawBitmap(it, MARGIN + 10, y + 12, null) }
-            val tx = MARGIN + 108
-            str(ctx.getString(R.string.backup_your_paynym), tx, y + 12, paint(11f, GREEN, true))
-            str(cosmic ?: "", tx, y + 28, paint(18f, INK, true))
-            wrap(paynym, tx, y + 56, PAGE_W - MARGIN - tx, 8f)
+            if (paynym != null) {
+                qrBitmap(paynym, 84)?.let { c.drawBitmap(it, MARGIN + 10, y + 12, null) }
+                val tx = MARGIN + 108
+                str(ctx.getString(R.string.backup_your_paynym), tx, y + 12, paint(11f, GREEN, true))
+                str(cosmic ?: "", tx, y + 28, paint(18f, INK, true))
+                wrap(paynym, tx, y + 56, PAGE_W - MARGIN - tx, 8f)
+            }
+            if (paynymKey != null) {
+                val ky = y + if (paynym != null) 102f else 6f
+                rule(ky, Color.rgb(217, 217, 217), 0.75f)
+                str(ctx.getString(R.string.backup_paynym_key), MARGIN + 10, ky + 6, paint(9f, RED, true))
+                qrBitmap(paynymKey, 64)?.let { c.drawBitmap(it, MARGIN + 10, ky + 20, null) }
+                val kx = MARGIN + 84
+                wrap(paynymKey, kx, ky + 20, PAGE_W - MARGIN - kx, 8f)
+                str(ctx.getString(R.string.backup_paynym_key_note), MARGIN + 10, y + h - 18, paint(7f, DIM))
+            }
             y += h + 16
         }
 

@@ -698,6 +698,8 @@
     <string name="backup_header_subtitle">"BILLETERA · COPIA EN PAPEL"</string>
     <string name="backup_warning_banner">"!  CLAVES PRIVADAS DENTRO — quien lea esto puede gastar tu bitcoin. Guárdalo offline y seguro."</string>
     <string name="backup_your_paynym">"TU PAYNYM"</string>
+    <string name="backup_paynym_key">"CLAVE DE IDENTIDAD PAYNYM — PRIVADA"</string>
+    <string name="backup_paynym_key_note">"Restaura tu PayNym en otro dispositivo. Sin ella, las monedas pagadas a tu PayNym no se pueden recuperar."</string>
     <string name="backup_funded_addresses">"DIRECCIONES CON FONDOS (%1$d)"</string>
     <string name="backup_no_funded">"No hay direcciones con fondos. Deposita en una y vuelve a exportar para respaldar su clave."</string>
     <string name="backup_balance_sats">"%1$s sats"</string>

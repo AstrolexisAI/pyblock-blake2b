@@ -98,12 +98,29 @@ private fun RicochetChainSheet(r: RicochetRecord, onCopy: (String) -> Unit, onCl
 fun PaynymSheet(onCopy: (String) -> Unit, paste: () -> String, onClose: () -> Unit) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
-    val myCode = remember { PaymentCode.myCode(ctx) }
+    // `myCode`/`identityKey` are state, not constants: a restore replaces the identity in place.
+    var myCode by remember { mutableStateOf(PaymentCode.myCode(ctx)) }
     var contacts by remember { mutableStateOf(PaynymBook.all(ctx)) }
     var adding by remember { mutableStateOf(false) }
     var newCode by remember { mutableStateOf("") }
     var newLabel by remember { mutableStateOf("") }
     var msg by remember { mutableStateOf<String?>(null) }
+    // Identity backup / restore.
+    var identityKey by remember { mutableStateOf(runCatching { PaymentCode.myIdentityKey(ctx) }.getOrNull()) }
+    var revealed by remember { mutableStateOf(false) }
+    var restoring by remember { mutableStateOf(false) }
+    var restoreInput by remember { mutableStateOf("") }
+    var pending by remember { mutableStateOf<PaymentCode.Identity?>(null) }
+    var restoreErr by remember { mutableStateOf<String?>(null) }
+    var restoreDone by remember { mutableStateOf(false) }
+    var scanningKey by remember { mutableStateOf(false) }
+
+    if (scanningKey) {
+        com.astrolexis.pyblock.ui.components.QrScanner(title = "SCAN A PYNYM1… IDENTITY KEY",
+            onResult = { code -> restoreInput = code.trim(); restoring = true; pending = null; restoreErr = null; scanningKey = false },
+            onClose = { scanningKey = false })
+        return
+    }
 
     sheetBox("PAYNYM", Blake.pp, onClose) {
         // My code
@@ -127,6 +144,87 @@ fun PaynymSheet(onCopy: (String) -> Unit, paste: () -> String, onClose: () -> Un
         }
         Spacer(Modifier.height(6.dp))
         if (myCode.isNotEmpty()) Text("Share once. Anyone can pay you repeatedly to fresh addresses — no reuse.", style = Blake.mono(8f), color = Blake.faint)
+
+        // IDENTITY BACKUP — the PayNym has no seed phrase, so these 64 bytes are the only way back.
+        // Reveal is opt-in (as sensitive as a WIF) and restore is a two-step confirm that shows the
+        // resulting payment code before anything is written.
+        Spacer(Modifier.height(18.dp))
+        Text("IDENTITY BACKUP", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
+        Spacer(Modifier.height(6.dp))
+        Text("Your PayNym has no seed phrase — this key IS your PayNym, and it's printed on the paper backup. Without it, coins paid to your PayNym cannot be recovered on another device.",
+            style = Blake.mono(9f), color = Blake.faint)
+        Spacer(Modifier.height(10.dp))
+        val idk = identityKey
+        if (revealed && idk != null) {
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Box(Modifier.background(Blake.hero).padding(10.dp)) { QrCode(text = idk, size = 150.dp) }
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(idk, style = Blake.mono(9f), color = Blake.danger,
+                modifier = Modifier.fillMaxWidth().clickableNoRipple {
+                    com.astrolexis.pyblock.ui.components.copySensitiveToClipboard(ctx, idk, "PayNym identity key")
+                })
+            Spacer(Modifier.height(6.dp))
+            Text("⚠ Anyone holding this key can derive every payment ever sent to your PayNym. Never share it and never store it on a connected device.",
+                style = Blake.mono(8f), color = Blake.warn)
+            Spacer(Modifier.height(8.dp))
+            sheetBtn("HIDE KEY", Blake.ppDim) { revealed = false }
+        } else if (idk != null) {
+            sheetBtn("REVEAL IDENTITY KEY", Blake.warn) { revealed = true }
+        } else {
+            Text("The identity key can't be read right now. Unlock the device and reopen the app — do NOT restore over it while it can't be read.",
+                style = Blake.mono(9f), color = Blake.danger)
+        }
+        Spacer(Modifier.height(10.dp))
+        if (restoreDone) {
+            Text("✓ PayNym restored. Open each contact and tap CHECK to re-import what they sent you.",
+                style = Blake.mono(9f), color = Blake.ok)
+            Spacer(Modifier.height(8.dp))
+        }
+        if (!restoring) {
+            sheetBtn("RESTORE FROM BACKUP", Blake.ppDim) {
+                restoring = true; restoreErr = null; restoreDone = false; pending = null
+            }
+        } else {
+            sheetField(restoreInput, "PYNYM1… identity key", KeyboardType.Text) {
+                restoreInput = it; pending = null; restoreErr = null
+            }
+            Spacer(Modifier.height(6.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("⛶ SCAN", style = Blake.mono(10f), color = Blake.pp,
+                    modifier = Modifier.clickableNoRipple { scanningKey = true })
+                Spacer(Modifier.width(14.dp))
+                Text("PASTE", style = Blake.mono(10f), color = Blake.pp,
+                    modifier = Modifier.clickableNoRipple { restoreInput = paste(); pending = null; restoreErr = null })
+                Spacer(Modifier.weight(1f))
+                Text("CANCEL", style = Blake.mono(10f), color = Blake.ppDim,
+                    modifier = Modifier.clickableNoRipple { restoring = false; restoreInput = ""; pending = null; restoreErr = null })
+            }
+            Spacer(Modifier.height(8.dp))
+            val pend = pending
+            if (pend == null) {
+                sheetBtn("CHECK KEY", Blake.pp) {
+                    val id = PaymentCode.parseIdentityKey(restoreInput)
+                    if (id == null) restoreErr = "Not a valid identity key (PYNYM1…). Check for a mistyped character — the checksum rejected it."
+                    else { pending = id; restoreErr = null }
+                }
+            } else {
+                Text(if (idk == null) "This will WRITE a PayNym identity to this device."
+                     else "This REPLACES the PayNym on this device. The current one is gone unless you have its key.",
+                    style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.danger)
+                Spacer(Modifier.height(4.dp))
+                Text("Restores to: ${PaymentCode.encode(pend)}", style = Blake.mono(8f), color = Blake.pp)
+                Spacer(Modifier.height(8.dp))
+                sheetBtn("CONFIRM RESTORE", Blake.danger) {
+                    if (PaymentCode.importIdentity(ctx, pend)) {
+                        myCode = PaymentCode.myCode(ctx)
+                        identityKey = runCatching { PaymentCode.myIdentityKey(ctx) }.getOrNull()
+                        pending = null; restoring = false; restoreInput = ""; revealed = false; restoreDone = true
+                    } else restoreErr = "Could not write to secure storage. Nothing was changed."
+                }
+            }
+            restoreErr?.let { Spacer(Modifier.height(6.dp)); Text(it, style = Blake.mono(9f), color = Blake.danger) }
+        }
 
         Spacer(Modifier.height(16.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {

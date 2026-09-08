@@ -698,6 +698,8 @@
     <string name="backup_header_subtitle">"WALLET BACKUP CARTACEO"</string>
     <string name="backup_warning_banner">"!  CHIAVI PRIVATE ALL'INTERNO — chiunque legga questo può spendere i tuoi bitcoin. Tienilo offline e al sicuro."</string>
     <string name="backup_your_paynym">"IL TUO PAYNYM"</string>
+    <string name="backup_paynym_key">"CHIAVE DI IDENTITÀ PAYNYM — PRIVATA"</string>
+    <string name="backup_paynym_key_note">"Ripristina il tuo PayNym su un altro dispositivo. Senza di essa, le monete inviate al tuo PayNym non sono recuperabili."</string>
     <string name="backup_funded_addresses">"INDIRIZZI CON FONDI (%1$d)"</string>
     <string name="backup_no_funded">"Nessun indirizzo finanziato. Finanziane uno, poi esporta di nuovo per fare il backup della sua chiave."</string>
     <string name="backup_balance_sats">"%1$s sats"</string>

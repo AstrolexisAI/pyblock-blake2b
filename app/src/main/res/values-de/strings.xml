@@ -698,6 +698,8 @@
     <string name="backup_header_subtitle">"WALLET · PAPIER-BACKUP"</string>
     <string name="backup_warning_banner">"!  PRIVATE SCHLÜSSEL ENTHALTEN — wer dies liest, kann deine Bitcoin ausgeben. Offline und sicher aufbewahren."</string>
     <string name="backup_your_paynym">"DEIN PAYNYM"</string>
+    <string name="backup_paynym_key">"PAYNYM-IDENTITÄTSSCHLÜSSEL — PRIVAT"</string>
+    <string name="backup_paynym_key_note">"Stellt dein PayNym auf einem neuen Gerät wieder her. Ohne ihn sind an dein PayNym gezahlte Coins nicht wiederherstellbar."</string>
     <string name="backup_funded_addresses">"ADRESSEN MIT GUTHABEN (%1$d)"</string>
     <string name="backup_no_funded">"Keine Adressen mit Guthaben. Eine aufladen, dann erneut exportieren, um ihren Schlüssel zu sichern."</string>
     <string name="backup_balance_sats">"%1$s sats"</string>

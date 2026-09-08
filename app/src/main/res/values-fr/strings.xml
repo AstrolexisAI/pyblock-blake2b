@@ -698,6 +698,8 @@
     <string name="backup_header_subtitle">"PORTEFEUILLE · SAUVEGARDE PAPIER"</string>
     <string name="backup_warning_banner">"!  CLÉS PRIVÉES À L'INTÉRIEUR — quiconque lit ceci peut dépenser vos bitcoins. Gardez hors ligne et en sûreté."</string>
     <string name="backup_your_paynym">"VOTRE PAYNYM"</string>
+    <string name="backup_paynym_key">"CLÉ D'IDENTITÉ PAYNYM — PRIVÉE"</string>
+    <string name="backup_paynym_key_note">"Restaure votre PayNym sur un nouvel appareil. Sans elle, les fonds envoyés à votre PayNym sont irrécupérables."</string>
     <string name="backup_funded_addresses">"ADRESSES FINANCÉES (%1$d)"</string>
     <string name="backup_no_funded">"Aucune adresse approvisionnée. Approvisionne-en une, puis exporte à nouveau pour sauvegarder sa clé."</string>
     <string name="backup_balance_sats">"%1$s sats"</string>

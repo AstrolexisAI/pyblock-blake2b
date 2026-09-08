@@ -585,7 +585,10 @@ private fun exportBackup(ctx: android.content.Context, wallets: List<VanityWalle
     if (entries.isEmpty()) { android.widget.Toast.makeText(ctx, "Unlock the vault to export keys", android.widget.Toast.LENGTH_SHORT).show(); return }
     val f = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.US).format(java.util.Date())
     val paynym = runCatching { com.astrolexis.pyblock.data.crypto.PaymentCode.myCode(ctx) }.getOrNull()?.takeIf { it.isNotEmpty() }
-    val file = com.astrolexis.pyblock.data.wallet.BackupPdf.generate(ctx, entries, paynym, null, f)
+    // The PRIVATE identity key too: it is the only way to recover PayNym-received coins on a new
+    // device (there is no seed to re-derive it from).
+    val paynymKey = runCatching { com.astrolexis.pyblock.data.crypto.PaymentCode.myIdentityKey(ctx) }.getOrNull()
+    val file = com.astrolexis.pyblock.data.wallet.BackupPdf.generate(ctx, entries, paynym, null, f, paynymKey)
     if (file == null) { android.widget.Toast.makeText(ctx, "Export failed", android.widget.Toast.LENGTH_SHORT).show(); return }
     val uri = androidx.core.content.FileProvider.getUriForFile(ctx, "${ctx.packageName}.fileprovider", file)
     val intent = android.content.Intent(android.content.Intent.ACTION_VIEW)
