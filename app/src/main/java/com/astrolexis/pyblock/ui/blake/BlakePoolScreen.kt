@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -84,15 +85,47 @@ fun BlakePoolScreen() {
             // KPI card
             Column(Modifier.fillMaxWidth().blakeCard()) {
                 Row(Modifier.fillMaxWidth()) {
-                    BlakeStat(hashrate(stats?.networkHashrateThs), "network hashrate")
+                    BlakeStat(hashrate(stats?.poolHashrateThs), "pool hashrate")
                     Spacer(Modifier.weight(1f))
                     BlakeStat("${stats?.miners ?: 0}", "miners", Blake.fg, alignEnd = true)
                 }
                 Spacer(Modifier.height(18.dp))
                 Row(Modifier.fillMaxWidth()) {
-                    BlakeStat(stats?.blockHeight?.toString() ?: "—", "block height", Blake.fg)
+                    BlakeStat(hashrate(stats?.chainHashrateThs), "network hashrate", Blake.ppDim)
                     Spacer(Modifier.weight(1f))
-                    BlakeStat("${stats?.connections ?: 0}", "connections", Blake.ppDim, alignEnd = true)
+                    BlakeStat(stats?.blockHeight?.toString() ?: "—", "block height", Blake.fg, alignEnd = true)
+                }
+            }
+
+            // Hashrate by stratum
+            val byStratum = stats?.hashrateByStratum
+            if (!byStratum.isNullOrEmpty()) {
+                Spacer(Modifier.height(22.dp))
+                Column(Modifier.fillMaxWidth().blakeCard()) {
+                    Text("HASHRATE BY STRATUM", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
+                    Spacer(Modifier.height(10.dp))
+                    val order = listOf("lotto" to "LOTTO", "lotto_asic" to "LOTTO · ASIC",
+                        "chirp" to "CHIRP", "carousel" to "CAROUSEL", "wavicles" to "WAVICLES")
+                    val rows = order.mapNotNull { (k, label) -> byStratum[k]?.let { Triple(k, label, it) } }
+                    val total = rows.sumOf { it.third }
+                    rows.forEach { (k, label, ths) ->
+                        Column(Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(label, style = Blake.mono(9f, FontWeight.ExtraBold), color = stratumColor(k, tip), letterSpacing = 0.5.sp)
+                                Spacer(Modifier.weight(1f))
+                                Text(hashrate(ths), style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.fg)
+                            }
+                            Spacer(Modifier.height(3.dp))
+                            Row(Modifier.fillMaxWidth().height(5.dp).background(Blake.line)) {
+                                val frac = if (total > 0) (ths / total).toFloat() else 0f
+                                Box(Modifier.fillMaxHeight().weight(frac.coerceAtLeast(0.0001f)).background(stratumColor(k, tip)))
+                                Box(Modifier.fillMaxHeight().weight((1f - frac).coerceAtLeast(0.0001f)))
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    Text("Pool total across all stratums · network is every miner on BLAKE2b.",
+                        style = Blake.mono(7f), color = Blake.faint)
                 }
             }
 
@@ -131,8 +164,10 @@ fun BlakePoolScreen() {
  *  LOTTO before block 970000, CAROUSEL after) is purple; the others keep a stable accent, so the
  *  list re-colours itself automatically once the timechain crosses the switch. */
 private fun stratumColor(s: String?, tip: Int): androidx.compose.ui.graphics.Color {
-    if (s != null && s.lowercase() == BlakeFork.primaryStratum(tip)) return Blake.pp
-    return when (s?.lowercase()) {
+    // lotto_asic is the same product as lotto (ASIC vs GPU) — colour it in the lotto family.
+    val key = if (s?.lowercase() == "lotto_asic") "lotto" else s?.lowercase()
+    if (key != null && key == BlakeFork.primaryStratum(tip)) return Blake.pp
+    return when (key) {
         "chirp" -> Blake.ok
         "carousel", "lotto" -> Blake.warn
         "wavicles" -> Blake.wave

@@ -36,7 +36,10 @@ object BlakeApi {
         val pool: String? = null,
         val miners: Int? = null,
         val connections: Int? = null,
-        @SerialName("network_hashrate_ths") val networkHashrateThs: Double? = null,
+        @SerialName("network_hashrate_ths") val networkHashrateThs: Double? = null,  // LEGACY: only LOTTO gateways
+        @SerialName("pool_hashrate_ths") val poolHashrateThs: Double? = null,        // whole pool, all stratums
+        @SerialName("chain_hashrate_ths") val chainHashrateThs: Double? = null,      // entire BLAKE2b network
+        @SerialName("hashrate_by_stratum_ths") val hashrateByStratum: Map<String, Double>? = null,
         @SerialName("block_height") val blockHeight: Int? = null,
         @SerialName("shares_accepted") val sharesAccepted: Int? = null,
         @SerialName("shares_rejected") val sharesRejected: Int? = null,
