@@ -104,12 +104,17 @@ fun BlakePoolScreen() {
                 Column(Modifier.fillMaxWidth().blakeCard()) {
                     Text("HASHRATE BY STRATUM", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
                     Spacer(Modifier.height(10.dp))
-                    val order = listOf("lotto" to "LOTTO", "lotto_asic" to "LOTTO · ASIC",
+                    val labels = mapOf("lotto" to "LOTTO", "lotto_asic" to "LOTTO · ASIC",
                         "chirp" to "CHIRP", "carousel" to "CAROUSEL", "wavicles" to "WAVICLES")
-                    // Sort by hashrate descending so the biggest contributor (and the flagship, once it
-                    // grows after the 970000 swap) leads — the card orders itself through the transition.
-                    val rows = order.mapNotNull { (k, label) -> byStratum[k]?.let { Triple(k, label, it) } }
-                        .sortedByDescending { it.third }
+                    // Flagship first (LOTTO before 970000, CAROUSEL after — lotto's ASIC tier tags along
+                    // while lotto is flagship), then the rest by hashrate desc. Leads with the flagship
+                    // through the swap regardless of its size.
+                    val primary = BlakeFork.primaryStratum(tip)
+                    val flagshipKeys = if (primary == "lotto") listOf("lotto", "lotto_asic") else listOf(primary)
+                    val present = byStratum.keys.filter { labels.containsKey(it) }
+                    val flag = flagshipKeys.filter { it in present }.sortedByDescending { byStratum[it] ?: 0.0 }
+                    val rest = present.filter { it !in flag }.sortedByDescending { byStratum[it] ?: 0.0 }
+                    val rows = (flag + rest).map { Triple(it, labels[it] ?: it.uppercase(), byStratum[it] ?: 0.0) }
                     val total = rows.sumOf { it.third }
                     rows.forEach { (k, label, ths) ->
                         Column(Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
