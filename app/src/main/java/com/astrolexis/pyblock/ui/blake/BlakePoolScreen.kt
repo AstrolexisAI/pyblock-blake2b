@@ -109,7 +109,7 @@ fun BlakePoolScreen() {
                     // Flagship first (LOTTO before 970000, CAROUSEL after — lotto's ASIC tier tags along
                     // while lotto is flagship), then the rest by hashrate desc. Leads with the flagship
                     // through the swap regardless of its size.
-                    val primary = BlakeFork.primaryStratum(tip)
+                    val primary = BlakeFork.primaryStratum(tip, stats?.flagship)
                     val flagshipKeys = if (primary == "lotto") listOf("lotto", "lotto_asic") else listOf(primary)
                     val present = byStratum.keys.filter { labels.containsKey(it) }
                     val flag = flagshipKeys.filter { it in present }.sortedByDescending { byStratum[it] ?: 0.0 }
@@ -119,14 +119,14 @@ fun BlakePoolScreen() {
                     rows.forEach { (k, label, ths) ->
                         Column(Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(label, style = Blake.mono(9f, FontWeight.ExtraBold), color = stratumColor(k, tip), letterSpacing = 0.5.sp)
+                                Text(label, style = Blake.mono(9f, FontWeight.ExtraBold), color = stratumColor(k, tip, stats?.flagship), letterSpacing = 0.5.sp)
                                 Spacer(Modifier.weight(1f))
                                 Text(hashrate(ths), style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.fg)
                             }
                             Spacer(Modifier.height(3.dp))
                             Row(Modifier.fillMaxWidth().height(5.dp).background(Blake.line)) {
                                 val frac = if (total > 0) (ths / total).toFloat() else 0f
-                                Box(Modifier.fillMaxHeight().weight(frac.coerceAtLeast(0.0001f)).background(stratumColor(k, tip)))
+                                Box(Modifier.fillMaxHeight().weight(frac.coerceAtLeast(0.0001f)).background(stratumColor(k, tip, stats?.flagship)))
                                 Box(Modifier.fillMaxHeight().weight((1f - frac).coerceAtLeast(0.0001f)))
                             }
                         }
@@ -150,7 +150,7 @@ fun BlakePoolScreen() {
                             Text("#${b.height}", style = Blake.mono(13f, FontWeight.ExtraBold), color = Blake.pp)
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(b.stratum?.uppercase() ?: "—", style = Blake.mono(9f, FontWeight.ExtraBold),
-                                    color = stratumColor(b.stratum, tip), letterSpacing = 0.5.sp)
+                                    color = stratumColor(b.stratum, tip, stats?.flagship), letterSpacing = 0.5.sp)
                                 Text(" · ${b.finderMasked ?: "—"}", style = Blake.mono(9f), color = Blake.faint, maxLines = 1)
                             }
                         }
@@ -165,16 +165,16 @@ fun BlakePoolScreen() {
       }
     }
 
-    selectedBlock?.let { b -> BlockDetailDialog(b, tip) { selectedBlock = null } }
+    selectedBlock?.let { b -> BlockDetailDialog(b, tip, stats?.flagship) { selectedBlock = null } }
 }
 
 /** Colour each block by the stratum that found it. The flagship (primary for the current era —
  *  LOTTO before block 970000, CAROUSEL after) is purple; the others keep a stable accent, so the
  *  list re-colours itself automatically once the timechain crosses the switch. */
-private fun stratumColor(s: String?, tip: Int): androidx.compose.ui.graphics.Color {
+private fun stratumColor(s: String?, tip: Int, serverFlagship: String? = null): androidx.compose.ui.graphics.Color {
     // lotto_asic is the same product as lotto (ASIC vs GPU) — colour it in the lotto family.
     val key = if (s?.lowercase() == "lotto_asic") "lotto" else s?.lowercase()
-    if (key != null && key == BlakeFork.primaryStratum(tip)) return Blake.pp
+    if (key != null && key == BlakeFork.primaryStratum(tip, serverFlagship)) return Blake.pp
     return when (key) {
         "chirp" -> Blake.ok
         "carousel", "lotto" -> Blake.warn
@@ -187,15 +187,15 @@ private fun stratumColor(s: String?, tip: Int): androidx.compose.ui.graphics.Col
 /** Tap a mined block → its details + the COINBASE SPLIT (how the reward was divided across
  *  miners) once the pool reports it. Mirrors iOS BlockDetailView. */
 @Composable
-private fun BlockDetailDialog(b: BlakeApi.Block, tip: Int, onClose: () -> Unit) {
+private fun BlockDetailDialog(b: BlakeApi.Block, tip: Int, serverFlagship: String?, onClose: () -> Unit) {
     val ctx = androidx.compose.ui.platform.LocalContext.current
     val clip = androidx.compose.ui.platform.LocalClipboardManager.current
     var detail by remember { mutableStateOf<BlakeApi.BlockDetail?>(null) }
     var loadingSplit by remember { mutableStateOf(true) }
     LaunchedEffect(b.height) { detail = BlakeApi.blockDetail(b.height); loadingSplit = false }
     val confs = if (tip > 0) maxOf(0, tip - b.height + 1) else 0
-    val isPrimary = b.stratum?.lowercase() == BlakeFork.primaryStratum(tip)
-    val accent = stratumColor(b.stratum, tip)
+    val isPrimary = b.stratum?.lowercase() == BlakeFork.primaryStratum(tip, serverFlagship)
+    val accent = stratumColor(b.stratum, tip, serverFlagship)
 
     sheetBox("BLOCK #${b.height}", accent, onClose) {
         Row(verticalAlignment = Alignment.CenterVertically) {

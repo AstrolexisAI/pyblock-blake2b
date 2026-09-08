@@ -15,7 +15,16 @@ object BlakeFork {
      *  primary; at/after it CAROUSEL is. Drives the flagship colour so the UI swaps automatically as
      *  the timechain crosses the boundary — no rebuild. Mirrors iOS. */
     const val CAROUSEL_SWITCH_HEIGHT = 970_000
-    fun primaryStratum(tip: Int): String = if (tip >= CAROUSEL_SWITCH_HEIGHT) "carousel" else "lotto"
+    /** The flagship pool mode right now. The AUTHORITATIVE signal is the server's `flagship`, which
+     *  it derives from the LOTTO gateways' own `/carousel active` — the same source the website uses,
+     *  so app and web cannot disagree. The height gate is only a fallback for when the server omits
+     *  the field (gateways never answered): switching on height alone can lead or lag the real
+     *  gateway switch by a few blocks. */
+    fun primaryStratum(tip: Int, serverFlagship: String? = null): String {
+        val f = serverFlagship?.lowercase()
+        if (f == "lotto" || f == "carousel") return f
+        return if (tip >= CAROUSEL_SWITCH_HEIGHT) "carousel" else "lotto"
+    }
 
     fun confirmations(u: BlakeApi.Utxo, tip: Int): Int =
         if (tip > 0) maxOf(0, tip - u.height + 1) else 0
