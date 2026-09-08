@@ -106,7 +106,10 @@ fun BlakePoolScreen() {
                     Spacer(Modifier.height(10.dp))
                     val order = listOf("lotto" to "LOTTO", "lotto_asic" to "LOTTO · ASIC",
                         "chirp" to "CHIRP", "carousel" to "CAROUSEL", "wavicles" to "WAVICLES")
+                    // Sort by hashrate descending so the biggest contributor (and the flagship, once it
+                    // grows after the 970000 swap) leads — the card orders itself through the transition.
                     val rows = order.mapNotNull { (k, label) -> byStratum[k]?.let { Triple(k, label, it) } }
+                        .sortedByDescending { it.third }
                     val total = rows.sumOf { it.third }
                     rows.forEach { (k, label, ths) ->
                         Column(Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
