@@ -128,7 +128,8 @@ fun SendWizardSheet(
     val selectedSats = if (coinKeys.isEmpty()) 0L
         else BlakeBalanceStore.allUtxos().filter { it.id in coinKeys }.sumOf { it.value }
     val sweepSats = if (selectedSats > 0) selectedSats else spendable
-    val effectiveFee = maxOf(1, customFeeText.toIntOrNull() ?: feeRate)
+    // Clamped: a typo in the custom field must not become a four-figure fee rate.
+    val effectiveFee = (customFeeText.toIntOrNull() ?: feeRate).coerceIn(1, 500)
 
     fun amountSats(): Long {
         if (sendMax) return sweepSats
@@ -172,7 +173,7 @@ fun SendWizardSheet(
                     // recipient learns our payment code and can detect (and spend) the stealth payment.
                     // One per peer, ever — [hasNotified]/[markNotified] guard it.
                     if (!com.astrolexis.pyblock.data.crypto.PaymentCode.hasNotified(ctx, peerCode)) {
-                        BlakeSpend.sendNotification(ctx, peerCode, effectiveFee.toLong())
+                        BlakeSpend.sendNotification(ctx, peerCode, effectiveFee.toLong(), only)
                         notifiedNow = true
                     }
                     val next = com.astrolexis.pyblock.data.crypto.PaymentCode.nextWalletSendAddress(ctx, peerCode)

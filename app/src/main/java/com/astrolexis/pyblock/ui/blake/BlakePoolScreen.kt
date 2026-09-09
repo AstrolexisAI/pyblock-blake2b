@@ -50,13 +50,27 @@ fun BlakePoolScreen() {
     val scope = rememberCoroutineScope()
     val tip = stats?.blockHeight ?: status?.blockHeight ?: 0
 
-    val load: suspend () -> Unit = {
-        BlakeApi.poolStats()?.let { stats = it }
+    var blocksHeight by remember { mutableStateOf(-1) }   // height the block feed was last fetched at
+    /** Returns true when the stats call succeeded (the signal the poll loop backs off on). */
+    val load: suspend () -> Boolean = {
+        val fresh = BlakeApi.poolStats()
+        fresh?.let { stats = it }
         BlakeApi.status()?.let { status = it }
-        BlakeApi.blocks().takeIf { it.isNotEmpty() }?.let { blocks = it }
+        // The block feed is the heavy call (the whole history) and changes once per block, so it is
+        // fetched only when the height moved, not on every 20 s tick.
+        val h = fresh?.blockHeight ?: status?.blockHeight ?: 0
+        if (blocks.isEmpty() || h != blocksHeight) {
+            BlakeApi.blocks().takeIf { it.isNotEmpty() }?.let { blocks = it; blocksHeight = h }
+        }
         loaded = true
+        fresh != null
     }
-    LaunchedEffect(Unit) { while (true) { load(); delay(20_000) } }
+    // Back off while the server is unreachable: a fleet of open POOL screens hammering every 20 s is
+    // exactly what kept php-fpm from recovering on 2026-09-08. Snap back on the first success.
+    LaunchedEffect(Unit) {
+        var d = 20_000L
+        while (true) { val ok = load(); d = if (ok) 20_000L else minOf(d * 2, 300_000L); delay(d) }
+    }
 
     val live = status?.operational == true
 
@@ -207,7 +221,8 @@ private fun BlockDetailDialog(b: BlakeApi.Block, tip: Int, serverFlagship: Strin
         kv("FINDER", b.finderMasked ?: "—", Blake.fg)
         kv("CONFIRMATIONS", if (confs > 0) "$confs" else "—", Blake.fg)
         kv("DIFFICULTY", b.difficulty?.let { fmtDiff(it) } ?: "—", Blake.fg)
-        b.protocolName?.let { kv("PROTOCOL", it, Blake.fg) }
+        // Since the swap the feed's protocol is the stratum name itself; showing it twice says nothing.
+        b.protocolName?.takeIf { it.lowercase() != b.stratum?.lowercase() }?.let { kv("PROTOCOL", it, Blake.fg) }
         detail?.architect?.takeIf { it.isNotBlank() }?.let {
             kv(if (b.stratum?.lowercase() == "wavicles") "BUILT BY" else "ARCHITECT",
                if (b.stratum?.lowercase() == "wavicles") "$it's node" else it, Blake.fg)

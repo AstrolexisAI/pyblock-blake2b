@@ -8,6 +8,10 @@ import kotlinx.serialization.Serializable
  *  e.g. a PayNym stealth address that already confirmed — without a full on-device CBF scan. */
 @Serializable
 data class WalletUtxosResp(
+    // Only an ok:true body is authoritative. ok:false with `oversized` set is a PARTIAL answer: the
+    // listed addresses were too big to load, every other address in the request was served.
+    val ok: Boolean? = null,
+    val oversized: List<String>? = null,
     val utxos: List<Utxo> = emptyList(),
     // true = server scan was busy (cache miss during a concurrent scan) — NOT an empty
     // balance. Treated as a failure so the sweep retries instead of showing a false 0.

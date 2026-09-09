@@ -50,6 +50,7 @@ object BlakeSpend {
         object BroadcastFailed : Err("Couldn't broadcast to the BLAKE2b network.")
         object AlreadyPending : Err("This coin is already in a pending transaction — it will confirm shortly. No need to resend.")
         data class FeeTooHigh(val fee: Long, val amount: Long) : Err("Fee ($fee sats) would equal or exceed the amount ($amount sats).")
+        data class FeeCapped(val fee: Long, val cap: Long) : Err("Fee ($fee sats) is above the safety cap ($cap sats). Lower the fee rate.")
     }
 
     /** One spendable fork coin: a mature post-fork coinbase output + the key that owns it. */
@@ -207,6 +208,19 @@ object BlakeSpend {
     }
 
     /** Greedy largest-first coins covering `need` + a worst-case legacy fee, or all (max). */
+    // ---- Fee safety caps ----
+    // The fee rate is a free-text field. A fat-fingered "1000" instead of "10" on a MAX sweep would
+    // hand nearly the whole balance to the miner, and the existing guard only compares fee against
+    // the AMOUNT, which a sweep does not have. Absolute ceilings plus a share-of-inputs ceiling.
+    const val MAX_FEE_SATS = 1_000_000L            // 0.01 coin, far above any sane fee here
+    const val MAX_NOTIFICATION_FEE_SATS = 50_000L  // a notification tx is ~250 vB
+    const val MAX_SWEEP_FEE_SHARE = 20L            // fee may not exceed 1/20 (5%) of a sweep
+
+    private fun checkFeeCap(fee: Long, inTotal: Long, sendMax: Boolean) {
+        if (fee > MAX_FEE_SATS) throw Err.FeeCapped(fee, MAX_FEE_SATS)
+        if (sendMax && fee > inTotal / MAX_SWEEP_FEE_SHARE) throw Err.FeeCapped(fee, inTotal / MAX_SWEEP_FEE_SHARE)
+    }
+
     private fun select(coins: List<Coin>, need: Long, sendMax: Boolean, feeRateSatVb: Long): List<Coin>? {
         if (sendMax) return coins
         val sorted = coins.sortedByDescending { it.valueSats }
@@ -273,6 +287,7 @@ object BlakeSpend {
         val outTotal = tx.output().sumOf { it.value.toSat().toLong() }
         val fee = if (inTotal >= outTotal) inTotal - outTotal else 0L
         if (!sendMax && fee >= amountSats) throw Err.FeeTooHigh(fee, amountSats)
+        checkFeeCap(fee, inTotal, sendMax)
 
         val txid = try {
             BlakeApi.pushTx(bytesToHex(tx.serialize()))
@@ -309,7 +324,10 @@ object BlakeSpend {
      * reads; its private key blinds the payload — they MUST be the same key. Outputs: dust to the
      * peer's notification address + an 80-byte OP_RETURN (our blinded code) + change → self.
      */
-    suspend fun sendNotification(ctx: Context, peerCode: String, feeRateSatVb: Long): String {
+    /** [onlyCoins] is the user's coin-control selection: when set, the designated input is chosen
+     *  from those coins only, so announcing a PayNym never touches a coin kept out of the send. */
+    suspend fun sendNotification(ctx: Context, peerCode: String, feeRateSatVb: Long,
+                                 onlyCoins: Set<String>? = null): String {
         if (!BlakeChains.SEND_ENABLED) throw Err.Disabled
 
         val notifAddr = com.astrolexis.pyblock.data.crypto.PaymentCode.notificationAddressForPeer(peerCode)
@@ -320,7 +338,8 @@ object BlakeSpend {
         val tip = BlakeApi.status()?.blockHeight ?: 0
         if (tip <= 0) throw Err.NoSpendable
 
-        val coins = gatherCoins(ctx, tip)
+        var coins = gatherCoins(ctx, tip)
+        if (onlyCoins != null) coins = coins.filter { it.key in onlyCoins }   // coin control
         if (coins.isEmpty()) throw Err.NoSpendable
 
         // Single designated input = largest spendable coin (guaranteed input 0).
@@ -353,6 +372,11 @@ object BlakeSpend {
         // HARD GUARD: the sole input must be our designated mature-coinbase coin.
         val txInKeys = tx.input().map { metaKey(it.previousOutput.txid.toString(), it.previousOutput.vout.toInt()) }.toSet()
         if (txInKeys != setOf(designated.key)) throw Err.UnexpectedInput
+        // Fee cap: change returns to our own address, so only dust + fee leave. Bound the fee so a
+        // wild fee rate cannot burn the designated coin.
+        val notifOut = tx.output().sumOf { it.value.toSat().toLong() }
+        val notifFee = if (designated.valueSats >= notifOut) designated.valueSats - notifOut else 0L
+        if (notifFee > MAX_NOTIFICATION_FEE_SATS) throw Err.FeeCapped(notifFee, MAX_NOTIFICATION_FEE_SATS)
 
         val txid = BlakeApi.pushTx(bytesToHex(tx.serialize()))
         BlakeBalanceStore.markSpent(setOf(designated.key))
@@ -449,6 +473,7 @@ object BlakeSpend {
 
         // FUND-SAFETY: abort (before ANY broadcast) if the fee would eat the payment (AMOUNT only).
         if (!sendMax && totalFee >= amountSats) throw Err.FeeTooHigh(totalFee, amountSats)
+        checkFeeCap(totalFee, selectedTotal, sendMax)
 
         for ((idx, tx) in builtTxs.withIndex()) {
             BlakeApi.pushTx(bytesToHex(tx.serialize()))

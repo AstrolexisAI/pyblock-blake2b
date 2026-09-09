@@ -407,7 +407,9 @@ object PaymentCode {
     fun parseNotificationTx(rawHex: String): NotificationTx? {
         val raw = rawHex.hexToBytes() ?: return null
         var i = 0
-        fun take(n: Int): ByteArray? { if (i + n > raw.size) return null; val r = raw.copyOfRange(i, i + n); i += n; return r }
+        // n is attacker-controlled (a varint from a tx we did not build): reject negative or oversized
+        // lengths before any arithmetic, so a hostile length can neither wrap nor throw.
+        fun take(n: Int): ByteArray? { if (n < 0 || n > raw.size - i) return null; val r = raw.copyOfRange(i, i + n); i += n; return r }
         fun u8(): Int? { if (i >= raw.size) return null; return raw[i++].toInt() and 0xff }
         fun varint(): Int? {
             val n = u8() ?: return null
@@ -415,7 +417,11 @@ object PaymentCode {
                 n < 0xfd -> n
                 n == 0xfd -> take(2)?.let { (it[0].toInt() and 0xff) or ((it[1].toInt() and 0xff) shl 8) }
                 n == 0xfe -> take(4)?.let { b -> (0..3).fold(0) { a, k -> a or ((b[k].toInt() and 0xff) shl (8 * k)) } }
-                else -> take(8)?.let { b -> (0..7).fold(0) { a, k -> a or ((b[k].toInt() and 0xff) shl (8 * k)) } }
+                else -> take(8)?.let { b ->
+                    val v = (0..7).fold(0L) { a, k -> a or ((b[k].toLong() and 0xff) shl (8 * k)) }
+                    // No count inside a tx can exceed the tx's own byte length.
+                    if (v < 0 || v > raw.size) null else v.toInt()
+                }
             }
         }
         take(4) ?: return null                            // version

@@ -35,6 +35,12 @@ object ConfirmedUtxos {
                 break        // don't hammer a server that just timed out with the remaining chunks
             }
             if (resp.warming) { failed = true; break }   // scan busy → retry, never a false 0
+            // ok:false without an `oversized` list is an error body (fatal, empty, unknown): trust nothing.
+            // ok:false WITH the list is partial: the served addresses are real positive hits, and the
+            // oversized ones simply stay "unknown" — which is all a missing address ever means here.
+            if (resp.ok == false && resp.oversized.isNullOrEmpty()) { failed = true; break }
+            if (!resp.oversized.isNullOrEmpty())
+                android.util.Log.w("PyBLOCKutxo", "wallet_utxos: ${resp.oversized!!.size} oversized addr(s) skipped by the server")
             found.addAll(resp.utxos)
         }
         return Batch(found.groupBy { it.address }, failed)
