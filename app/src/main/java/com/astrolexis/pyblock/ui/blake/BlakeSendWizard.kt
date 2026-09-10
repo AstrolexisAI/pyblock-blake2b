@@ -535,9 +535,10 @@ private fun SpendableCard(coinKeys: Set<String>, selectedSats: Long, spendable: 
 @Composable
 private fun SendResultScreen(r: WizardResult, onCopy: (String) -> Unit, onClose: () -> Unit) {
     var pop by remember { mutableStateOf(false) }
+    var burst by remember { mutableStateOf(true) }   // the one-shot send effect over the result
     val scale by animateFloatAsState(if (pop) 1f else 0.3f, tween(450), label = "pop")
     val alpha by animateFloatAsState(if (pop) 1f else 0f, tween(450), label = "popa")
-    androidx.compose.runtime.LaunchedEffect(Unit) { pop = true; com.astrolexis.pyblock.ui.Haptics.tap() }
+    androidx.compose.runtime.LaunchedEffect(Unit) { pop = true; com.astrolexis.pyblock.ui.Haptics.tap(); com.astrolexis.pyblock.ui.Sfx.success() }
 
     val contacts by com.astrolexis.pyblock.data.wallet.BlakeContactsStore.contacts.collectAsState()
     val contactName = contacts.firstOrNull { it.value == r.contactValue }?.label
@@ -547,6 +548,8 @@ private fun SendResultScreen(r: WizardResult, onCopy: (String) -> Unit, onClose:
     var saved by remember { mutableStateOf(false) }
     var contactNameInput by remember { mutableStateOf("") }
 
+    androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
+    if (burst) SendBurst { burst = false }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("✓", style = Blake.mono(26f, FontWeight.ExtraBold), color = Blake.ok,
@@ -623,6 +626,7 @@ private fun SendResultScreen(r: WizardResult, onCopy: (String) -> Unit, onClose:
         Spacer(Modifier.height(10.dp))
         Text("CLOSE", style = Blake.mono(13f, FontWeight.ExtraBold), color = Blake.bg, letterSpacing = 1.sp, textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth().background(Blake.pp).padding(vertical = 12.dp).clickableNoRipple(onClose))
+    }
     }
 }
 
