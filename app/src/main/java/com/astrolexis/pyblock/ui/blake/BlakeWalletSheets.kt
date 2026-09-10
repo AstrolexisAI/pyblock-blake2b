@@ -29,6 +29,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.animation.core.animateFloat
+import com.astrolexis.pyblock.data.blake.BlakeBalanceStore
+import androidx.compose.foundation.layout.size
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -402,9 +405,42 @@ fun CoinsSheet(utxos: List<BlakeApi.Utxo>, tip: Int, onSpend: (Set<String>) -> U
     var lockedExpanded by remember { mutableStateOf(false) }
     val unlockedIds by com.astrolexis.pyblock.data.blake.UnlockStore.ids.collectAsState()
     val labels by com.astrolexis.pyblock.data.blake.BlakeLabelStore.labels.collectAsState()
+    // Coins inside an in-flight send are no longer offered; the change shows under PENDING until a
+    // block confirms it. Mirrors iOS CoinsView.
+    val inFlightIds by BlakeBalanceStore.pendingSpentIds.collectAsState()
+    val pendingIn by BlakeBalanceStore.pendingIn.collectAsState()
+    val pulse by androidx.compose.animation.core.rememberInfiniteTransition(label = "pending").animateFloat(
+        initialValue = 0.25f, targetValue = 1f, label = "pulse",
+        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+            androidx.compose.animation.core.tween(900), androidx.compose.animation.core.RepeatMode.Reverse))
     sheetBox("COIN CONTROL", Blake.pp, onClose) {
+        val incoming = pendingIn.filter { it.value > 0 }.toList().sortedByDescending { it.second }
+        val inFlight = utxos.filter { it.id in inFlightIds }
+        if (incoming.isNotEmpty() || inFlight.isNotEmpty()) {
+            Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("PENDING · 0-conf", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 1.sp)
+                Spacer(Modifier.weight(1f))
+                val tot = incoming.sumOf { it.second }
+                if (tot > 0) Text("+${Blake.btc(tot)} ${Blake.RUNE}", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.pp)
+            }
+            incoming.forEach { (addr, sats) ->
+                Row(Modifier.fillMaxWidth().padding(bottom = 8.dp).border(1.dp, Blake.line, RectangleShape).padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(8.dp).background(Blake.pp.copy(alpha = pulse), androidx.compose.foundation.shape.CircleShape))
+                    Spacer(Modifier.width(10.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("+${Blake.btc(sats)} ${Blake.RUNE}", style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.pp)
+                        Text("arriving · ${mid(addr)}", style = Blake.mono(8f), color = Blake.faint, maxLines = 1)
+                    }
+                    Text("waiting for a block", style = Blake.mono(8f), color = Blake.ppDim)
+                }
+            }
+            if (inFlight.isNotEmpty())
+                Text("${inFlight.size} coin${if (inFlight.size == 1) "" else "s"} in flight · ${Blake.btc(inFlight.sumOf { it.value })} ${Blake.RUNE} · they return to SPENDABLE only if the send fails",
+                    style = Blake.mono(8f), color = Blake.faint, modifier = Modifier.padding(bottom = 10.dp))
+        }
         if (utxos.isEmpty()) { Text("No coins.", style = Blake.mono(10f), color = Blake.faint); return@sheetBox }
-        val sorted = utxos.sortedByDescending { it.value }
+        val sorted = utxos.filter { it.id !in inFlightIds }.sortedByDescending { it.value }
         val spendableIds = sorted.filter { BlakeFork.isEffectivelySpendable(it, tip) }.map { it.id }.toSet()
         if (spendableIds.isNotEmpty() && BlakeChains.SEND_ENABLED) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
