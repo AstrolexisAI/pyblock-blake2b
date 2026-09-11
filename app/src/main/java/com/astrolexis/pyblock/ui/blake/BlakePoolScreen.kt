@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -50,6 +51,8 @@ fun BlakePoolScreen() {
     var loaded by remember { mutableStateOf(false) }
     var refreshing by remember { mutableStateOf(false) }
     var selectedBlock by remember { mutableStateOf<BlakeApi.Block?>(null) }
+    var showRentals by remember { mutableStateOf(false) }
+    var showMiner by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val tip = stats?.blockHeight ?: status?.blockHeight ?: 0
 
@@ -183,6 +186,12 @@ fun BlakePoolScreen() {
                 }
             }
 
+            // Places to go from the pool: rent hash to your address, or see your own miners. Same
+            // rows as the wallet's command list — glyph, name, hint, chevron, hairline.
+            Spacer(Modifier.height(22.dp))
+            poolCommandRow("ᚱ", "RENTALS", "rent hash to your address") { showRentals = true }
+            poolCommandRow("ᛗ", "MINER", "your workers · connect") { showMiner = true }
+
             Spacer(Modifier.height(22.dp))
             Text("MINED BLOCKS", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
             Spacer(Modifier.height(12.dp))
@@ -211,6 +220,8 @@ fun BlakePoolScreen() {
       }
     }
 
+    if (showRentals) BlakeRentalsSheet { showRentals = false }
+    if (showMiner) BlakeMinerSheet { showMiner = false }
     selectedBlock?.let { b -> BlockDetailDialog(b, tip, stats?.flagship) { selectedBlock = null } }
 }
 
@@ -315,4 +326,18 @@ private fun relTime(ts: Double): String {
 private fun hashrate(th: Double?): String {
     th ?: return "—"
     return if (th >= 1000) "%.2f PH/s".format(th / 1000) else "%.1f TH/s".format(th)
+}
+
+@Composable
+private fun poolCommandRow(glyph: String, name: String, trailing: String, onClick: () -> Unit) {
+    Row(Modifier.fillMaxWidth().hairline().clickableNoRipple { com.astrolexis.pyblock.ui.Haptics.tap(); onClick() }.padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically) {
+        Text(glyph, style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.pp, modifier = Modifier.width(14.dp))
+        Spacer(Modifier.width(10.dp))
+        Text(name, style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.fg, letterSpacing = 2.sp)
+        Spacer(Modifier.weight(1f))
+        Text(trailing, style = Blake.mono(9f), color = Blake.faint)
+        Spacer(Modifier.width(10.dp))
+        Text("›", style = Blake.mono(14f), color = Blake.ppDim)
+    }
 }
