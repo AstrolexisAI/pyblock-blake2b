@@ -34,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.SolidColor
@@ -120,6 +121,7 @@ fun SendWizardSheet(
     var scanning by remember { mutableStateOf(false) }
     var showContacts by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
+    var takeoff by remember { mutableStateOf(false) }   // the lift-off drawn over the sheet right after CONFIRM
     var error by remember { mutableStateOf<String?>(null) }
     var result by remember { mutableStateOf<WizardResult?>(null) }
 
@@ -224,6 +226,7 @@ fun SendWizardSheet(
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         Box(Modifier.fillMaxSize().background(Blake.bg)) {
             val r = result
+            if (takeoff) Box(Modifier.fillMaxSize().zIndex(1f)) { Takeoff { takeoff = false } }
             if (r != null) {
                 SendResultScreen(r, onCopy = { clip.setText(AnnotatedString(it)) }, onClose = onClose)
             } else if (scanning) {
@@ -285,7 +288,7 @@ fun SendWizardSheet(
                             Text(if (busy) "BROADCASTING…" else if (ricochet) "CONFIRM RICOCHET" else "CONFIRM SEND",
                                 style = Blake.mono(14f, FontWeight.ExtraBold), color = Blake.bg, letterSpacing = 1.sp, textAlign = TextAlign.Center,
                                 modifier = Modifier.weight(1f).background(Blake.pp).padding(vertical = 14.dp)
-                                    .clickableNoRipple { if (!busy) submit() })
+                                    .clickableNoRipple { if (!busy) { takeoff = true; com.astrolexis.pyblock.ui.Sfx.select(); submit() } })
                         }
                     }
                 }

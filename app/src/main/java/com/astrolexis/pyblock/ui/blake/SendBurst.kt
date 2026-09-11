@@ -13,6 +13,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
@@ -77,5 +84,60 @@ fun SendBurst(onDone: () -> Unit) {
                 translationY = 0.40f * size.height - 0.5f * size.height   // centre on the ring origin
                 scaleX = scale; scaleY = scale; alpha = fade
             })
+    }
+}
+
+/**
+ * The moment the user confirms a send, before the network answers: the rune lifts off from the
+ * confirm button like a ship leaving the pad, three fading ghosts trailing, gone by the time the
+ * result lands. About 0.8 s; never intercepts touches. Mirrors iOS TakeoffView.
+ */
+@Composable
+fun Takeoff(onDone: () -> Unit) {
+    var t by remember { mutableFloatStateOf(0f) }
+    LaunchedEffect(Unit) {
+        val start = withFrameNanos { it }
+        while (t < 0.9f) { withFrameNanos { now -> t = (now - start) / 1e9f } }
+        onDone()
+    }
+    val density = androidx.compose.ui.platform.LocalDensity.current.density
+    val paint = remember {
+        android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            typeface = android.graphics.Typeface.MONOSPACE; isFakeBoldText = true; textAlign = android.graphics.Paint.Align.CENTER
+        }
+    }
+    Canvas(Modifier.fillMaxSize()) {
+        val u = minOf(1f, t / 0.8f)
+        fun ss(v: Float) = v * v * (3f - 2f * v)
+        val y0 = size.height - 92f * density; val y1 = size.height * 0.30f; val x = size.width / 2f
+        drawIntoCanvas { c ->
+            for (g in 3 downTo 1) {
+                val ug = maxOf(0f, u - g * 0.08f); val eg = ss(ug)
+                paint.textSize = 34f * density * (1f - 0.4f * eg)
+                paint.color = android.graphics.Color.argb((((1f - u) * (0.35f - g * 0.08f)).coerceIn(0f, 1f) * 255).toInt(), 0xB9, 0x6B, 0xFF)
+                c.nativeCanvas.drawText(Blake.RUNE, x, y0 + (y1 - y0) * eg + paint.textSize * 0.35f, paint)
+            }
+            val e = ss(u)
+            paint.textSize = 34f * density * (1f - 0.4f * e)
+            paint.color = android.graphics.Color.argb(((if (u < 0.8f) 1f else (1f - u) / 0.2f) * 255).toInt(), 0xB9, 0x6B, 0xFF)
+            val y = y0 + (y1 - y0) * e
+            c.nativeCanvas.drawText(Blake.RUNE, x, y + paint.textSize * 0.35f, paint)
+            paint.textSize = 9f * density
+            paint.color = android.graphics.Color.argb(((if (u < 0.7f) 1f else (1f - u) / 0.3f) * 255).toInt(), 0x8F, 0x6F, 0xD0)
+            c.nativeCanvas.drawText("SENDING", x, y + 30f * density, paint)
+        }
+    }
+}
+
+/** Coinbase maturity as a bar, not a sentence: how far a mined coin is through its 100 blocks.
+ *  Hairline track, amber fill, only while immature. Mirrors iOS MaturityBar. */
+@Composable
+fun MaturityBar(u: com.astrolexis.pyblock.data.blake.BlakeApi.Utxo, tip: Int, height: androidx.compose.ui.unit.Dp = 2.dp) {
+    if (!u.coinbase || tip <= 0 || com.astrolexis.pyblock.data.blake.BlakeFork.isSpendable(u, tip)) return
+    val frac = (com.astrolexis.pyblock.data.blake.BlakeFork.confirmations(u, tip).toFloat() /
+        com.astrolexis.pyblock.data.blake.BlakeFork.COINBASE_MATURITY).coerceIn(0f, 1f)
+    val shown by androidx.compose.animation.core.animateFloatAsState(frac, androidx.compose.animation.core.tween(600), label = "maturity")
+    Box(Modifier.fillMaxWidth().padding(top = 3.dp).height(height).background(Blake.line2)) {
+        Box(Modifier.fillMaxWidth(shown).height(height).background(Blake.warn))
     }
 }

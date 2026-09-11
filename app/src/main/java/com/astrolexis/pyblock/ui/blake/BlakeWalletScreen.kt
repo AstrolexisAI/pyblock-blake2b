@@ -427,6 +427,7 @@ private fun coinBreakdownRow(u: BlakeApi.Utxo, tip: Int, locked: Boolean,
             Text(if (locked) (BlakeFork.lockReason(u, tip) ?: "locked")
                  else if (unlocked) "unlocked · replay risk accepted" else "mature mined",
                  style = Blake.mono(7f), color = Blake.faint)
+            MaturityBar(u, tip)
         }
         if (replayLocked) {
             if (unlocked) miniBtn("LOCK", Blake.warn, onRelock)

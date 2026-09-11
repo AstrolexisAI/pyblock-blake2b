@@ -122,6 +122,7 @@ fun UtxoDetailSheet(u: BlakeApi.Utxo, tip: Int, onCopy: (String) -> Unit, onClos
         }
         kv("STATUS", statusText, if (reason == null) Blake.ok else if (unlocked) Blake.pp else Blake.warn)
         kv("CONFIRMATIONS", "${BlakeFork.confirmations(u, tip)}", Blake.fg)
+        MaturityBar(u, tip, height = 4.dp)
         kv("HEIGHT", "#${u.height}", Blake.fg)
         kv("TYPE", if (u.coinbase) "coinbase (mined)" else "received", Blake.fg)
         Spacer(Modifier.height(10.dp))
@@ -483,6 +484,7 @@ fun CoinsSheet(utxos: List<BlakeApi.Utxo>, tip: Int, onSpend: (Set<String>) -> U
                          else if (!spendable && BlakeFork.isReplayLocked(u, tip)) "${reason ?: "received"} · tap to unlock"
                          else (reason ?: (if (u.coinbase) "mined · spendable" else "received")),
                         style = Blake.mono(8f), color = if (unlocked) Blake.pp else Blake.faint)
+                    MaturityBar(u, tip)
                 }
                 Text("#${u.height}", style = Blake.mono(9f), color = Blake.faint)
             }
