@@ -40,6 +40,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.astrolexis.pyblock.ui.Haptics
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
@@ -159,18 +161,22 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
                 Spacer(Modifier.height(20.dp))
             }
 
-            // Total balance card
-            Column(Modifier.fillMaxWidth().blakeCard()) {
+            // The balance is the screen (Omarchy pass, mirrors iOS): no card, no "BALANCE" label,
+            // one status line under the number, a fixed spinner slot so nothing shifts.
+            Column(Modifier.fillMaxWidth().padding(top = 6.dp)) {
+                Row(verticalAlignment = Alignment.Top) {
+                    Text("${Blake.btc(total)} ${Blake.RUNE}", style = Blake.mono(34f, FontWeight.ExtraBold), color = Blake.pp, maxLines = 1, modifier = Modifier.weight(1f))
+                    Text("⚙", style = Blake.mono(15f), color = Blake.faint, modifier = Modifier.padding(top = 6.dp).clickableNoRipple { sheet = Sheet.Settings })
+                }
+                Spacer(Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("BLAKE2b BALANCE", style = Blake.mono(10f), color = Blake.ppDim, letterSpacing = 2.sp)
-                    if (live) {
+                    if (wallets.isNotEmpty()) {
+                        Box(Modifier.size(5.dp).background(if (live) Blake.ok else Blake.faint, CircleShape))
                         Spacer(Modifier.size(6.dp))
-                        Box(Modifier.size(5.dp).background(Blake.ok, CircleShape))
-                        Spacer(Modifier.size(3.dp))
-                        Text("LIVE", style = Blake.mono(8f, FontWeight.ExtraBold), color = Blake.ok, letterSpacing = 1.sp)
+                        Text(if (live) "LIVE" else "OFFLINE", style = Blake.mono(8f, FontWeight.ExtraBold), color = if (live) Blake.ok else Blake.faint, letterSpacing = 1.sp)
+                        Spacer(Modifier.size(6.dp))
                     }
-                    // Syncing spins INLINE next to LIVE (fixed-width slot) so it never adds a row
-                    // and shifts the card while refreshing.
+                    if (tip > 0) Text("#$tip", style = Blake.mono(8f), color = Blake.faint)
                     Spacer(Modifier.size(6.dp))
                     val spin by rememberInfiniteTransition(label = "sync").animateFloat(
                         0f, 360f, infiniteRepeatable(tween(1000, easing = androidx.compose.animation.core.LinearEasing), RepeatMode.Restart), label = "spin")
@@ -178,58 +184,37 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
                         if (loading) Text("⟳", style = Blake.mono(9f), color = Blake.pp, modifier = Modifier.graphicsLayer { rotationZ = spin })
                     }
                     Spacer(Modifier.weight(1f))
-                    Text("⚙", style = Blake.mono(14f), color = Blake.ppDim, modifier = Modifier.clickableNoRipple { sheet = Sheet.Settings })
+                    Text("${"%,d".format(total)} sats · ${wallets.size} addr", style = Blake.mono(8f), color = Blake.faint)
                 }
-                Spacer(Modifier.height(6.dp))
-                Text("${Blake.btc(total)} ${Blake.RUNE}", style = Blake.mono(30f, FontWeight.ExtraBold), color = Blake.pp, maxLines = 1)
-                Spacer(Modifier.height(4.dp))
-                Text("${"%,d".format(total)} sats · ${wallets.size} address${if (wallets.size == 1) "" else "es"}",
-                    style = Blake.mono(9f), color = Blake.faint)
                 val pendInTotal = pendingIn.values.sum()
                 if (pendInTotal > 0 || pendingSpent.isNotEmpty()) {
-                    Spacer(Modifier.height(2.dp))
+                    Spacer(Modifier.height(4.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.size(5.dp).background(Blake.warn, CircleShape))
                         Spacer(Modifier.width(6.dp))
                         val parts = buildList {
-                            if (pendInTotal > 0) add("+${Blake.btc(pendInTotal)} ${Blake.RUNE} incoming")
+                            if (pendInTotal > 0) add("+${Blake.btc(pendInTotal)} ${Blake.RUNE} arriving")
                             if (pendingSpent.isNotEmpty()) add("send in flight")
                         }
-                        Text(parts.joinToString(" · ") + " · pending", style = Blake.mono(9f), color = Blake.warn)
+                        Text(parts.joinToString(" · ") + " · waiting for a block", style = Blake.mono(8f), color = Blake.warn)
                     }
                 }
             }
 
-            // Send actions
-            if ((BlakeChains.SEND_ENABLED || BlakeChains.RICOCHET_ENABLED) && wallets.isNotEmpty()) {
-                Spacer(Modifier.height(20.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            // One primary action and a list of places to go: identical rows, hairlines, no boxes.
+            if (wallets.isNotEmpty()) {
+                Spacer(Modifier.height(22.dp))
+                if (BlakeChains.SEND_ENABLED || BlakeChains.RICOCHET_ENABLED) {
                     Text("↗ SEND", style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.bg, letterSpacing = 1.sp, textAlign = TextAlign.Center,
-                        modifier = Modifier.weight(1f).background(Blake.pp).padding(vertical = 12.dp)
+                        modifier = Modifier.fillMaxWidth().background(Blake.pp).padding(vertical = 12.dp)
                             .clickableNoRipple { if (spendable <= 0) toast(ctx, "No spendable coins yet.") else sheet = Sheet.Send() })
-                    if (BlakeChains.RICOCHET_ENABLED || ricochetRecords.isNotEmpty()) {   // historial: las hop keys de ricochets pasados deben seguir alcanzables
-                        Text("⟿ RICOCHETS", style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 1.sp, textAlign = TextAlign.Center,
-                            modifier = Modifier.weight(1f).border(1.dp, Blake.pp, RectangleShape).padding(vertical = 12.dp)
-                                .clickableNoRipple { sheet = Sheet.Ricochets })
-                    }
+                    Spacer(Modifier.height(14.dp))
                 }
-            }
-
-            // Control buttons
-            Spacer(Modifier.height(10.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                navBtn(Modifier.weight(1f), "⌗ ADDRESS CONTROL", "${wallets.size}") { sheet = Sheet.Addresses }
-                if (BlakeBalanceStore.allUtxos().isNotEmpty())
-                    navBtn(Modifier.weight(1f), "◈ COIN CONTROL", "${BlakeBalanceStore.allUtxos().size}") { sheet = Sheet.Coins }
-            }
-
-            // PayNym entry
-            Spacer(Modifier.height(10.dp))
-            Row(Modifier.fillMaxWidth().border(1.dp, Blake.line, RectangleShape).padding(horizontal = 14.dp, vertical = 11.dp)
-                .clickableNoRipple { sheet = Sheet.Paynym }, verticalAlignment = Alignment.CenterVertically) {
-                Text("᛭ PAYNYM", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 2.sp)
-                Spacer(Modifier.weight(1f))
-                Text("share · receive", style = Blake.mono(9f), color = Blake.faint)
+                commandRow("⌗", "ADDRESSES", "${wallets.size}") { sheet = Sheet.Addresses }
+                if (BlakeBalanceStore.allUtxos().isNotEmpty()) commandRow("◈", "COINS", "${BlakeBalanceStore.allUtxos().size}") { sheet = Sheet.Coins }
+                commandRow("᛭", "PAYNYM", "share · receive") { sheet = Sheet.Paynym }
+                if (BlakeChains.RICOCHET_ENABLED || ricochetRecords.isNotEmpty())   // past hop keys must stay reachable
+                    commandRow("⟿", "RICOCHETS", "${ricochetRecords.size}") { sheet = Sheet.Ricochets }
             }
 
             if (wallets.isEmpty()) {
@@ -238,14 +223,17 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
                     Text(Blake.RUNE, style = Blake.mono(40f, FontWeight.ExtraBold), color = Blake.pp.copy(alpha = 0.5f))
                     Spacer(Modifier.height(10.dp))
                     Text("No addresses yet", style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 1.sp)
-                    Spacer(Modifier.height(6.dp))
-                    Text("Open ADDRESS CONTROL to generate one, or import a WIF.",
-                        style = Blake.mono(9f), color = Blake.faint, textAlign = TextAlign.Center)
+                    Spacer(Modifier.height(14.dp))
+                    Text("CREATE AN ADDRESS", style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.bg, letterSpacing = 1.sp, textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().background(Blake.pp).padding(vertical = 12.dp).clickableNoRipple { sheet = Sheet.Addresses })
+                    Spacer(Modifier.height(8.dp))
+                    Text("or import a key · scan a paper backup", style = Blake.mono(8f), color = Blake.faint, textAlign = TextAlign.Center)
                 }
             } else {
                 // DETAILS toggle
                 Spacer(Modifier.height(20.dp))
-                Row(Modifier.fillMaxWidth().border(1.dp, Blake.line, RectangleShape).padding(vertical = 10.dp, horizontal = 4.dp)
+                Box(Modifier.fillMaxWidth().height(1.dp).background(Blake.line))
+                Row(Modifier.fillMaxWidth().padding(vertical = 10.dp)
                     .clickableNoRipple { showDetails = !showDetails }, verticalAlignment = Alignment.CenterVertically) {
                     Text("DETAILS", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
                     Spacer(Modifier.size(6.dp))
@@ -254,7 +242,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
                 AnimatedVisibility(showDetails) {
                     Column {
                         Spacer(Modifier.height(14.dp))
-                        Column(Modifier.fillMaxWidth().blakeCard()) {
+                        Column(Modifier.fillMaxWidth()) {
                             // Tap a header to expand its coins inline — unlock a replay-locked coin
                             // (or re-lock one you unlocked) without leaving the wallet screen.
                             breakdownRow("SPENDABLE", spendable, spendableUtxos.size, Blake.ok, spendExpanded) { spendExpanded = !spendExpanded }
@@ -276,9 +264,6 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
                                     coinBreakdownRow(u, tip, locked = true, onUnlock = { pendingUnlock = u }, onRelock = { UnlockStore.relock(u.id) }, onInfo = { sheet = Sheet.Utxo(u) })
                                 }
                             }
-                            Spacer(Modifier.height(6.dp))
-                            Text("Spendable = mature mined coins. Locked = immature or pre-fork (replay-exposed). Tap a row to unlock.",
-                                style = Blake.mono(7f), color = Blake.faint)
                         }
                         Spacer(Modifier.height(20.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -297,7 +282,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
                         val acts = ArrayList<Act>()
                         pendingActivity.forEach { p ->
                             acts.add(Act(maxOf(now, p.seen)) {
-                                Row(Modifier.fillMaxWidth().padding(bottom = 8.dp).blakeCard(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Row(Modifier.fillMaxWidth().padding(vertical = 10.dp).drawBehind { drawRect(hairline, topLeft = androidx.compose.ui.geometry.Offset(0f, size.height - 1f), size = androidx.compose.ui.geometry.Size(size.width, 1f)) }, verticalAlignment = Alignment.CenterVertically) {
                                     Column(Modifier.weight(1f)) {
                                         Text("+ ${Blake.btc(p.sats)} ${Blake.RUNE}", style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.warn)
                                         Text("incoming · ${p.address.take(10)}…", style = Blake.mono(8f), color = Blake.faint)
@@ -309,7 +294,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
                         sentRecords.take(30).forEach { r ->
                             val pending = com.astrolexis.pyblock.data.blake.BlakeSentStore.isPending(r, liveCoinIds)
                             acts.add(Act(r.date) {
-                                Row(Modifier.fillMaxWidth().padding(bottom = 8.dp).blakeCard(12.dp)
+                                Row(Modifier.fillMaxWidth().padding(vertical = 10.dp).drawBehind { drawRect(hairline, topLeft = androidx.compose.ui.geometry.Offset(0f, size.height - 1f), size = androidx.compose.ui.geometry.Size(size.width, 1f)) }
                                     .clickableNoRipple { sentDetail = r }, verticalAlignment = Alignment.CenterVertically) {
                                     Column(Modifier.weight(1f)) {
                                         Text("− ${Blake.btc(r.amountSats)} ${Blake.RUNE}${if (r.ricochet) " · ricochet" else ""}",
@@ -326,7 +311,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
                         }
                         BlakeBalanceStore.allUtxos().forEach { u ->
                             acts.add(Act(now - maxOf(0, tip - u.height).toLong() * 40) {
-                                Row(Modifier.fillMaxWidth().padding(bottom = 8.dp).blakeCard(12.dp)
+                                Row(Modifier.fillMaxWidth().padding(vertical = 10.dp).drawBehind { drawRect(hairline, topLeft = androidx.compose.ui.geometry.Offset(0f, size.height - 1f), size = androidx.compose.ui.geometry.Size(size.width, 1f)) }
                                     .clickableNoRipple { sheet = Sheet.Utxo(u) }, verticalAlignment = Alignment.CenterVertically) {
                                     Column(Modifier.weight(1f)) {
                                         Text("+ ${Blake.btc(u.value)} ${Blake.RUNE}", style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.ok)
@@ -524,3 +509,21 @@ private fun SentDetailDialog(
 }
 
 private fun toast(ctx: android.content.Context, msg: String) = Toast.makeText(ctx, msg, Toast.LENGTH_SHORT).show()
+
+private val hairline = Blake.line2
+
+/** One row of the wallet command list: glyph, name, a count or hint, chevron. Hairline below. */
+@Composable
+private fun commandRow(glyph: String, name: String, trailing: String, onClick: () -> Unit) {
+    Row(Modifier.fillMaxWidth().clickableNoRipple { Haptics.tap(); onClick() }.padding(vertical = 12.dp)
+        .drawBehind { drawRect(Blake.line, topLeft = androidx.compose.ui.geometry.Offset(0f, size.height - 1f), size = androidx.compose.ui.geometry.Size(size.width, 1f)) },
+        verticalAlignment = Alignment.CenterVertically) {
+        Text(glyph, style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.pp, modifier = Modifier.width(14.dp))
+        Spacer(Modifier.width(10.dp))
+        Text(name, style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.fg, letterSpacing = 2.sp)
+        Spacer(Modifier.weight(1f))
+        Text(trailing, style = Blake.mono(9f), color = Blake.faint)
+        Spacer(Modifier.width(10.dp))
+        Text("›", style = Blake.mono(14f), color = Blake.ppDim)
+    }
+}
