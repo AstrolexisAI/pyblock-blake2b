@@ -2,6 +2,13 @@ package com.astrolexis.pyblock.data.blake
 
 import android.content.Context
 import com.astrolexis.pyblock.data.wallet.WalletStore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -86,7 +93,19 @@ object BlakeBalanceStore {
     /** Mark coins as spent IMMEDIATELY after a successful broadcast, so a second send within the
      *  server's cache window can't reuse them (double-spend → bad-txns-inputs-missingorspent). Ids
      *  are "txid:vout"; cleared naturally once a confirmed refresh drops the spent UTXOs. */
-    fun markSpent(ids: Set<String>) { if (ids.isNotEmpty()) _pendingSpentIds.value = _pendingSpentIds.value + ids }
+    fun markSpent(ids: Set<String>) {
+        if (ids.isEmpty()) return
+        val now = System.currentTimeMillis()
+        synchronized(localSpent) { ids.forEach { localSpent[it] = now } }
+        _pendingSpentIds.value = _pendingSpentIds.value + ids
+    }
+    /** Coins WE broadcast a spend of → broadcast time. The server's mempool view lags the push
+     *  (index cache window; it may only list txs paying an address, not spending from it), so a
+     *  poll right after a send used to wipe the in-flight mark and the "sending · in mempool"
+     *  line vanished. A local mark holds until the coin leaves the confirmed set (mined) or
+     *  [LOCAL_SPENT_TTL_MS] passes without the node ever showing the tx. Mirrors iOS. */
+    private val localSpent = HashMap<String, Long>()
+    private const val LOCAL_SPENT_TTL_MS = 30L * 60_000
 
     // ---- Derived totals ----
 
@@ -165,10 +184,37 @@ object BlakeBalanceStore {
                 }
             }
         }
+        // Local marks: drop the ones whose coin is gone (mined) or that aged out unseen.
+        val now = System.currentTimeMillis()
+        val local = synchronized(localSpent) {
+            localSpent.entries.removeAll { it.key !in ourIds || now - it.value >= LOCAL_SPENT_TTL_MS }
+            localSpent.keys.toSet()
+        }
         _pendingIn.value = inSats
-        _pendingSpentIds.value = spent
+        _pendingSpentIds.value = spent + local
         _pendingActivity.value = items.sortedByDescending { it.seen }
     }
+
+    /** Mempool-only poll while the live stream is up. The push stream carries CONFIRMED utxo
+     *  sets; 0-conf state only comes from `wallet_mempool`, so without this the pending lines
+     *  only moved on a pull-to-refresh. Cheap (one small GET per address), 15 s. */
+    private val pollScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var pollJob: Job? = null
+    private fun startMempoolPoll(ctx: Context) {
+        if (pollJob?.isActive == true) return
+        pollJob = pollScope.launch {
+            while (isActive) {
+                delay(15_000)
+                if (refreshMutex.isLocked) continue          // a full refresh polls anyway
+                val wallets = WalletStore.wallets.value.filter { it.address.isNotBlank() }
+                if (wallets.isEmpty()) continue
+                val pendingBefore = pendingInTotal(); val totalBefore = lastTotal ?: totalSats()
+                pollMempool(wallets)
+                detectConfirmed(pendingBefore, totalBefore)
+            }
+        }
+    }
+    private fun stopMempoolPoll() { pollJob?.cancel(); pollJob = null }
 
     /** Consume the pending receive event (after the UI plays the effect). */
     fun clearReceiveEvent() { _receiveEvent.value = null }
@@ -231,9 +277,11 @@ object BlakeBalanceStore {
                 sendSubscribe()
             }
         }
+        startMempoolPoll(ctx)
     }
 
     fun stopLive() {
+        stopMempoolPoll()
         socket?.close(1000, null); socket = null; _live.value = false
     }
 
