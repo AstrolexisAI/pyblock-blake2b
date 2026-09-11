@@ -27,6 +27,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.animation.core.tween
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -51,6 +53,10 @@ fun BlakePoolScreen() {
     val tip = stats?.blockHeight ?: status?.blockHeight ?: 0
 
     var blocksHeight by remember { mutableStateOf(-1) }   // height the block feed was last fetched at
+    var topBlock by remember { mutableStateOf(-1) }        // newest block shown; a higher one is "found"
+    var sweepKey by remember { mutableStateOf(0) }         // bumps once per found block
+    val sweep = remember { androidx.compose.animation.core.Animatable(-0.3f) }
+    LaunchedEffect(sweepKey) { if (sweepKey > 0) { sweep.snapTo(-0.3f); sweep.animateTo(1.3f, tween(900)) } }
     /** Returns true when the stats call succeeded (the signal the poll loop backs off on). */
     val load: suspend () -> Boolean = {
         val fresh = BlakeApi.poolStats()
@@ -60,7 +66,18 @@ fun BlakePoolScreen() {
         // fetched only when the height moved, not on every 20 s tick.
         val h = fresh?.blockHeight ?: status?.blockHeight ?: 0
         if (blocks.isEmpty() || h != blocksHeight) {
-            BlakeApi.blocks().takeIf { it.isNotEmpty() }?.let { blocks = it; blocksHeight = h }
+            BlakeApi.blocks().takeIf { it.isNotEmpty() }?.let { bb ->
+                blocks = bb; blocksHeight = h
+                val newest = bb.maxOfOrNull { it.height } ?: -1
+                // Only a block that arrived while watching counts: the first load just sets the mark.
+                if (topBlock > 0 && newest > topBlock) {
+                    val b = bb.first { it.height == newest }
+                    com.astrolexis.pyblock.ui.Haptics.tap(); com.astrolexis.pyblock.ui.Sfx.stageClear()
+                    WalletEvents.post(WalletEvents.Kind.Block(newest, b.stratum ?: "pool"))
+                    sweepKey++
+                }
+                topBlock = maxOf(topBlock, newest)
+            }
         }
         loaded = true
         fresh != null
@@ -96,8 +113,20 @@ fun BlakePoolScreen() {
             else if (stats == null) Text("⚠ can't reach the server.", style = Blake.mono(10f), color = Blake.danger)
 
             Spacer(Modifier.height(14.dp))
-            // KPI card
-            Column(Modifier.fillMaxWidth().blakeCard()) {
+            // KPI card — with the block-found sweep: a thin light bar crossing it once, left to right.
+            Column(Modifier.fillMaxWidth().blakeCard().drawWithContent {
+                drawContent()
+                val x = sweep.value
+                if (x > -0.3f && x < 1.3f) {
+                    val w = size.width * 0.3f
+                    drawRect(
+                        brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
+                            listOf(Blake.pp.copy(alpha = 0f), Blake.pp.copy(alpha = 0.45f), Blake.pp.copy(alpha = 0f)),
+                            startX = size.width * x, endX = size.width * x + w),
+                        topLeft = androidx.compose.ui.geometry.Offset(size.width * x, 0f),
+                        size = androidx.compose.ui.geometry.Size(w, size.height))
+                }
+            }) {
                 Row(Modifier.fillMaxWidth()) {
                     BlakeStat(hashrate(stats?.poolHashrateThs), "pool hashrate")
                     Spacer(Modifier.weight(1f))

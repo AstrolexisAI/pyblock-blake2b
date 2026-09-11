@@ -131,10 +131,13 @@ object BlakeBalanceStore {
             loaded += w.address
             if (r.second > tipSeen) tipSeen = r.second
         }
+        val pendingBefore = pendingInTotal(); val totalBefore = lastTotal ?: totalSats()
         _utxos.value = next
         if (tipSeen > 0) _tip.value = tipSeen
         pollMempool(wallets)
         _loading.value = false
+        detectConfirmed(pendingBefore, totalBefore)
+        detectMatured()
 
         detectReceive(wallets.map { it.address })
     }
@@ -167,6 +170,30 @@ object BlakeBalanceStore {
 
     /** Consume the pending receive event (after the UI plays the effect). */
     fun clearReceiveEvent() { _receiveEvent.value = null }
+    /** A 0-conf incoming amount was mined (it left pendingIn while the confirmed total held). */
+    private val _confirmedEvent = MutableStateFlow<ReceiveEvent?>(null)
+    val confirmedEvent: StateFlow<ReceiveEvent?> = _confirmedEvent.asStateFlow()
+    fun clearConfirmedEvent() { _confirmedEvent.value = null }
+    /** Mined coins crossed the 100-block line and became spendable. */
+    private val _maturedEvent = MutableStateFlow<ReceiveEvent?>(null)
+    val maturedEvent: StateFlow<ReceiveEvent?> = _maturedEvent.asStateFlow()
+    fun clearMaturedEvent() { _maturedEvent.value = null }
+    private var prevSpendableIds: Set<String>? = null
+
+    @Synchronized private fun detectMatured() {
+        val tip = _tip.value
+        val now = allUtxos().filter { it.coinbase && BlakeFork.isSpendable(it, tip) }.map { it.id }.toSet()
+        val prev = prevSpendableIds; prevSpendableIds = now
+        if (prev == null) return
+        val fresh = now - prev
+        if (fresh.isEmpty()) return
+        val sats = allUtxos().filter { it.id in fresh }.sumOf { it.value }
+        if (sats > 0) { eventSeq += 1; _maturedEvent.value = ReceiveEvent(eventSeq, sats) }
+    }
+    private fun detectConfirmed(pendingBefore: Long, totalBefore: Long) {
+        val after = pendingInTotal()
+        if (pendingBefore > after && totalSats() >= totalBefore) { eventSeq += 1; _confirmedEvent.value = ReceiveEvent(eventSeq, pendingBefore - after) }
+    }
 
     // ---- Live stream (WebSocket push — no time-based polling) ----
 
@@ -234,6 +261,7 @@ object BlakeBalanceStore {
         loaded += addr
         // fire the "received" effect the instant a payment lands — but only against a complete baseline
         detectReceive(WalletStore.wallets.value.filter { it.address.isNotBlank() }.map { it.address })
+        detectMatured()
     }
 
     private fun scheduleReconnect() {

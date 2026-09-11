@@ -94,15 +94,26 @@ fun BlakeRootScaffold() {
         BlakeBalanceStore.startLive(ctx)
     }
 
-    // App-wide "received" banner — fires on any tab when the balance rises.
+    // Every event lands on ONE quiet line at the top, on any tab. A receive also flies its
+    // squadron in first; everything else just states itself and leaves.
+    LaunchedEffect(Unit) { WalletEvents.drain() }
     val receiveEvent by BlakeBalanceStore.receiveEvent.collectAsState()
     LaunchedEffect(receiveEvent) {
-        if (receiveEvent != null) {
-            com.astrolexis.pyblock.ui.Haptics.tap()
-            kotlinx.coroutines.delay(3_600)
+        receiveEvent?.let { ev ->
+            com.astrolexis.pyblock.ui.Haptics.tap(); com.astrolexis.pyblock.ui.Sfx.received()
+            WalletEvents.post(WalletEvents.Kind.Received(ev.deltaSats))
             BlakeBalanceStore.clearReceiveEvent()
         }
     }
+    val confirmedEvent by BlakeBalanceStore.confirmedEvent.collectAsState()
+    LaunchedEffect(confirmedEvent) {
+        confirmedEvent?.let { ev -> com.astrolexis.pyblock.ui.Sfx.blip(); WalletEvents.post(WalletEvents.Kind.Confirmed(ev.deltaSats)); BlakeBalanceStore.clearConfirmedEvent() }
+    }
+    val maturedEvent by BlakeBalanceStore.maturedEvent.collectAsState()
+    LaunchedEffect(maturedEvent) {
+        maturedEvent?.let { ev -> com.astrolexis.pyblock.ui.Haptics.tap(); com.astrolexis.pyblock.ui.Sfx.powerUp(); WalletEvents.post(WalletEvents.Kind.Matured(ev.deltaSats)); BlakeBalanceStore.clearMaturedEvent() }
+    }
+    val formation by WalletEvents.formation.collectAsState()
 
     Scaffold(
         containerColor = Blake.bg,
@@ -123,27 +134,8 @@ fun BlakeRootScaffold() {
                 composable("vanity") { BlakeVanityScreen(onClose = { nav.popBackStack() }) }
             }
 
-            // Received banner overlay (top).
-            AnimatedVisibility(
-                visible = receiveEvent != null,
-                enter = slideInVertically { -it } + fadeIn(),
-                exit = slideOutVertically { -it } + fadeOut(),
-                modifier = Modifier.align(Alignment.TopCenter),
-            ) {
-                val ev = receiveEvent
-                Row(
-                    Modifier.statusBarsPadding().padding(horizontal = 14.dp, vertical = 8.dp).fillMaxWidth()
-                        .background(Blake.ink, Blake.shape).border(1.dp, Blake.ok.copy(alpha = 0.7f), Blake.shape).padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text("⬇", style = Blake.mono(18f, FontWeight.ExtraBold), color = Blake.ok)
-                    Spacer(Modifier.size(10.dp))
-                    Column {
-                        Text("RECEIVED", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.ok, letterSpacing = 2.sp)
-                        Text("+${Blake.btc(ev?.deltaSats ?: 0)} ${Blake.RUNE}", style = Blake.mono(13f, FontWeight.ExtraBold), color = Blake.hero)
-                    }
-                }
-            }
+            formation?.let { ReceiveFormation(it) }
+            Ticker(Modifier.align(Alignment.TopCenter))
         }
     }
 }
