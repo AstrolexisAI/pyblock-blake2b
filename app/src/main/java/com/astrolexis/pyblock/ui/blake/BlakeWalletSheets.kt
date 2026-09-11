@@ -1,6 +1,7 @@
 package com.astrolexis.pyblock.ui.blake
 
 import androidx.compose.foundation.background
+import com.astrolexis.pyblock.data.blake.BlakePrice
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -555,6 +556,8 @@ fun SendSheet(onSend: (String, Long, Boolean, Long, Boolean) -> Unit, paste: () 
 @Composable
 fun CurrencyPickerSheet(currencies: List<String>, onPick: (String) -> Unit) {
     sheetBox("CURRENCY", Blake.pp, { onPick(currencies.firstOrNull() ?: "USD") }) {
+        Text("${BlakePrice.TICKER}/USDT on ${BlakePrice.SOURCE} · other currencies crossed via mempool.space",
+            style = Blake.mono(8f), color = Blake.faint, modifier = Modifier.padding(bottom = 6.dp))
         currencies.forEach { c ->
             Text(c, style = Blake.mono(14f), color = Blake.fg,
                 modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp).clickableNoRipple { onPick(c) })

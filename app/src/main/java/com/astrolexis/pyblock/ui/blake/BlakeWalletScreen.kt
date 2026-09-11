@@ -1,5 +1,6 @@
 package com.astrolexis.pyblock.ui.blake
 
+import java.util.Locale
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
@@ -75,7 +76,10 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
     BlakeBalanceStore.utxos.collectAsState().value      // recompose on utxo change
     val tip by BlakeBalanceStore.tip.collectAsState()
     val loading by BlakeBalanceStore.loading.collectAsState()
-    val rates by BlakePrice.rates.collectAsState()
+    BlakePrice.rates.collectAsState().value             // recompose on cross-rate load
+    val xbtUsd by BlakePrice.xbtUsd.collectAsState()
+    val change24h by BlakePrice.change24h.collectAsState()
+    val ccy by BlakePrice.currency.collectAsState()
     val live by BlakeBalanceStore.live.collectAsState()
     val sentRecords by com.astrolexis.pyblock.data.blake.BlakeSentStore.records.collectAsState()
     val pendingIn by BlakeBalanceStore.pendingIn.collectAsState()
@@ -127,8 +131,6 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
             delay(30_000)
         }
     }
-    // recompute derived off rates too
-    rates.size
     com.astrolexis.pyblock.data.blake.UnlockStore.ids.collectAsState().value   // recompose on unlock/relock
     val labels by com.astrolexis.pyblock.data.blake.BlakeLabelStore.labels.collectAsState()   // recompose on label edits
     val ricochetRecords by com.astrolexis.pyblock.data.wallet.RicochetHistory.records.collectAsState()
@@ -195,18 +197,39 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
                     Text("${"%,d".format(total)} sats · ${wallets.size} addr", style = Blake.mono(8f), color = Blake.faint)
                 }
                 }
-                val pendInTotal = pendingIn.values.sum()
-                if (pendInTotal > 0 || pendingSpent.isNotEmpty()) {
+                // The coin's own market quote (XBT on the exchanges), never the BTC price: rate, 24h
+                // move, and what the whole balance is worth. Tap it to open the currency picker.
+                val quote = if (xbtUsd != null) BlakePrice.quoteLabel() else null
+                if (quote != null) {
                     Spacer(Modifier.height(4.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.size(5.dp).background(Blake.warn, CircleShape))
-                        Spacer(Modifier.width(6.dp))
-                        val parts = buildList {
-                            if (pendInTotal > 0) add("+${Blake.btc(pendInTotal)} ${Blake.RUNE} arriving")
-                            if (pendingSpent.isNotEmpty()) add("send in flight")
+                    Row(Modifier.fillMaxWidth().clickableNoRipple { sheet = Sheet.Currency }, verticalAlignment = Alignment.CenterVertically) {
+                        Text(quote, style = Blake.mono(8f), color = Blake.faint)
+                        change24h?.let { c ->
+                            Spacer(Modifier.width(6.dp))
+                            Text((if (c >= 0) "+" else "") + "%.1f%%".format(Locale.US, c), style = Blake.mono(8f, FontWeight.ExtraBold), color = if (c >= 0) Blake.ok else Blake.warn)
                         }
-                        Text(parts.joinToString(" · ") + " · waiting for a block", style = Blake.mono(8f), color = Blake.warn)
+                        Spacer(Modifier.weight(1f))
+                        BlakePrice.fiatLabel(total)?.let { Text("$it $ccy", style = Blake.mono(8f), color = Blake.faint) }
                     }
+                    Text("${BlakePrice.SOURCE} · ${BlakePrice.TICKER}/USDT", style = Blake.mono(7f), color = Blake.faint)
+                }
+                // Mempool state, said plainly: the tx has been SEEN by the node but no block holds it
+                // yet, so it has 0 confirmations. One line per direction, amount first.
+                val pendInTotal = pendingIn.values.sum()
+                val pendOutTotal = BlakeBalanceStore.pendingOutTotal()
+                if (pendInTotal > 0 || pendOutTotal > 0) {
+                    Spacer(Modifier.height(4.dp))
+                    if (pendInTotal > 0) Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(5.dp).background(Blake.warn, CircleShape)); Spacer(Modifier.width(6.dp))
+                        Text("+${Blake.btc(pendInTotal)} ${Blake.RUNE}", style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.warn); Spacer(Modifier.width(6.dp))
+                        Text("incoming · in mempool · 0 conf", style = Blake.mono(8f), color = Blake.warn)
+                    }
+                    if (pendOutTotal > 0) Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(5.dp).background(Blake.warn, CircleShape)); Spacer(Modifier.width(6.dp))
+                        Text("−${Blake.btc(pendOutTotal)} ${Blake.RUNE}", style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.warn); Spacer(Modifier.width(6.dp))
+                        Text("sending · in mempool · 0 conf", style = Blake.mono(8f), color = Blake.warn)
+                    }
+                    Text("seen by the node, not yet in a block", style = Blake.mono(7f), color = Blake.faint)
                 }
             }
 

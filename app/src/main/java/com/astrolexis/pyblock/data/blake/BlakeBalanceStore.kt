@@ -79,6 +79,8 @@ object BlakeBalanceStore {
     data class PendingItem(val id: String, val incoming: Boolean, val sats: Long, val address: String, val seen: Long)
 
     fun pendingInTotal(): Long = _pendingIn.value.values.sum()
+    /** Value of our own coins that an in-flight (0-conf) send is spending. */
+    fun pendingOutTotal(): Long { val s = _pendingSpentIds.value; return allUtxos().filter { it.id in s }.sumOf { it.value } }
     fun hasPending(): Boolean = pendingInTotal() > 0 || _pendingSpentIds.value.isNotEmpty()
 
     /** Mark coins as spent IMMEDIATELY after a successful broadcast, so a second send within the
