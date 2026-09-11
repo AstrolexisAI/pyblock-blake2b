@@ -45,7 +45,24 @@ object BlakeBalanceStore {
     private val _receiveEvent = MutableStateFlow<ReceiveEvent?>(null)
     val receiveEvent: StateFlow<ReceiveEvent?> = _receiveEvent.asStateFlow()
     data class ReceiveEvent(val id: Long, val deltaSats: Long)
-    private var lastTotal: Long? = null
+    private var lastTotal: Long? = null   // null until the first COMPLETE total (no false ding)
+    /** Addresses whose UTXO set has been loaded at least once this session. A total is only
+     *  compared to the previous one once EVERY wallet is here; before that a rising total is the
+     *  rest of the wallets arriving (a warming miss, or the stream landing before the first
+     *  refresh finished), not a payment. That was the "RECEIVED on every open" bug. */
+    private val loaded = HashSet<String>()
+    /** The wallet list the current baseline was taken against; a new or removed address invalidates it. */
+    private var baselineAddresses: List<String> = emptyList()
+
+    /** Emit a receive event only for a rise between two COMPLETE totals over the SAME addresses. */
+    @Synchronized private fun detectReceive(wallets: List<String>) {
+        if (!wallets.all { it in loaded }) return
+        if (wallets != baselineAddresses) { baselineAddresses = wallets; lastTotal = totalSats(); return }
+        val total = totalSats()
+        val prev = lastTotal
+        if (prev != null && total > prev) { eventSeq += 1; _receiveEvent.value = ReceiveEvent(eventSeq, total - prev) }
+        lastTotal = total
+    }
     private var eventSeq = 0L
 
     // ---- Pending (0-conf mempool) ----
@@ -111,6 +128,7 @@ object BlakeBalanceStore {
             // miss left that address stale until the next refresh.
             val r = BlakeApi.walletUtxos(w.address) ?: BlakeApi.walletUtxos(w.address) ?: continue
             next[w.address] = r.first
+            loaded += w.address
             if (r.second > tipSeen) tipSeen = r.second
         }
         _utxos.value = next
@@ -118,13 +136,7 @@ object BlakeBalanceStore {
         pollMempool(wallets)
         _loading.value = false
 
-        val total = totalSats()
-        val prev = lastTotal
-        if (prev != null && total > prev) {
-            eventSeq += 1
-            _receiveEvent.value = ReceiveEvent(eventSeq, total - prev)
-        }
-        lastTotal = total
+        detectReceive(wallets.map { it.address })
     }
 
     /** Poll the blake2b mempool for every address → 0-conf incoming (receives/change) and
@@ -219,11 +231,9 @@ object BlakeBalanceStore {
         val addr = m.address ?: return
         val us = m.utxos ?: return
         _utxos.value = _utxos.value.toMutableMap().apply { put(addr, us) }
-        // fire the "received" effect the instant a payment lands
-        val total = totalSats()
-        val prev = lastTotal
-        if (prev != null && total > prev) { eventSeq += 1; _receiveEvent.value = ReceiveEvent(eventSeq, total - prev) }
-        lastTotal = total
+        loaded += addr
+        // fire the "received" effect the instant a payment lands — but only against a complete baseline
+        detectReceive(WalletStore.wallets.value.filter { it.address.isNotBlank() }.map { it.address })
     }
 
     private fun scheduleReconnect() {
