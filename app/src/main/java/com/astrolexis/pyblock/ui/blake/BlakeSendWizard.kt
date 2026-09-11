@@ -555,7 +555,7 @@ private fun SendResultScreen(r: WizardResult, onCopy: (String) -> Unit, onClose:
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(contentAlignment = Alignment.Center) {
                 // One ring, opening once from the check and fading as it grows.
-                Box(Modifier.size(30.dp).graphicsLayer { scaleX = 0.4f + 5.6f * ring; scaleY = 0.4f + 5.6f * ring; alpha = 0.9f * (1f - ring) }
+                Box(Modifier.size(30.dp).graphicsLayer { scaleX = 0.4f + 5.6f * ring; scaleY = 0.4f + 5.6f * ring; this.alpha = 0.9f * (1f - ring) }
                     .border(1.5.dp, Blake.ok, CircleShape))
                 Text("✓", style = Blake.mono(26f, FontWeight.ExtraBold), color = Blake.ok,
                     modifier = Modifier.graphicsLayer { scaleX = scale; scaleY = scale; this.alpha = alpha })
