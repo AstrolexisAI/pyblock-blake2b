@@ -121,7 +121,6 @@ fun SendWizardSheet(
     var scanning by remember { mutableStateOf(false) }
     var showContacts by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
-    var takeoff by remember { mutableStateOf(false) }   // the lift-off drawn over the sheet right after CONFIRM
     var error by remember { mutableStateOf<String?>(null) }
     var result by remember { mutableStateOf<WizardResult?>(null) }
 
@@ -226,7 +225,6 @@ fun SendWizardSheet(
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         Box(Modifier.fillMaxSize().background(Blake.bg)) {
             val r = result
-            if (takeoff) Box(Modifier.fillMaxSize().zIndex(1f)) { Takeoff { takeoff = false } }
             if (r != null) {
                 SendResultScreen(r, onCopy = { clip.setText(AnnotatedString(it)) }, onClose = onClose)
             } else if (scanning) {
@@ -288,7 +286,8 @@ fun SendWizardSheet(
                             Text(if (busy) "BROADCASTING…" else if (ricochet) "CONFIRM RICOCHET" else "CONFIRM SEND",
                                 style = Blake.mono(14f, FontWeight.ExtraBold), color = Blake.bg, letterSpacing = 1.sp, textAlign = TextAlign.Center,
                                 modifier = Modifier.weight(1f).background(Blake.pp).padding(vertical = 14.dp)
-                                    .clickableNoRipple { if (!busy) { takeoff = true; com.astrolexis.pyblock.ui.Sfx.select(); submit() } })
+                                    .graphicsLayer { scaleX = if (busy) 0.98f else 1f; scaleY = if (busy) 0.98f else 1f; alpha = if (busy) 0.85f else 1f }
+                                    .clickableNoRipple { if (!busy) { com.astrolexis.pyblock.ui.Sfx.select(); submit() } })
                         }
                     }
                 }
@@ -538,7 +537,7 @@ private fun SpendableCard(coinKeys: Set<String>, selectedSats: Long, spendable: 
 @Composable
 private fun SendResultScreen(r: WizardResult, onCopy: (String) -> Unit, onClose: () -> Unit) {
     var pop by remember { mutableStateOf(false) }
-    var burst by remember { mutableStateOf(true) }   // the one-shot send effect over the result
+    val ring by animateFloatAsState(if (pop) 1f else 0f, tween(550, delayMillis = 50), label = "ring")   // one ring, once
     val scale by animateFloatAsState(if (pop) 1f else 0.3f, tween(450), label = "pop")
     val alpha by animateFloatAsState(if (pop) 1f else 0f, tween(450), label = "popa")
     androidx.compose.runtime.LaunchedEffect(Unit) { pop = true; com.astrolexis.pyblock.ui.Haptics.tap(); com.astrolexis.pyblock.ui.Sfx.success() }
@@ -552,11 +551,15 @@ private fun SendResultScreen(r: WizardResult, onCopy: (String) -> Unit, onClose:
     var contactNameInput by remember { mutableStateOf("") }
 
     androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
-    if (burst) SendBurst { burst = false }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("✓", style = Blake.mono(26f, FontWeight.ExtraBold), color = Blake.ok,
-                modifier = Modifier.graphicsLayer { scaleX = scale; scaleY = scale; this.alpha = alpha })
+            Box(contentAlignment = Alignment.Center) {
+                // One ring, opening once from the check and fading as it grows.
+                Box(Modifier.size(30.dp).graphicsLayer { scaleX = 0.4f + 5.6f * ring; scaleY = 0.4f + 5.6f * ring; alpha = 0.9f * (1f - ring) }
+                    .border(1.5.dp, Blake.ok, CircleShape))
+                Text("✓", style = Blake.mono(26f, FontWeight.ExtraBold), color = Blake.ok,
+                    modifier = Modifier.graphicsLayer { scaleX = scale; scaleY = scale; this.alpha = alpha })
+            }
             Spacer(Modifier.width(10.dp))
             Text(if (r.ricochet) "RICOCHET SENT" else "SENT", style = Blake.mono(18f, FontWeight.ExtraBold), color = Blake.ok, letterSpacing = 2.sp)
         }
