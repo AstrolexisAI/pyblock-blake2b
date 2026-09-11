@@ -134,8 +134,9 @@ fun BlakeRootScaffold() {
                 composable("vanity") { BlakeVanityScreen(onClose = { nav.popBackStack() }) }
             }
 
+            // No banner: events show IN PLACE (wallet status line, pool timechain line). A receive
+            // flies its squadron into the balance number first.
             formation?.let { ReceiveFormation(it) }
-            Ticker(Modifier.align(Alignment.TopCenter))
         }
     }
 }

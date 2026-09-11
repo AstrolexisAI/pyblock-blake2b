@@ -105,7 +105,9 @@ fun BlakePoolScreen() {
                     color = if (live) Blake.ok else Blake.warn, letterSpacing = 2.sp)
             }
             Spacer(Modifier.height(8.dp))
-            Text("BLAKE2b · timechain ${status?.blockHeight?.let { "#$it" } ?: "—"}",
+            val poolEvent by WalletEvents.current.collectAsState()
+            // A found block borrows this line for a few seconds; otherwise it states the timechain.
+            Text(poolEvent?.let { "${it.glyph} ${it.text}" } ?: "BLAKE2b · timechain ${status?.blockHeight?.let { "#$it" } ?: "—"}",
                 style = Blake.mono(10f), color = Blake.ppDim, letterSpacing = 1.sp)
 
             Spacer(Modifier.height(22.dp))

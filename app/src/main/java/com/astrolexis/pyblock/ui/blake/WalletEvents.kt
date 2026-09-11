@@ -96,33 +96,9 @@ object WalletEvents {
     }
 }
 
-/** The line itself. Slides in from the right, sits under the status bar, slides out to the left. */
-@Composable
-fun Ticker(modifier: Modifier = Modifier) {
-    val current by WalletEvents.current.collectAsState()
-    AnimatedContent(
-        targetState = current, label = "ticker", modifier = modifier,
-        transitionSpec = { (slideInHorizontally { it } + fadeIn()) togetherWith (slideOutHorizontally { -it } + fadeOut()) },
-    ) { e ->
-        if (e != null) {
-            Row(
-                Modifier.fillMaxWidth()
-                    .background(Brush.verticalGradient(listOf(Blake.bg, Blake.bg.copy(alpha = 0f))))
-                    .statusBarsPadding().padding(horizontal = 20.dp, vertical = 6.dp)
-                    .clickableNoRipple { WalletEvents.dismiss() },
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(e.glyph, style = Blake.mono(11f, FontWeight.ExtraBold), color = e.color)
-                Spacer(Modifier.width(8.dp))
-                Text(e.text, style = Blake.mono(10f, FontWeight.ExtraBold), color = e.color, letterSpacing = 1.5.sp, maxLines = 1)
-            }
-        } else Box(Modifier.fillMaxWidth())
-    }
-}
-
 /**
  * The receive formation: a small squadron of runes enters from the top right in a sine wave, the
- * Galaga way, and folds into the ticker line as the RECEIVED text lands. Canvas, ~1.4 s, never
+ * Galaga way, and folds into the balance number as it rolls to the new total. Canvas, ~1.4 s, never
  * intercepts touches. Mirrors iOS ReceiveFormationView.
  */
 @Composable
@@ -141,7 +117,7 @@ fun ReceiveFormation(event: WalletEvents.Event, count: Int = 7) {
         }
     }
     Canvas(Modifier.fillMaxSize()) {
-        val tx = 26f * density; val ty = 64f * density
+        val tx = 60f * density; val ty = 118f * density   // where the balance number sits
         paint.textSize = 14f * density
         drawIntoCanvas { c ->
             for (i in 0 until count) {

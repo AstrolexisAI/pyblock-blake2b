@@ -169,7 +169,15 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
                     Text("⚙", style = Blake.mono(15f), color = Blake.faint, modifier = Modifier.padding(top = 6.dp).clickableNoRipple { sheet = Sheet.Settings })
                 }
                 Spacer(Modifier.height(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                val currentEvent by WalletEvents.current.collectAsState()
+                androidx.compose.animation.Crossfade(targetState = currentEvent, label = "statusline") { ev ->
+                if (ev != null) Row(Modifier.height(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    // An event borrows this line for a few seconds, then it goes back to status.
+                    Text(ev.glyph, style = Blake.mono(9f, FontWeight.ExtraBold), color = ev.color)
+                    Spacer(Modifier.width(6.dp))
+                    Text(ev.text, style = Blake.mono(8f, FontWeight.ExtraBold), color = ev.color, letterSpacing = 1.sp, maxLines = 1)
+                } else
+                Row(Modifier.height(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     if (wallets.isNotEmpty()) {
                         Box(Modifier.size(5.dp).background(if (live) Blake.ok else Blake.faint, CircleShape))
                         Spacer(Modifier.size(6.dp))
@@ -185,6 +193,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
                     }
                     Spacer(Modifier.weight(1f))
                     Text("${"%,d".format(total)} sats · ${wallets.size} addr", style = Blake.mono(8f), color = Blake.faint)
+                }
                 }
                 val pendInTotal = pendingIn.values.sum()
                 if (pendInTotal > 0 || pendingSpent.isNotEmpty()) {
