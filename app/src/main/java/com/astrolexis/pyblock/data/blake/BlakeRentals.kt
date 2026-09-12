@@ -177,6 +177,28 @@ object BlakeRentals {
         return q
     }
 
+    /** Sats a BOLT11 invoice asks for, read from its human-readable part (`lnbc<amount><mult>1…`).
+     *  null when the invoice carries no amount or can't be parsed — both of which we refuse to pay. */
+    fun invoiceSats(invoice: String): Long? {
+        val s = invoice.lowercase()
+        if (!s.startsWith("lnbc")) return null
+        val sep = s.lastIndexOf('1')
+        if (sep <= 4) return null
+        var amount = s.substring(4, sep)
+        if (amount.isEmpty()) return null                       // amountless invoice
+        var multiplier = 1.0
+        val last = amount.last()
+        if (last in "munp") {
+            multiplier = mapOf('m' to 1e-3, 'u' to 1e-6, 'n' to 1e-9, 'p' to 1e-12)[last] ?: 1.0
+            amount = amount.dropLast(1)
+        }
+        val v = amount.toDoubleOrNull() ?: return null
+        if (v < 0) return null
+        val sats = v * multiplier * 100_000_000
+        if (!sats.isFinite() || sats < 0 || sats >= 21_000_000.0 * 100_000_000) return null
+        return Math.round(sats)
+    }
+
     /** Places the order; the server re-quotes at pay time. `clientNonce` makes a retry idempotent. */
     suspend fun order(rigId: String, address: String, pool: String, clientNonce: String): Order {
         val r = signed("POST", "/api/app/blake2b_order.php",
@@ -184,6 +206,13 @@ object BlakeRentals {
             ?: throw Failure(if (DeviceStore.peek() == null) "Couldn't register this device." else "Can't reach the server.")
         val o = if (r.second == 200) runCatching { json.decodeFromString<Order>(r.first) }.getOrNull() else null
         if (o?.ok != true || o.invoice.isNullOrBlank() || o.orderId.isNullOrBlank()) throw Failure(serverMessage(r.first, r.second))
+        // FUND-SAFETY: the screen shows a total and a QR that come from two different fields of the
+        // same response. Never display an invoice asking for something other than the total shown —
+        // a wrong (or hostile) server would otherwise collect a silent overpay.
+        val asked = invoiceSats(o.invoice)
+        if (asked == null || asked != (o.totalSats ?: -1L)) {
+            throw Failure("The invoice asks for ${asked ?: "an unreadable amount"} sats but the order says ${o.totalSats ?: 0}. Not showing it — nothing was paid.")
+        }
         return o
     }
 
