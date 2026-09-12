@@ -126,7 +126,13 @@ fun BlakeWaviclesScreen() {
                 Text("window ${"%.0f".format(fill * 100)}% full · 8× network difficulty (TIDES)",
                     style = Blake.mono(8f), color = Blake.faint)
                 Spacer(Modifier.height(8.dp))
-                val miners = w?.miners ?: emptyList()
+                // The table is keyed by the stratum username, and some rigs are pointed here with a
+                // machine name ("sc184", "HS-BOX…") instead of a payout address. Those can never be
+                // paid, and mixed into the payout table they read as peers earning nothing. Show
+                // only identities that could receive a coinbase, and count the rest in one line.
+                val allMiners = w?.miners ?: emptyList()
+                val miners = allMiners.filter { isPayoutIdentity(it.identity) }
+                val unpayable = allMiners.size - miners.size
                 if (miners.isEmpty()) {
                     Text("Window empty — the first block pays the pool until work is credited.",
                         style = Blake.mono(8f), color = Blake.faint)
@@ -147,6 +153,11 @@ fun BlakeWaviclesScreen() {
                                     style = Blake.mono(7f), color = Blake.faint)
                             }
                         }
+                    }
+                    if (unpayable > 0) {
+                        Spacer(Modifier.height(6.dp))
+                        Text("$unpayable miner${if (unpayable == 1) "" else "s"} hidden: their stratum username isn't a payout address, so the pool has nowhere to pay them.",
+                            style = Blake.mono(7f), color = Blake.faint)
                     }
                 }
             }
@@ -238,4 +249,19 @@ private fun hrGhs(ghs: Double?): String {
     ghs ?: return "—"
     val ths = ghs / 1000
     return when { ths >= 1000 -> "%.2f PH/s".format(ths / 1000); ths >= 1 -> "%.1f TH/s".format(ths); else -> "%.0f GH/s".format(ghs) }
+}
+
+/** Could this identity ever receive a coinbase payment? Mainnet P2PKH/P2SH/bech32 only — the same
+ *  shape the send screen accepts. Anything else is a rig name typed into the stratum username.
+ *  A worker suffix ("addr.rig1") is normal and still pays the address before the dot. */
+private fun isPayoutIdentity(raw: String?): Boolean {
+    val a = raw?.trim() ?: return false
+    if (a.length < 26) return false
+    val base = a.substringBefore('.')
+    if (base.length < 26) return false
+    return when {
+        base.startsWith("1") || base.startsWith("3") -> base.length <= 35
+        base.lowercase().startsWith("bc1") -> base.length <= 62
+        else -> false
+    }
 }
