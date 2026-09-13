@@ -63,7 +63,14 @@ fun BlakeChirpScreen() {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
             Text("CHIRP", style = Blake.mono(24f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 3.sp)
             Spacer(Modifier.height(6.dp))
-            Text("Syndicate · weighted split · 0.9% fee", style = Blake.mono(10f), color = Blake.ppDim)
+            // From the gateway, never hardcoded: CHIRP is 1% + 1% on this chain, and this line used to
+            // print the SHA-256 pool's 0.9%. No split from the server → say what it is, quote nothing.
+            val sp = pool?.split?.pct
+            Text(
+                if (sp?.syndicate != null)
+                    "Syndicate · ${pctText(sp.syndicate)} to members by weight · ${pctText(sp.supplier ?: 0.0)} node-runner · ${pctText(sp.pool ?: 0.0)} PyBLØCK"
+                else "Syndicate · weighted split",
+                style = Blake.mono(10f), color = Blake.ppDim)
 
             Spacer(Modifier.height(22.dp))
             if (!loaded) { Text("⟳ loading…", style = Blake.mono(10f), color = Blake.pp); Spacer(Modifier.height(14.dp)) }
@@ -200,3 +207,8 @@ private fun powerStr(p: Double?): String {
     p ?: return "—"
     return if (p >= 1_000_000) "%.0f TH/s".format(p / 1_000_000) else "%.0f GH/s".format(p / 1000)
 }
+
+/** "1%" / "0.9%" — no trailing zero when it's whole. */
+private fun pctText(v: Double): String =
+    if (v == Math.rint(v)) String.format(java.util.Locale.US, "%.0f%%", v)
+    else String.format(java.util.Locale.US, "%.1f%%", v)

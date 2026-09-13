@@ -85,7 +85,12 @@ fun BlakeWaviclesScreen() {
                 Text("WAVICLES", style = Blake.mono(24f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 3.sp)
             }
             Spacer(Modifier.height(6.dp))
-            Text("DATUM · bring your own node · 0.4% fee", style = Blake.mono(10f), color = Blake.ppDim)
+            // Both fees, from the server: 0.4% with your own node (DATUM), 2.9% when the block comes
+            // through PyBLØCK's stratum. This line claimed 0.4% for every case.
+            val ownPct = (stats?.pool?.feeBps ?: 40) / 100.0
+            val stratumPct = (stats?.pool?.stratumFeeBps ?: 290) / 100.0
+            Text("DATUM · bring your own node · ${wpct(ownPct)} fee · ${wpct(stratumPct)} via our stratum",
+                style = Blake.mono(10f), color = Blake.ppDim)
             Spacer(Modifier.height(22.dp))
             if (!loaded) { Text("⟳ loading…", style = Blake.mono(10f), color = Blake.wave); Spacer(Modifier.height(14.dp)) }
             else if (offline) { Text("⚠ pool offline — pull to retry.", style = Blake.mono(10f), color = Blake.danger); Spacer(Modifier.height(14.dp)) }
@@ -115,7 +120,9 @@ fun BlakeWaviclesScreen() {
                 val fee = w?.sampleFeeSats ?: 0L
                 kvRow("BLOCK VALUE", "${Blake.btc(value)} ${Blake.RUNE}", Blake.fg)
                 kvRow("TO THE WINDOW", "${Blake.btc(maxOf(0L, value - fee))} ${Blake.RUNE}", Blake.wave)
-                kvRow("POOL FEE (0.4%)", "$fee sats", Blake.faint)
+                // Measured from THIS sample rather than assumed: the blend of the two fee paths moves.
+                kvRow(if (value > 0) "POOL FEE (${String.format(java.util.Locale.US, "%.2f%%", fee * 100.0 / value)})" else "POOL FEE",
+                    "$fee sats", Blake.faint)
                 Spacer(Modifier.height(8.dp))
                 val fill = (w?.fillPercent ?: 0.0).coerceIn(0.0, 1.0)
                 Row(Modifier.fillMaxWidth().height(10.dp).background(Blake.line)) {
@@ -189,7 +196,9 @@ fun BlakeWaviclesScreen() {
             Column(Modifier.fillMaxWidth().blakeCard()) {
                 Text("HOW IT WORKS", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
                 Spacer(Modifier.height(8.dp))
-                Text("99.6% of every block goes to the work window — split by share of work (TIDES), paid in that block's coinbase · 0.4% fee.",
+                val own = (stats?.pool?.feeBps ?: 40) / 100.0
+                val strat = (stats?.pool?.stratumFeeBps ?: 290) / 100.0
+                Text("${wpct(100 - own)} of every block goes to the work window — split by share of work (TIDES), paid in that block's coinbase. The fee is ${wpct(own)} when you bring your own node, ${wpct(strat)} when the block comes through PyBLØCK's stratum.",
                     style = Blake.mono(9f), color = Blake.fg)
                 Spacer(Modifier.height(6.dp))
                 Text("Not solo: every block found by anyone in the window pays everyone in the window.",
@@ -271,3 +280,8 @@ private fun isPayoutIdentity(raw: String?): Boolean {
         else -> false
     }
 }
+
+/** "0.4%" / "3%" — no trailing zero when it's whole. */
+private fun wpct(v: Double): String =
+    if (v == Math.rint(v)) String.format(java.util.Locale.US, "%.0f%%", v)
+    else String.format(java.util.Locale.US, "%.1f%%", v)

@@ -104,6 +104,9 @@ object BlakeApi {
         @SerialName("fee_bps") val feeBps: Int? = null,
         @SerialName("min_payout") val minPayout: Int? = null,
         @SerialName("window_multiple") val windowMultiple: Int? = null,
+        /** The OTHER fee: a block reaching the pool through PyBLØCK's stratum pays this instead of
+         *  [feeBps] (2.9% vs 0.4% with your own node). The screen showed 0.4% for both. */
+        @SerialName("stratum_fee_bps") val stratumFeeBps: Int? = null,
         val datum: WDatum? = null,
     )
     @Serializable data class WWav(
@@ -161,6 +164,18 @@ object BlakeApi {
         val bestdiff: Double? = null,
         @SerialName("min_days") val minDays: Int? = null,
         @SerialName("min_power") val minPower: Double? = null,
+        /** How the block is divided, as the gateway reports it. Never hardcode this: CHIRP takes
+         *  0.9% on SHA-256 and 1% + 1% here, and the header used to print the other chain's number. */
+        val split: ChirpSplit? = null,
+    )
+
+    @Serializable data class ChirpSplitPct(
+        val syndicate: Double? = null, val supplier: Double? = null, val pool: Double? = null,
+    )
+    @Serializable data class ChirpSplit(
+        @SerialName("supplier_bps") val supplierBps: Int? = null,
+        @SerialName("fee_bps") val feeBps: Int? = null,
+        val pct: ChirpSplitPct? = null,
     )
 
     /** One connected participant on the CHIRP syndicate (server `mode=workers`). */
