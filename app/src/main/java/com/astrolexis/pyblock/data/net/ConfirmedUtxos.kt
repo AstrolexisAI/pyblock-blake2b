@@ -22,8 +22,11 @@ object ConfirmedUtxos {
     /** One batched lookup. [failed] = true if any chunk errored (partial or no data). */
     data class Batch(val byAddress: Map<String, List<Utxo>>, val failed: Boolean)
 
-    /** Confirmed UTXO sweep for the spendable (Bitcoin) wallet. */
-    suspend fun fetch(addresses: Collection<String>, chain: String? = null): Batch {
+    /** Confirmed UTXO sweep. [chain] is REQUIRED and has no default on purpose: an unset chain is
+     *  answered by the Bitcoin node, and this app's coins are on the fork, so a forgotten argument
+     *  is not a slower answer but a wrong one — the whole PayNym receive path was silently asking
+     *  Bitcoin whether a BLAKE2b payment had arrived. */
+    suspend fun fetch(addresses: Collection<String>, chain: String): Batch {
         val unique = addresses.filter { it.isNotBlank() }.distinct()
         if (unique.isEmpty()) return Batch(emptyMap(), failed = false)
         val found = ArrayList<Utxo>()
@@ -47,6 +50,6 @@ object ConfirmedUtxos {
     }
 
     /** Convenience for callers that only need the map (absence == unknown). */
-    suspend fun forAddresses(addresses: Collection<String>): Map<String, List<Utxo>> =
-        fetch(addresses).byAddress
+    suspend fun forAddresses(addresses: Collection<String>, chain: String): Map<String, List<Utxo>> =
+        fetch(addresses, chain).byAddress
 }

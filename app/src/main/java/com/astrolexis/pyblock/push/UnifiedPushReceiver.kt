@@ -18,7 +18,11 @@ class UnifiedPushReceiver : MessagingReceiver() {
 
     override fun onNewEndpoint(context: Context, endpoint: PushEndpoint, instance: String) {
         val app = context.applicationContext
-        scope.launch { PushRepo.registerEndpoint(app, endpoint.url) }
+        PushRepo.rememberEndpoint(app, endpoint.url)
+        scope.launch {
+            PushRepo.registerEndpoint(app, endpoint.url)
+            PushRepo.syncAddresses(app)      // tell the server WHICH addresses to watch, not just where to push
+        }
     }
 
     override fun onMessage(context: Context, message: PushMessage, instance: String) {

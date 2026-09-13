@@ -96,6 +96,15 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
     var lockedExpanded by remember { mutableStateOf(false) }
     var pendingUnlock by remember { mutableStateOf<BlakeApi.Utxo?>(null) }   // coin awaiting replay-risk confirm
     var sheet by remember { mutableStateOf<Sheet?>(null) }
+    // Tapping PAY on a chat payment request navigates here with the address parked in
+    // PendingPayment. Nothing on this screen ever picked it up (the only consumer was the
+    // Bitcoin wallet screen, which this app never shows), so the request was dropped in silence
+    // and the person arrived at an empty wallet with nothing to act on.
+    LaunchedEffect(Unit) {
+        com.astrolexis.pyblock.data.wallet.PendingPayment.consume()?.let { req ->
+            sheet = Sheet.Send(prefillTo = req.address, prefillSats = req.amountSats)
+        }
+    }
     var refreshing by remember { mutableStateOf(false) }
 
     // Live activity feedback: a heartbeat dot on the header + a one-shot slide-down/blink of
@@ -381,7 +390,8 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
             onClose = { sheet = null },
         )
         Sheet.Coins -> CoinsSheet(BlakeBalanceStore.allUtxos(), tip, onSpend = { keys -> sheet = Sheet.Send(keys) }, onOpen = { u -> sheet = Sheet.Utxo(u) }) { sheet = null }
-        is Sheet.Send -> SendWizardSheet(coinKeys = s.coinKeys, onClose = { sheet = null })
+        is Sheet.Send -> SendWizardSheet(coinKeys = s.coinKeys, prefillTo = s.prefillTo,
+                                         prefillSats = s.prefillSats, onClose = { sheet = null })
         Sheet.Currency -> CurrencyPickerSheet(BlakePrice.available()) { BlakePrice.setCurrency(it); sheet = null }
         Sheet.Settings -> SettingsSheet(operational, rc, statusHeight) { sheet = null }
         Sheet.Ricochets -> RicochetHistorySheet(onCopy = { clip.setText(AnnotatedString(it)); toast(ctx, "Copied") }) { sheet = null }
@@ -419,7 +429,8 @@ private sealed class Sheet {
     data class Utxo(val utxo: BlakeApi.Utxo) : Sheet()
     object Addresses : Sheet()
     object Coins : Sheet()
-    data class Send(val coinKeys: Set<String> = emptySet()) : Sheet()
+    data class Send(val coinKeys: Set<String> = emptySet(),
+                    val prefillTo: String = "", val prefillSats: Long? = null) : Sheet()
     object Currency : Sheet()
     object Settings : Sheet()
     object Ricochets : Sheet()

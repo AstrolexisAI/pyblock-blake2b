@@ -77,6 +77,7 @@ private data class WizardResult(
 fun SendWizardSheet(
     coinKeys: Set<String> = emptySet(),
     prefillTo: String = "",
+    prefillSats: Long? = null,
     onClose: () -> Unit,
 ) {
     val ctx = LocalContext.current
@@ -111,8 +112,8 @@ fun SendWizardSheet(
 
     var step by remember { mutableStateOf(1) }
     var toAddress by remember { mutableStateOf(prefillTo) }
-    var amountText by remember { mutableStateOf("") }
-    var unit by remember { mutableStateOf(SendUnit.BTC) }
+    var amountText by remember { mutableStateOf(prefillSats?.toString() ?: "") }
+    var unit by remember { mutableStateOf(if (prefillSats != null) SendUnit.SATS else SendUnit.BTC) }
     var sendMax by remember { mutableStateOf(false) }
     var ricochet by remember { mutableStateOf(false) }
     var hops by remember { mutableStateOf(2) }

@@ -9,7 +9,6 @@ import com.astrolexis.pyblock.data.crypto.PaynymNotifications
 import com.astrolexis.pyblock.data.model.Utxo
 import com.astrolexis.pyblock.data.wallet.VanityWallet
 import com.astrolexis.pyblock.data.wallet.WalletStore
-import com.astrolexis.pyblock.data.wallet.WalletSyncManager
 import androidx.lifecycle.viewModelScope
 import com.astrolexis.pyblock.data.net.ApiClient
 import com.astrolexis.pyblock.data.net.ConfirmedUtxos
@@ -88,7 +87,6 @@ fun NostrUiState.unreadDmCount(): Int =
 class NostrClient(app: Application) : AndroidViewModel(app) {
     private companion object {
         const val SWEEP_TTL_MS = 45_000L               // coalesce rapid-fire sweep triggers
-        const val WALLET_SWEEP_MS = 30 * 60_000L       // saved-wallet server-assist cadence
     }
 
     private val _state = MutableStateFlow(NostrUiState())
@@ -119,7 +117,6 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
     private var sweepParent: CompletableJob? = null
     private val sweepMutex = Mutex()                 // single-flight: one sweep at a time
     @Volatile private var lastSweepDoneMs = 0L
-    @Volatile private var lastWalletSweepMs = 0L
     @Volatile private var sweepFailStreak = 0
     @Volatile private var lastConfirmedUtxos: Map<String, List<Utxo>> = emptyMap()
     // Peers whose DMs the user actually opened — their windows join the sweep.
@@ -208,19 +205,20 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
     }
 
     private suspend fun pumpWalletMempool() {
-        WalletStore.ensureLoaded(ctx)
-        for (meta in WalletStore.wallets.value) {
-            val node = WalletSyncManager.getNode(ctx, meta)
-            if (node.running) continue           // its own 20 s refreshMempool covers it
-            val resp = try { ApiClient.api.walletMempool(meta.address) } catch (e: Exception) { continue }
-            if (resp.txs.isEmpty()) continue
-            node.seedMempool(resp.txs.map { it.hex to it.seen })
-        }
-        // Also probe our BIP-47 notification address on the fast endpoint: a cold PayNym
+        // The saved wallets used to be pumped here too, into the BDK node's mempool view. That node
+        // is Bitcoin mainnet (BdkNode builds it on Network.BITCOIN and dials a :8333 peer) and none
+        // of its screens are reachable in this app, so the pump asked the Bitcoin mempool about
+        // BLAKE2b addresses every 30 seconds and fed the answer to a wallet nobody can see. Worse
+        // than useless: with so much of this chain's traffic replayed from Bitcoin, those addresses
+        // really do have coins over there, and a hit fires a "received" notification for a payment
+        // that was never made here. Real 0-conf comes from BlakeBalanceStore.pollMempool, on the
+        // right chain.
+        //
+        // What is kept is the BIP-47 notification address on the fast endpoint: a cold PayNym
         // sender announcing their code (iOS notification tx) must be discovered in ~30 s,
         // not on the slow 1–16 min sweep backoff or only when RECEIVE is opened. When a
         // notification tx appears, run the full unblind+claim pass. (iOS parity.)
-        val notifAddr = com.astrolexis.pyblock.data.crypto.PaymentCode.notificationAddress(ctx)
+        val notifAddr = PaymentCode.notificationAddress(ctx)
         if (notifAddr != null) {
             val resp = try { ApiClient.api.walletMempool(notifAddr, PaynymNotifications.CHAIN) } catch (e: Exception) { null }
             if (resp != null && resp.txs.isNotEmpty()) runCatching { PaynymNotifications.sweep(ctx) }
@@ -255,20 +253,18 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
                 addAll(extCands.values.flatten().map { it.address })
                 notifAddr?.let { add(it) }
             }
-            val walletAddrs = WalletStore.wallets.value.map { it.address }
-            // Wallet addresses ride along on a slow cadence — CBF tracks them anyway.
-            val includeWallets = now - lastWalletSweepMs > WALLET_SWEEP_MS
-            // PayNym windows are asked of THIS app's chain. They used to ride in the same call as
-            // the saved wallet addresses, which is a Bitcoin question served by the Bitcoin node —
-            // so every BLAKE2b payment to a derived address came back unfunded and was never
-            // claimed. The two now travel separately because they are two different questions.
+            // PayNym windows are asked of THIS app's chain. They used to ride in one call with the
+            // saved wallet addresses, whose answer went to the Bitcoin BDK node — so the call went
+            // out with no chain at all, was served by the Bitcoin node, and every BLAKE2b payment to
+            // a derived address came back unfunded and was never claimed. The wallet half is gone:
+            // that node is unreachable here and BlakeBalanceStore owns the real balance. What is
+            // left is one question, asked of one chain.
             android.util.Log.i("PyBLOCKpaynym",
-                "sweep: ${peers.size} peer(s), ${extCands.size} ext sender(s), ${candidates.size} addr(s), wallets=$includeWallets")
+                "sweep: ${peers.size} peer(s), ${extCands.size} ext sender(s), ${candidates.size} addr(s)")
             val batch = ConfirmedUtxos.fetch(candidates, PaynymNotifications.CHAIN)
             if (batch.failed) sweepFailStreak++ else {
                 sweepFailStreak = 0
                 lastSweepDoneMs = android.os.SystemClock.elapsedRealtime()
-                if (includeWallets) lastWalletSweepMs = now
                 // The batch covers every candidate window in full, so it REPLACES the map and
                 // stale/spent entries go with it.
                 lastConfirmedUtxos = batch.byAddress
@@ -302,11 +298,6 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
             }
             // External-sender discovery + claims (takes the claim lock itself, fetches its own chain).
             PaynymNotifications.sweep(ctx)
-            // Server-assisted instant balances for saved wallets (incl. just-claimed ones).
-            if (includeWallets) {
-                val w = ConfirmedUtxos.fetch(walletAddrs)
-                if (!w.failed) WalletSyncManager.seedConfirmed(ctx, w.byAddress)
-            }
         }
     }
 

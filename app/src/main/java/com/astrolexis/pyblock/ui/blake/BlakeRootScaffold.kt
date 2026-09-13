@@ -50,6 +50,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.astrolexis.pyblock.data.blake.BlakeBalanceStore
+import com.astrolexis.pyblock.data.net.PushRepo
 import com.astrolexis.pyblock.data.nostr.NostrClient
 import com.astrolexis.pyblock.data.wallet.PendingPayment
 import com.astrolexis.pyblock.data.wallet.WalletVault
@@ -77,7 +78,7 @@ fun BlakeRootScaffold() {
     DisposableEffect(lifecycleOwner) {
         val obs = LifecycleEventObserver { _, event ->
             when (event) {
-                Lifecycle.Event.ON_START -> chat.connect()
+                Lifecycle.Event.ON_START -> { chat.connect(); PushRepo.syncAddressesAsync(ctx) }
                 Lifecycle.Event.ON_STOP -> { chat.disconnect(); WalletVault.lock() }
                 else -> {}
             }

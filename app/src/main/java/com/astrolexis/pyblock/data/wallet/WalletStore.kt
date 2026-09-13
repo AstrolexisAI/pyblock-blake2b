@@ -76,6 +76,8 @@ object WalletStore {
         if (!p.edit().putString(wifKey(entry.id), toStore).commit()) return false
         _wallets.update { list -> list.filter { it.id != entry.id } + entry }
         persist(p)
+        // A new address is only watched for payment push once the server is told about it.
+        com.astrolexis.pyblock.data.net.PushRepo.syncAddressesAsync(ctx)
         // Empty tx baseline so the wallet's first incoming tx (e.g. a PayNym
         // receive) notifies instead of being swallowed as historical.
         WalletTxNotifier.markNew(ctx, entry.id)
@@ -118,6 +120,8 @@ object WalletStore {
         p.edit().remove(wifKey(id)).apply()
         _wallets.update { list -> list.filter { it.id != id } }
         persist(p)
+        // Re-send the list so a removed address stops being watched.
+        com.astrolexis.pyblock.data.net.PushRepo.syncAddressesAsync(ctx)
     }
 
     /** Spendable WIF: decrypts through the vault when on (null while locked); plaintext otherwise. */
