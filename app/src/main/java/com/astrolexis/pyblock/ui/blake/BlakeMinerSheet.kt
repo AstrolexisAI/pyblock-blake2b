@@ -103,7 +103,14 @@ fun BlakeMinerSheet(onClose: () -> Unit) {
             Text(if (editing) "DONE" else "CHANGE", style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 1.sp,
                 modifier = Modifier.clickableNoRipple { Haptics.tap(); editing = !editing })
         }
-        if (address.isNotEmpty()) { Spacer(Modifier.height(6.dp)); Text(address, style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.fg, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+        if (address.isNotEmpty()) {
+            Spacer(Modifier.height(6.dp))
+            Text(com.astrolexis.pyblock.data.blake.AddressCheck.grouped(address), style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.fg)
+            if (!com.astrolexis.pyblock.data.blake.AddressCheck.isValid(address)) {
+                Text("This is not a valid payout address — the pool has nowhere to pay it.",
+                    style = Blake.mono(7f), color = Blake.danger)
+            }
+        }
         if (editing || address.isEmpty()) {
             if (found.isNotEmpty()) {
                 Spacer(Modifier.height(6.dp)); Text("mining from your wallet:", style = Blake.mono(8f), color = Blake.faint)
@@ -127,9 +134,14 @@ fun BlakeMinerSheet(onClose: () -> Unit) {
                     modifier = Modifier.weight(1f).border(1.dp, Blake.line, RectangleShape).padding(9.dp),
                     decorationBox = { inner -> if (manual.isEmpty()) Text("other address", style = Blake.mono(10f), color = Blake.faint); inner() })
                 Spacer(Modifier.width(8.dp))
-                val ok = manual.trim().length >= 26
+                val ok = com.astrolexis.pyblock.data.blake.AddressCheck.isValid(manual)
                 Text("USE", style = Blake.mono(9f, FontWeight.ExtraBold), color = if (ok) Blake.pp else Blake.faint, letterSpacing = 1.sp,
-                    modifier = Modifier.clickableNoRipple { if (ok) { Haptics.tap(); select(manual.trim()); manual = "" } })
+                    modifier = Modifier.clickableNoRipple { if (ok) { Haptics.tap(); select(com.astrolexis.pyblock.data.blake.AddressCheck.normalize(manual)); manual = "" } })
+            }
+            // On this pool the payout address IS the stratum username, so an unchecked address here
+            // is a week of mining that pays nobody. Say what's wrong while it costs nothing.
+            com.astrolexis.pyblock.data.blake.AddressCheck.problem(manual)?.let {
+                Text(it, style = Blake.mono(7f), color = Blake.danger)
             }
         }
         Spacer(Modifier.height(18.dp))

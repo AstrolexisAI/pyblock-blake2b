@@ -301,13 +301,20 @@ fun BlakeRentalsSheet(onClose: () -> Unit) {
                 BasicTextField(value = address, onValueChange = { address = it; quote = null }, singleLine = true,
                     textStyle = Blake.mono(10f).copy(color = Blake.fg), cursorBrush = SolidColor(Blake.pp),
                     modifier = Modifier.fillMaxWidth().border(1.dp, Blake.line, RectangleShape).padding(10.dp))
+                // Hours of rented hash mine to this address: a wrong-but-well-formed one pays a
+                // stranger, a rig name pays nobody. Check the checksum and show it back.
+                com.astrolexis.pyblock.data.blake.AddressCheck.problem(address)?.let {
+                    Text(it, style = Blake.mono(7f), color = Blake.danger)
+                } ?: if (com.astrolexis.pyblock.data.blake.AddressCheck.isValid(address)) {
+                    Text("✓ " + com.astrolexis.pyblock.data.blake.AddressCheck.grouped(address), style = Blake.mono(7f), color = Blake.ok)
+                } else Unit
                 Text("The rented hash mines to this address on the pool above. Coins land like any other reward.", style = Blake.mono(7f), color = Blake.faint)
 
                 // ---- Quote / pay ----
                 Spacer(Modifier.height(14.dp))
                 error?.let { Text(it, style = Blake.mono(9f), color = Blake.danger); Spacer(Modifier.height(8.dp)) }
                 val q = quote
-                val canQuote = address.trim().length >= 26
+                val canQuote = com.astrolexis.pyblock.data.blake.AddressCheck.isValid(address)
                 if (q != null) {
                     labelValue("PACKAGE", "${BlakeRentals.th(q.th)} · ${q.hours ?: hours}h")
                     labelValue("POOL", "${pools[q.pool ?: pool]?.label ?: pool.uppercase()} :${q.port ?: 0}")

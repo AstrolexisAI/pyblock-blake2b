@@ -323,9 +323,15 @@ private fun StepTo(
         BasicTextField(addr, onAddr, textStyle = Blake.mono(14f).copy(color = Blake.fg),
             cursorBrush = SolidColor(Blake.pp),
             modifier = Modifier.fillMaxWidth().border(1.dp, if (ok) Blake.pp.copy(alpha = 0.6f) else Blake.line, RectangleShape).padding(14.dp))
-        if (addr.isNotEmpty() && !ok) {
+        val why = addressProblem(addr)
+        if (why != null) {
             Spacer(Modifier.height(6.dp))
-            Text("That doesn't look like a valid address.", style = Blake.mono(8f), color = Blake.danger)
+            Text(why, style = Blake.mono(8f), color = Blake.danger)
+        } else if (ok && !com.astrolexis.pyblock.data.crypto.PaymentCode.looksLikePaymentCode(addr.trim())) {
+            // Echo it back grouped, so a wrong-but-valid address still gets a second look before it
+            // is paid: spot the typo before it costs you.
+            Spacer(Modifier.height(6.dp))
+            Text("✓ " + com.astrolexis.pyblock.data.blake.AddressCheck.grouped(addr), style = Blake.mono(8f), color = Blake.ok)
         } else {
             com.astrolexis.pyblock.data.wallet.BlakeContactsStore.labelFor(addr)?.let { name ->
                 Spacer(Modifier.height(6.dp))
@@ -647,15 +653,19 @@ private fun amountSubtitle(unit: SendUnit, sendMax: Boolean, sats: Long, overspe
     return if (fiat != null) "$other · $fiat $ccy" else other
 }
 
-/** Light client-side plausibility (base58 P2PKH / bech32) — full validation is at build. */
+/** Checksum-verified, not shape-guessed: a typo that keeps the length used to sail through here. */
 private fun isPlausibleAddress(s: String): Boolean {
     val a = s.trim()
     // A BIP-47 PayNym payment code ("PM…") is a valid recipient — resolved to an address at send.
     if (com.astrolexis.pyblock.data.crypto.PaymentCode.looksLikePaymentCode(a)) return true
-    if (a.length < 26) return false
-    if (a.startsWith("1") || a.startsWith("3")) return a.length <= 35
-    if (a.lowercase().startsWith("bc1")) return a.length <= 62
-    return false
+    return com.astrolexis.pyblock.data.blake.AddressCheck.isValid(a)
+}
+
+/** What's wrong with what they typed, in one sentence they can act on. */
+private fun addressProblem(s: String): String? {
+    val a = s.trim()
+    if (a.isEmpty() || com.astrolexis.pyblock.data.crypto.PaymentCode.looksLikePaymentCode(a)) return null
+    return com.astrolexis.pyblock.data.blake.AddressCheck.problem(a)
 }
 
 private fun sanitizeAddress(raw: String): String {
