@@ -26,6 +26,19 @@ object PaynymNotifications {
      *  would have found. */
     const val GAP = 20
 
+    /** The chain this app's wallet lives on.
+     *
+     *  This file arrived with the fork from the SHA-256 app, where `chain` was left unset and the
+     *  server answered for Bitcoin. Here the keys in [WalletStore] hold BLAKE2b coins, so every
+     *  unset call was asking the wrong chain whether a payment had arrived — and being told no.
+     *  A PayNym payment on this chain was undiscoverable, confirmed or not. */
+    const val CHAIN = "blake2b"
+
+    /** How many indices past the frontier to probe in the mempool. BIP-47 fills indices in order,
+     *  so a payment being made right now lands at or just past the frontier — but "just past" is
+     *  real: a sender who paid twice before we swept, or reinstalled, is already ahead of us. */
+    private const val MEMPOOL_LOOKAHEAD = 5
+
     /** Internal: the chat sweep widens its own peer windows in the same pass. */
     fun fullSweepPending(ctx: Context) =
         !ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_FULLSWEEP, false)
@@ -57,8 +70,7 @@ object PaynymNotifications {
     @Volatile private var lastScanMs = 0L
 
     /** One full pass: (1) discover sender codes from notification txs to our notification address,
-     *  (2) import any funded derived receive addresses from every known sender. Fetches its own
-     *  confirmed-UTXO batch; prefer [scanWith] when the caller already has one. TTL-guarded: the
+     *  (2) import any funded derived receive addresses from every known sender. TTL-guarded: the
      *  RECEIVE sheet fires this on every open, and the background sweep already covers the same
      *  window — rapid re-opens must not each trigger a server-side UTXO-set scan. */
     suspend fun scan(ctx: Context, gap: Int = GAP, full: Boolean = false) {
@@ -66,27 +78,27 @@ object PaynymNotifications {
         // An explicit user check must never be swallowed by the background pass's TTL.
         if (!full && now - lastScanMs < 45_000) return
         lastScanMs = now
-        val notifAddr = PaymentCode.notificationAddress(ctx) ?: return
-        val addrs = listOf(notifAddr) + candidates(ctx, gap, full).values.flatten().map { it.address }
-        scanWith(ctx, ConfirmedUtxos.forAddresses(addrs), gap, full)
+        sweep(ctx, gap, full)
     }
 
-    /** Same pass, reusing an already-fetched confirmed-UTXO map (must cover the
-     *  notification address + every known sender's look-ahead window). Checks BOTH
-     *  0-conf (wallet_mempool) and CONFIRMED (wallet_utxos) — a payment that
-     *  confirmed and left the mempool is otherwise invisible to the app. */
-    suspend fun scanWith(ctx: Context, confirmed: Map<String, List<Utxo>>, gap: Int = GAP, full: Boolean = false) {
+    /** One pass over the notification address and every known sender's look-ahead window.
+     *
+     *  Checks BOTH 0-conf (wallet_mempool) and CONFIRMED (wallet_utxos): a payment that confirmed
+     *  and left the mempool is otherwise invisible to the app, and one that has not confirmed yet
+     *  is invisible without the mempool. Fetches its own [CHAIN] batch — the caller's confirmed-UTXO
+     *  map, where there is one, belongs to the Bitcoin wallet and says nothing about this chain. */
+    suspend fun sweep(ctx: Context, gap: Int = GAP, full: Boolean = false) {
         val wide = full || fullSweepPending(ctx)
         val notifAddr = PaymentCode.notificationAddress(ctx) ?: return
         val discovered = load(ctx)            // notification-tx-discovered senders
-        val before = discovered.toSet()
 
         // 1) discover senders — from 0-conf notification txs AND confirmed ones. A
         //    BIP-47 notification output is never spent, so it sits in the UTXO set
         //    forever and wallet_utxos hands us the raw tx to unblind.
+        val notifConfirmed = ConfirmedUtxos.fetch(listOf(notifAddr), CHAIN).byAddress
         val notifHexes =
-            (try { ApiClient.api.walletMempool(notifAddr).txs.map { it.hex } } catch (e: Exception) { emptyList() }) +
-            confirmed[notifAddr].orEmpty().map { it.hex }
+            (try { ApiClient.api.walletMempool(notifAddr, CHAIN).txs.map { it.hex } } catch (e: Exception) { emptyList() }) +
+            notifConfirmed[notifAddr].orEmpty().map { it.hex }
         for (hex in notifHexes) {
             val ntx = PaymentCode.parseNotificationTx(hex) ?: continue
             val code = PaymentCode.unblindNotification(ctx, ntx.designatedPubkey, ntx.outpoint, ntx.payload) ?: continue
@@ -94,25 +106,24 @@ object PaynymNotifications {
         }
         save(ctx, discovered)
 
-        // Claim from EVERY known sender: notif-discovered ∪ saved contacts.
+        // Claim from EVERY known sender: notif-discovered ∪ saved contacts. One batched call for
+        // the whole set — wallet_utxos costs the server a UTXO-set scan per CALL, not per address.
         val known = discovered + contactCodes(ctx)
-        // Codes not already covered by [confirmed] (contacts + this-pass discoveries) — fetch theirs.
-        val newCodes = known - before
-        val utxos = if (newCodes.isEmpty()) confirmed else confirmed +
-            ConfirmedUtxos.forAddresses(newCodes.flatMap { c -> PaymentCode.candidates(ctx, c, gap, wide).map { it.address } })
+        val windows = known.associateWith { PaymentCode.candidates(ctx, it, gap, wide) }
+        val utxos = ConfirmedUtxos.fetch(windows.values.flatten().map { it.address }, CHAIN).byAddress
 
-        // 2) import funded payments from each known sender — confirmed vs the batch
-        //    over the whole window; 0-conf mempool probe only at the frontier index
-        //    (BIP-47 fills indices in order). Claims are check-then-act over shared
-        //    state, so the whole step runs under the app-wide claim lock.
+        // 2) import funded payments from each known sender — confirmed vs the batch over the whole
+        //    window; 0-conf mempool probe near the frontier only. Claims are check-then-act over
+        //    shared state, so the whole step runs under the app-wide claim lock.
         WalletStore.ensureLoaded(ctx)
         PaynymClaims.mutex.withLock {
             for (code in known) {
                 val frontier = PaymentCode.receivedCount(ctx, code)
-                for (cand in PaymentCode.candidates(ctx, code, gap, wide)) {
+                for (cand in windows[code].orEmpty()) {
+                    val nearFrontier = cand.scheme == PaymentCode.Scheme.BIP47 &&
+                        cand.index >= frontier && cand.index < frontier + MEMPOOL_LOOKAHEAD
                     val funded = utxos[cand.address].orEmpty().isNotEmpty() ||
-                        (cand.scheme == PaymentCode.Scheme.BIP47 && cand.index == frontier &&
-                            (try { ApiClient.api.walletMempool(cand.address).txs.isNotEmpty() } catch (e: Exception) { false }))
+                        (nearFrontier && mempoolPays(cand.address))
                     if (!funded) continue
                     val k = PaymentCode.receiveKeyAt(ctx, code, cand.index, cand.scheme) ?: continue
                     // The receive counter tracks the CURRENT scheme only. A legacy hit at a high
@@ -133,4 +144,13 @@ object PaynymNotifications {
         // sender, so later passes can go back to the narrow window.
         if (wide) markFullSweepDone(ctx)
     }
+
+    /** Does an unconfirmed tx actually PAY this address? `wallet_mempool` answers for every tx that
+     *  touches the address, spends included, so a non-empty list is not by itself a payment. */
+    private suspend fun mempoolPays(address: String): Boolean =
+        try {
+            ApiClient.api.walletMempool(address, CHAIN).txs.any {
+                com.astrolexis.pyblock.data.wallet.MempoolParse.incomingSats(address, it.hex) > 0L
+            }
+        } catch (e: Exception) { false }
 }

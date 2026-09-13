@@ -222,8 +222,8 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
         // notification tx appears, run the full unblind+claim pass. (iOS parity.)
         val notifAddr = com.astrolexis.pyblock.data.crypto.PaymentCode.notificationAddress(ctx)
         if (notifAddr != null) {
-            val resp = try { ApiClient.api.walletMempool(notifAddr) } catch (e: Exception) { null }
-            if (resp != null && resp.txs.isNotEmpty()) runCatching { PaynymNotifications.scanWith(ctx, emptyMap()) }
+            val resp = try { ApiClient.api.walletMempool(notifAddr, PaynymNotifications.CHAIN) } catch (e: Exception) { null }
+            if (resp != null && resp.txs.isNotEmpty()) runCatching { PaynymNotifications.sweep(ctx) }
         }
     }
 
@@ -256,30 +256,26 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
                 notifAddr?.let { add(it) }
             }
             val walletAddrs = WalletStore.wallets.value.map { it.address }
-            // Wallet addresses ride along whenever they don't add a chunk — the
-            // server cost is per CALL, not per address. Past one chunk, they drop
-            // to a slow cadence (CBF tracks them anyway).
-            val includeWallets = candidates.size + walletAddrs.size <= 50 ||
-                now - lastWalletSweepMs > WALLET_SWEEP_MS
-            val all = if (includeWallets) candidates + walletAddrs else candidates
+            // Wallet addresses ride along on a slow cadence — CBF tracks them anyway.
+            val includeWallets = now - lastWalletSweepMs > WALLET_SWEEP_MS
+            // PayNym windows are asked of THIS app's chain. They used to ride in the same call as
+            // the saved wallet addresses, which is a Bitcoin question served by the Bitcoin node —
+            // so every BLAKE2b payment to a derived address came back unfunded and was never
+            // claimed. The two now travel separately because they are two different questions.
             android.util.Log.i("PyBLOCKpaynym",
-                "sweep: ${peers.size} peer(s), ${extCands.size} ext sender(s), ${all.size} addr(s), wallets=$includeWallets")
-            val batch = ConfirmedUtxos.fetch(all)
+                "sweep: ${peers.size} peer(s), ${extCands.size} ext sender(s), ${candidates.size} addr(s), wallets=$includeWallets")
+            val batch = ConfirmedUtxos.fetch(candidates, PaynymNotifications.CHAIN)
             if (batch.failed) sweepFailStreak++ else {
                 sweepFailStreak = 0
                 lastSweepDoneMs = android.os.SystemClock.elapsedRealtime()
                 if (includeWallets) lastWalletSweepMs = now
-                // Full-coverage sweep REPLACES the map (clears stale/spent entries);
-                // a partial one MERGES so unqueried wallets/windows keep their last
-                // known UTXOs — critical after a wallet-DB wipe (start()'s
-                // self-heal), which the retained entries re-seed on the next pass.
-                lastConfirmedUtxos = if (includeWallets) batch.byAddress
-                                     else lastConfirmedUtxos + batch.byAddress
+                // The batch covers every candidate window in full, so it REPLACES the map and
+                // stale/spent entries go with it.
+                lastConfirmedUtxos = batch.byAddress
             }
             val confirmed = lastConfirmedUtxos
-            // Peer-code claims: full window vs confirmed; 0-conf mempool check only
-            // at the frontier index (BIP-47 fills indices in order, so the next
-            // expected one suffices — no per-address fan-out over the whole window).
+            // Peer-code claims: full window vs confirmed; the 0-conf mempool check stays near the
+            // frontier (BIP-47 fills indices in order) — no per-address fan-out over the window.
             PaynymClaims.mutex.withLock {
                 for ((peer, cands) in peerCands) {
                     val code = peers[peer] ?: continue
@@ -287,7 +283,7 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
                     val top = cands.filter {
                         it.scheme == PaymentCode.Scheme.BIP47 &&
                             (confirmed[it.address].orEmpty().isNotEmpty() ||
-                                (it.index == frontier && mempoolFunded(it.address)))
+                                (nearFrontier(it.index, frontier) && mempoolFunded(it.address)))
                     }.maxOfOrNull { it.index }
                     if (top != null) claimIncomingPaynym(peer, upTo = top + 1)
                     // Legacy-scheme hits are imported directly. The frontier counts spec-scheme
@@ -304,15 +300,29 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
                     }
                 }
             }
-            // External-sender discovery + claims (takes the claim lock itself).
-            PaynymNotifications.scanWith(ctx, confirmed)
+            // External-sender discovery + claims (takes the claim lock itself, fetches its own chain).
+            PaynymNotifications.sweep(ctx)
             // Server-assisted instant balances for saved wallets (incl. just-claimed ones).
-            WalletSyncManager.seedConfirmed(ctx, confirmed)
+            if (includeWallets) {
+                val w = ConfirmedUtxos.fetch(walletAddrs)
+                if (!w.failed) WalletSyncManager.seedConfirmed(ctx, w.byAddress)
+            }
         }
     }
 
+    /** Indices worth a 0-conf probe: the next one expected, plus a few — a sender who paid twice
+     *  before we last swept, or who reinstalled, is already ahead of our counter. */
+    private fun nearFrontier(index: Int, frontier: Int): Boolean =
+        index >= frontier && index < frontier + 5
+
+    /** An unconfirmed tx that PAYS this address. `wallet_mempool` answers for every tx that
+     *  touches it, spends included, so a non-empty list is not by itself an incoming payment. */
     private suspend fun mempoolFunded(address: String): Boolean =
-        try { ApiClient.api.walletMempool(address).txs.isNotEmpty() } catch (e: Exception) { false }
+        try {
+            ApiClient.api.walletMempool(address, PaynymNotifications.CHAIN).txs.any {
+                com.astrolexis.pyblock.data.wallet.MempoolParse.incomingSats(address, it.hex) > 0L
+            }
+        } catch (e: Exception) { false }
 
     override fun onCleared() { disconnect() }
 
@@ -514,7 +524,7 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
         val frontier = PaymentCode.receivedCount(ctx, code)
         val top = cands.filter {
             confirmed[it.address].orEmpty().isNotEmpty() ||
-                (it.index == frontier && mempoolFunded(it.address))
+                (nearFrontier(it.index, frontier) && mempoolFunded(it.address))
         }.maxOfOrNull { it.index }
         if (top != null) PaynymClaims.mutex.withLock { claimIncomingPaynym(peer, upTo = top + 1) }
         else scanAllPaynymLookahead()   // cache had nothing for this peer → shared sweep picks it up
