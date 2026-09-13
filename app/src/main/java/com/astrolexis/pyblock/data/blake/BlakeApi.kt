@@ -109,6 +109,11 @@ object BlakeApi {
     @Serializable data class WWav(
         @SerialName("carry_total_sats") val carryTotalSats: Long? = null,
         @SerialName("last_snapshot") val lastSnapshot: String? = null,
+        /** Whether the carry mechanism EXISTS. It is off on the pool: what a coinbase can't place is
+         *  not owed — it stays in the split as BelowCut and is visible in the snapshot committed to
+         *  the OP_RETURN. The flag says whether the rule is alive; the number only says how much
+         *  there once was. */
+        @SerialName("carry_forward") val carryForward: Boolean? = null,
     )
     @Serializable data class WWindow(
         @SerialName("fill_percent") val fillPercent: Double? = null,

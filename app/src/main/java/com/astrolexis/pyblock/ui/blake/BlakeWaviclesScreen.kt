@@ -162,14 +162,20 @@ fun BlakeWaviclesScreen() {
                 }
             }
 
-            // Carry
+            // The pool used to carry dust a coinbase couldn't place and pay it in the next one. That
+            // rule is OFF (carry_forward: false): what doesn't fit isn't owed — it stays in the split
+            // as BelowCut, visible in the snapshot committed to the OP_RETURN. So this no longer says
+            // "Owed to miners", which read as if we were holding somebody's coins.
             Spacer(Modifier.height(22.dp))
             Column(Modifier.fillMaxWidth().blakeCard()) {
-                Text("CARRY", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
+                Text("PROOF", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
                 Spacer(Modifier.height(6.dp))
                 val carry = stats?.wavicles?.carryTotalSats ?: 0L
-                Text("Owed to miners: $carry sats", style = Blake.mono(12f, FontWeight.ExtraBold), color = if (carry > 0) Blake.warn else Blake.fg)
-                Text("Dust a coinbase couldn't place is carried and paid by the next coinbases.",
+                if (stats?.wavicles?.carryForward == true && carry > 0) {
+                    Text("Legacy carry from the earlier rule: $carry sats",
+                        style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.warn)
+                }
+                Text("Nothing is held back: what a coinbase can't place isn't owed, it stays in the split and is visible in the snapshot committed to the block's OP_RETURN.",
                     style = Blake.mono(8f), color = Blake.faint)
                 stats?.wavicles?.lastSnapshot?.let {
                     Spacer(Modifier.height(4.dp))
