@@ -268,8 +268,12 @@ fun AddressControlSheet(
             sheetBtn("⭳ EXPORT BACKUP PDF", Blake.warn) { exportBackup(ctx, wallets, balanceFor) }
         }
         Spacer(Modifier.height(16.dp))
-        if (wallets.isEmpty()) Text("No addresses yet.", style = Blake.mono(10f), color = Blake.faint)
-        else wallets.forEach { w ->
+        // Keys that hold payments people made to your PayNym are not "your addresses" the way the
+        // ones you generated are. They used to sit in the same list as "PayNym ← name", which read
+        // as if the app had grown addresses on its own. Own group, own explanation. Mirrors iOS.
+        val received = wallets.filter { it.label.startsWith("from ") }
+        val own = wallets - received.toSet()
+        @Composable fun walletRow(w: com.astrolexis.pyblock.data.wallet.VanityWallet) {
             Row(Modifier.fillMaxWidth().padding(bottom = 8.dp).border(1.dp, Blake.line, RectangleShape).padding(12.dp)
                 .clickableNoRipple { detailFor = w }, verticalAlignment = Alignment.CenterVertically) {
                 BlakeIdenticon(seed = w.address, dimen = 30.dp)
@@ -279,6 +283,18 @@ fun AddressControlSheet(
                     Text(mid(w.address), style = Blake.mono(9f), color = Blake.faint)
                 }
                 Text("${Blake.btc(balanceFor(w.address))} ${Blake.RUNE}", style = Blake.mono(11f), color = Blake.pp)
+            }
+        }
+        if (wallets.isEmpty()) Text("No addresses yet.", style = Blake.mono(10f), color = Blake.faint)
+        else {
+            own.forEach { w -> walletRow(w) }
+            if (received.isNotEmpty()) {
+                Spacer(Modifier.height(10.dp))
+                Text("RECEIVED VIA PAYNYM (${received.size})", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
+                Text("Payments from people, each at an address only your key can derive. Not for sharing — give out your PayNym instead.",
+                    style = Blake.mono(8f), color = Blake.faint)
+                Spacer(Modifier.height(8.dp))
+                received.forEach { w -> walletRow(w) }
             }
         }
     }

@@ -67,7 +67,7 @@ import kotlinx.coroutines.launch
  *  Faithful port of iOS WalletView — flat Blake aesthetic (black, ink cards, hairlines). */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
+fun BlakeWalletScreen(onLaunchVanity: () -> Unit, onPaid: (peer: String, txid: String, sats: Long) -> Unit = { _, _, _ -> }) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val clip = LocalClipboardManager.current
@@ -96,12 +96,16 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
     var lockedExpanded by remember { mutableStateOf(false) }
     var pendingUnlock by remember { mutableStateOf<BlakeApi.Utxo?>(null) }   // coin awaiting replay-risk confirm
     var sheet by remember { mutableStateOf<Sheet?>(null) }
+    // The chat peer a pending payment came from, so the receipt goes back to them. The old code
+    // parked it and nothing reachable ever read it: the coin arrived, the receipt never did.
+    var pendingPeer by remember { mutableStateOf<String?>(null) }
     // Tapping PAY on a chat payment request navigates here with the address parked in
     // PendingPayment. Nothing on this screen ever picked it up (the only consumer was the
     // Bitcoin wallet screen, which this app never shows), so the request was dropped in silence
     // and the person arrived at an empty wallet with nothing to act on.
     LaunchedEffect(Unit) {
         com.astrolexis.pyblock.data.wallet.PendingPayment.consume()?.let { req ->
+            pendingPeer = req.peer
             sheet = Sheet.Send(prefillTo = req.address, prefillSats = req.amountSats)
         }
     }
@@ -390,8 +394,9 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit) {
             onClose = { sheet = null },
         )
         Sheet.Coins -> CoinsSheet(BlakeBalanceStore.allUtxos(), tip, onSpend = { keys -> sheet = Sheet.Send(keys) }, onOpen = { u -> sheet = Sheet.Utxo(u) }) { sheet = null }
-        is Sheet.Send -> SendWizardSheet(coinKeys = s.coinKeys, prefillTo = s.prefillTo,
-                                         prefillSats = s.prefillSats, onClose = { sheet = null })
+        is Sheet.Send -> SendWizardSheet(coinKeys = s.coinKeys, prefillTo = s.prefillTo, prefillSats = s.prefillSats,
+                                         onSent = { txid, sats -> pendingPeer?.let { onPaid(it, txid, sats) }; pendingPeer = null },
+                                         onClose = { sheet = null })
         Sheet.Currency -> CurrencyPickerSheet(BlakePrice.available()) { BlakePrice.setCurrency(it); sheet = null }
         Sheet.Settings -> SettingsSheet(operational, rc, statusHeight) { sheet = null }
         Sheet.Ricochets -> RicochetHistorySheet(onCopy = { clip.setText(AnnotatedString(it)); toast(ctx, "Copied") }) { sheet = null }

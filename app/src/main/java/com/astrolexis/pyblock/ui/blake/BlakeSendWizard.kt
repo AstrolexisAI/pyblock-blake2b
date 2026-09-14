@@ -78,6 +78,8 @@ fun SendWizardSheet(
     coinKeys: Set<String> = emptySet(),
     prefillTo: String = "",
     prefillSats: Long? = null,
+    /** A broadcast landed: (txid, sats). Used to post a receipt into the chat it was paid from. */
+    onSent: ((String, Long) -> Unit)? = null,
     onClose: () -> Unit,
 ) {
     val ctx = LocalContext.current
@@ -188,10 +190,12 @@ fun SendWizardSheet(
                     com.astrolexis.pyblock.data.wallet.RicochetHistory.add(ctx, outcome, hops, recorded, dest, "mainnet")
                     BlakeSentStore.add(outcome.txids.lastOrNull() ?: "", recorded, dest, coinKeys, true)
                     result = WizardResult(outcome.txids, true, recorded, sendMax, dest, contactValue)
+                    onSent?.invoke(outcome.txids.lastOrNull() ?: "", recorded.toLong())
                 } else {
                     val txid = BlakeSpend.send(ctx, dest, amt, sendMax, effectiveFee.toLong(), only)
                     BlakeSentStore.add(txid, recorded, dest, coinKeys, false)
                     result = WizardResult(listOf(txid), false, recorded, sendMax, dest, contactValue)
+                    onSent?.invoke(txid, recorded.toLong())
                 }
                 // Broadcast landed: only now does the PayNym index move on. An index burnt by a
                 // cancelled send would eventually push a payment past the recipient's look-ahead

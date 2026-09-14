@@ -123,7 +123,13 @@ fun BlakeRootScaffold() {
         Box(Modifier.padding(padding).fillMaxSize().background(Blake.bg)) {
             NavHost(navController = nav, startDestination = "pool") {
                 composable("pool") { BlakePoolScreen() }
-                composable("wallet") { BlakeWalletScreen(onLaunchVanity = { nav.navigate("vanity") }) }
+                composable("wallet") {
+                    BlakeWalletScreen(onLaunchVanity = { nav.navigate("vanity") },
+                        onPaid = { peer, txid, sats ->
+                            val me = runCatching { com.astrolexis.pyblock.data.crypto.PaymentCode.myCode(ctx) }.getOrNull()
+                            chat.sendDM(peer, com.astrolexis.pyblock.data.util.PaymentReceipt(sats, txid, me).toUri())
+                        })
+                }
                 composable("chat") {
                     BlakeChatScreen(
                         client = chat,

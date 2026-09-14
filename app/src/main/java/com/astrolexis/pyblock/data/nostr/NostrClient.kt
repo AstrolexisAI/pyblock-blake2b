@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import com.astrolexis.pyblock.data.crypto.PaymentCode
 import com.astrolexis.pyblock.data.crypto.PaynymClaims
 import com.astrolexis.pyblock.data.crypto.PaynymName
+import com.astrolexis.pyblock.data.crypto.PaynymBook
 import com.astrolexis.pyblock.data.crypto.PaynymNotifications
 import com.astrolexis.pyblock.data.model.Utxo
 import com.astrolexis.pyblock.data.wallet.VanityWallet
@@ -198,6 +199,15 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
         return true
     }
 
+    /** Learn that `peer` pays and receives under `code`. Every path that discovers a code — the
+     *  public profile, a private hello, a receipt — goes through here, and the person becomes a
+     *  contact by themselves, under their chat name. Nobody adds anyone by hand. */
+    private fun rememberPeerCode(peer: String, code: String) {
+        if (!code.startsWith("PM") || PaymentCode.decode(code) == null) return
+        _state.update { s -> s.copy(peerPaynyms = s.peerPaynyms + (peer to code)) }
+        PaynymBook.autoLabel(ctx, code, _state.value.profiles[peer], nostr = peer)
+    }
+
     /** Human name for a pubkey: their profile name, else a short handle. */
     fun name(for_: String): String =
         _state.value.profiles[for_]?.takeIf { it.isNotEmpty() } ?: "@${for_.take(8)}"
@@ -383,7 +393,7 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
                         if (WalletStore.wallets.value.any { it.address == c.address }) continue
                         val k = PaymentCode.receiveKeyAt(ctx, code, c.index, c.scheme) ?: continue
                         val w = VanityWallet(java.util.UUID.randomUUID().toString(),
-                            "PayNym ← ${name(peer)} (legacy)", k.address, true, PaymentCode.RECEIVE_BIRTHDAY)
+                            "from ${name(peer)} (legacy)", k.address, true, PaymentCode.RECEIVE_BIRTHDAY)
                         WalletStore.add(ctx, w, k.wif)
                     }
                 }
@@ -692,7 +702,7 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
                 PaymentCode.didReceive(ctx, code, k.index); continue      // already have it; advance
             }
             val w = VanityWallet(java.util.UUID.randomUUID().toString(),
-                "PayNym ← ${name(peer)}", k.address, true, PaymentCode.RECEIVE_BIRTHDAY)
+                "from ${name(peer)}", k.address, true, PaymentCode.RECEIVE_BIRTHDAY)
             if (!WalletStore.add(ctx, w, k.wif)) break
             PaymentCode.didReceive(ctx, code, k.index)
         }
@@ -807,7 +817,10 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
         when (ev.kind) {
             0 -> {
                 parseName(ev.content)?.let { n ->
-                    if (n.isNotEmpty()) _state.update { it.copy(profiles = it.profiles + (ev.pubkey to n)) }
+                    if (n.isNotEmpty()) {
+                        _state.update { it.copy(profiles = it.profiles + (ev.pubkey to n)) }
+                        _state.value.peerPaynyms[ev.pubkey]?.let { PaynymBook.autoLabel(ctx, it, n, nostr = ev.pubkey) }
+                    }
                 }
                 parseBtc(ev.content)?.let { addr ->
                     _state.update { it.copy(peerAddresses = it.peerAddresses + (ev.pubkey to addr)) }
@@ -820,7 +833,7 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
                 }
                 parsePaynym(ev.content)?.let { pc ->
                     val isNew = _state.value.peerPaynyms[ev.pubkey] != pc
-                    _state.update { it.copy(peerPaynyms = it.peerPaynyms + (ev.pubkey to pc)) }
+                    rememberPeerCode(ev.pubkey, pc)
                     // The code may arrive after a receipt already did — reconcile now.
                     // Off the WS reader thread + under the claim lock: claims are
                     // check-then-act over shared state and must never interleave.
@@ -849,7 +862,7 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
                 // already have paid us, and never show it.
                 if (com.astrolexis.pyblock.data.util.PaymentUri.isHello(textDec)) {
                     if (ev.pubkey != myPubkey) com.astrolexis.pyblock.data.util.PaymentUri.helloCode(textDec)?.let { code ->
-                        _state.update { s -> s.copy(peerPaynyms = s.peerPaynyms + (peer to code)) }
+                        rememberPeerCode(peer, code)
                         interestPeers.add(peer)
                         viewModelScope.launch { PaynymClaims.mutex.withLock { claimIncomingPaynym(peer) } }
                     }
@@ -873,9 +886,7 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
                         // The receipt may carry the payer's own code (`from=`), which makes it
                         // self-sufficient: the receiver can derive the address even when the payer
                         // never opted in to advertising their code in their profile.
-                        com.astrolexis.pyblock.data.util.PaymentUri.receiptSender(textDec)?.let { code ->
-                            _state.update { s -> s.copy(peerPaynyms = s.peerPaynyms + (peer to code)) }
-                        }
+                        com.astrolexis.pyblock.data.util.PaymentUri.receiptSender(textDec)?.let { code -> rememberPeerCode(peer, code) }
                         if (_state.value.peerPaynyms[peer] != null)
                             viewModelScope.launch { PaynymClaims.mutex.withLock { claimIncomingPaynym(peer) } }
                     }

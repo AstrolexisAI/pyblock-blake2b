@@ -133,7 +133,9 @@ object PaynymNotifications {
                     if (WalletStore.wallets.value.any { it.address == k.address }) {
                         if (advance) PaymentCode.didReceive(ctx, code, cand.index)
                     } else {
-                        val label = if (cand.scheme == PaymentCode.Scheme.LEGACY) "PayNym ← external (legacy)" else "PayNym ← external"
+                        // Named after the person when we know them, like iOS: "from Oscar".
+                        val who = PaynymBook.aliasFor(ctx, code) ?: "PayNym"
+                        val label = if (cand.scheme == PaymentCode.Scheme.LEGACY) "from $who (legacy)" else "from $who"
                         val w = VanityWallet(UUID.randomUUID().toString(), label, k.address, true, PaymentCode.RECEIVE_BIRTHDAY)
                         if (WalletStore.add(ctx, w, k.wif) && advance) PaymentCode.didReceive(ctx, code, cand.index)
                     }

@@ -249,9 +249,11 @@ fun PaynymSheet(onCopy: (String) -> Unit, paste: () -> String, onClose: () -> Un
         }
 
         Spacer(Modifier.height(16.dp))
-        Text("CONTACTS", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
+        Text("PEOPLE", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
+        Text("Everyone you can pay, and who can pay you. People you talk to in the chat appear here on their own.",
+            style = Blake.mono(8f), color = Blake.faint)
         Spacer(Modifier.height(8.dp))
-        if (contacts.isEmpty()) Text("No PayNym contacts yet.", style = Blake.mono(9f), color = Blake.faint)
+        if (contacts.isEmpty()) Text("Nobody yet. Message someone in COMMUNITY, or add a code from outside.", style = Blake.mono(9f), color = Blake.faint)
         else contacts.forEach { c ->
             Row(Modifier.fillMaxWidth().padding(bottom = 8.dp).border(1.dp, Blake.line, RectangleShape).padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically) {

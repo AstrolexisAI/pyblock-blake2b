@@ -50,6 +50,23 @@ object PaynymBook {
 
     /** Add or update by code. Returns null if [code] is not a valid BIP-47 payment code.
      *  Blank alias → the cosmic name is shown. */
+    const val AUTO_PLACEHOLDER = "someone from the chat"
+
+    /** A contact that arrives on its own, from the chat. Added if missing; a placeholder alias takes
+     *  the real name when it arrives. An alias the user typed is never touched. */
+    fun autoLabel(ctx: Context, code: String, name: String?, nostr: String? = null) {
+        val cc = code.trim()
+        if (PaymentCode.decode(cc) == null) return
+        val cur = all(ctx).firstOrNull { it.code == cc }
+        when {
+            cur == null -> upsert(ctx, name?.takeIf { it.isNotBlank() } ?: AUTO_PLACEHOLDER, cc, nostr)
+            cur.alias == AUTO_PLACEHOLDER && !name.isNullOrBlank() -> upsert(ctx, name, cc, nostr)
+        }
+    }
+
+    fun aliasFor(ctx: Context, code: String): String? =
+        all(ctx).firstOrNull { it.code == code }?.alias?.takeIf { it.isNotBlank() && it != AUTO_PLACEHOLDER }
+
     fun upsert(ctx: Context, alias: String, code: String, nostr: String? = null): PaynymContact? {
         val cc = code.trim()
         if (PaymentCode.decode(cc) == null) return null
