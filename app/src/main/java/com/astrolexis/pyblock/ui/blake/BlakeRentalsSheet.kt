@@ -75,9 +75,6 @@ internal fun fullSheet(title: String, onClose: () -> Unit, body: @Composable () 
     }
 }
 
-/** Stratum port that rented hash is delivered on. */
-private const val RENTAL_PORT = 30110
-
 /** A row with a hairline under it (the list idiom of the wallet). */
 internal fun Modifier.hairline(): Modifier = drawBehind {
     drawRect(Blake.line, topLeft = Offset(0f, size.height - 1f), size = Size(size.width, 1f))
@@ -107,9 +104,6 @@ fun BlakeRentalsSheet(onClose: () -> Unit) {
     var loadedRigs by remember { mutableStateOf(false) }
     var hours by remember { mutableStateOf(3) }
     var rig by remember { mutableStateOf<BlakeRentals.Rig?>(null) }
-    // Both Carousel ports accept work, but rentals are delivered on RENTAL_PORT. Resolved from the
-    // catalog by PORT, not by key: if the pool is ever renamed on the server, an order must not
-    // quietly go elsewhere.
     var pool by remember { mutableStateOf("carousel") }
     var address by remember { mutableStateOf(prefs.getString("address", null) ?: wallets.firstOrNull()?.address ?: "") }
     var showWalletPick by remember { mutableStateOf(false) }
@@ -127,9 +121,6 @@ fun BlakeRentalsSheet(onClose: () -> Unit) {
     val loadRigs: suspend () -> Unit = {
         BlakeRentals.rigs()?.let { r ->
             rigs = r
-            // Resolve the delivery pool from the catalog by PORT (see the note on `pool`).
-            (r.pools.entries.firstOrNull { it.value.port == RENTAL_PORT }?.key
-                ?: r.pools.keys.firstOrNull { it == "carousel" })?.let { pool = it }
             rig?.let { sel -> r.rigs.firstOrNull { it.id == sel.id }?.let { rig = it } }   // keep the price current
             if (r.durations.isNotEmpty() && hours !in r.durations) hours = r.durations.first()
         }
@@ -154,7 +145,7 @@ fun BlakeRentalsSheet(onClose: () -> Unit) {
     }
 
     fullSheet("RENTALS", onClose) {
-        Text("Rent BLAKE2b hash to your address. Live market price, paid over Lightning.",
+        Text("Rent BLAKE2b hash to your address. Live market price, paid over Lightning; delivered on the pool you pick.",
             style = Blake.mono(9f), color = Blake.ppDim)
         Spacer(Modifier.height(18.dp))
 
@@ -272,23 +263,31 @@ fun BlakeRentalsSheet(onClose: () -> Unit) {
             }
 
             if (rig != null) {
-                // ---- Where it lands ----
-                //
-                // This was a four-way picker over every pool the catalog lists, which read as four
-                // different ways to buy and was the first thing anyone asked about. Rented hash is
-                // delivered on one port. So the screen states where it lands instead of offering a
-                // decision that isn't one, and takes the name, port and split from the catalog so a
-                // change on the server shows up without an app release.
+                // ---- Pool ----
                 Spacer(Modifier.height(18.dp))
-                sectionTitle("DELIVERED ON")
+                sectionTitle("DELIVER TO")
                 val pools = rigs?.pools ?: emptyMap()
-                val delivery = pools[pool]
-                Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(delivery?.label ?: pool.uppercase(), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 1.sp)
-                    delivery?.port?.let { Spacer(Modifier.width(6.dp)); Text(":$it", style = Blake.mono(9f), color = Blake.faint) }
-                }
-                delivery?.split?.takeIf { it.isNotBlank() }?.let {
-                    Text(it, style = Blake.mono(8f), color = Blake.ppDim, modifier = Modifier.padding(top = 4.dp))
+                // `lotto` is deliberately absent. The catalog lists it as "CAROUSEL (ASIC port)", a
+                // second high-diff port onto the same rotation, and both ports do accept work — but
+                // rented hash is delivered on :30110, and a second CAROUSEL row read as a second way
+                // to buy the same thing. That was the first thing anyone asked about. The website
+                // offers these three; so do we.
+                listOf("carousel", "chirp", "wavicles").filter { pools[it] != null }.forEach { key ->
+                    val p = pools[key]!!
+                    val on = pool == key
+                    Row(Modifier.fillMaxWidth().hairline().clickableNoRipple { Haptics.tap(); pool = key; quote = null; error = null }.padding(vertical = 9.dp),
+                        verticalAlignment = Alignment.Top) {
+                        Text(if (on) "✓" else "·", style = Blake.mono(11f, FontWeight.ExtraBold), color = if (on) Blake.ok else Blake.faint, modifier = Modifier.width(14.dp))
+                        Spacer(Modifier.width(10.dp))
+                        Column(Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(p.label ?: key.uppercase(), style = Blake.mono(11f, FontWeight.ExtraBold), color = if (on) Blake.hero else Blake.fg, letterSpacing = 1.sp)
+                                p.port?.let { Spacer(Modifier.width(6.dp)); Text(":$it", style = Blake.mono(9f), color = Blake.faint) }
+                            }
+                            p.split?.let { Text(it, style = Blake.mono(8f), color = Blake.ppDim) }
+                            p.note?.takeIf { it.isNotBlank() }?.let { Text(it, style = Blake.mono(7f), color = Blake.faint) }
+                        }
+                    }
                 }
 
                 // ---- Address ----
