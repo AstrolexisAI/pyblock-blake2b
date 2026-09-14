@@ -138,6 +138,42 @@ object Nostr {
         } catch (e: Exception) { null }
     }
 
+    /**
+     * Does this event really come from the pubkey it claims?
+     *
+     * Nothing on the read path used to ask. The app takes every event from ONE relay and trusts its
+     * id, pubkey and sig verbatim — so that relay could put any words in anyone's mouth, including
+     * yours, and the room would render them as theirs. Worse, a forged kind-0 can advertise a
+     * payment code, and the wallet pays PayNyms.
+     *
+     * Two checks, both needed. Recomputing the id proves the content wasn't altered after signing;
+     * verifying the BIP-340 signature over that id is what binds the content to the pubkey. The id
+     * on its own says nothing about authorship. Mirrors iOS `Nostr.verify`.
+     */
+    fun verify(ev: NostrEvent): Boolean = try {
+        val pub = ev.pubkey.hexBytes()
+        val sig = ev.sig.hexBytes()
+        if (pub.size != 32 || sig.size != 64) false
+        else {
+            val serialized = serializeForId(ev.pubkey, ev.created_at, ev.kind, ev.tags, ev.content)
+            val digest = MessageDigest.getInstance("SHA-256").digest(serialized.toByteArray(Charsets.UTF_8))
+            digest.hexStr() == ev.id.lowercase() && secp.verifySchnorr(sig, digest, pub)
+        }
+    } catch (e: Exception) { false }
+
+    /**
+     * Signs an event, verifies it, and checks that touching one character breaks it. Worth running
+     * at startup: a verifier that says no to everything empties the chat, and one that says yes to
+     * everything is not a verifier. The content carries a slash on purpose — that is the character
+     * the canonical serializer exists for.
+     */
+    fun selfTestVerify(ctx: Context): Boolean {
+        val ev = makeEvent(ctx, 1, "verify self-test a/b \u2713", listOf(listOf("t", "self/test")), 1_700_000_000L)
+            ?: return false
+        if (!verify(ev)) return false
+        return !verify(ev.copy(content = ev.content + "!"))
+    }
+
     // MARK: Encrypted DMs (NIP-44)
 
     /** kind-4 event with NIP-44-encrypted content + a `p` tag to the recipient. */

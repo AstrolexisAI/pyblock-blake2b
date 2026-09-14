@@ -24,6 +24,17 @@ class PyBlockApp : Application() {
         // Spending-password vault: scrypt must match RFC 7914 and AES-GCM must round-trip,
         // or we could encrypt keys we can't recover. Fail-closed.
         check(VaultCrypto.selfTest()) { "VaultCrypto self-test failed — refusing to run" }
+        // NIP-44 (ChaCha20 vs RFC 8439, conversation key vs the spec vector) is what stands between a
+        // DM and being readable by the relay. Its self-test existed and was only ever called from a
+        // screen this app never shows. Fail-closed, like the vault.
+        check(com.astrolexis.pyblock.data.crypto.Nip44.selfTest()) { "NIP-44 self-test failed — refusing to run" }
+        // Event verification: a verifier that says no to everything empties the chat, and one that
+        // says yes to everything is not a verifier. Sign, verify, tamper, verify again.
+        check(com.astrolexis.pyblock.data.nostr.Nostr.selfTestVerify(this)) { "Nostr verify self-test failed — refusing to run" }
+        // The DM archive depends on the Keystore, which can be unavailable during direct boot —
+        // a failure here must degrade (the relay still has the recent window), never crash.
+        if (!com.astrolexis.pyblock.data.nostr.DMArchive.selfTest(this))
+            android.util.Log.w("PyBLOCKchat", "DM archive round-trip failed — conversations will not persist this session")
         AddressStore.init(this)
         com.astrolexis.pyblock.data.wallet.WalletVault.init(this)   // learn if a spending password is set
         ThemeStore.init(this)

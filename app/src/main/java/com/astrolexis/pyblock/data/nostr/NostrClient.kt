@@ -64,6 +64,8 @@ data class NostrUiState(
     val reportedIds: Set<String> = emptySet(),
     // NIP-25 reactions on channel messages: messageId → emoji → reactor pubkeys.
     val reactions: Map<String, Map<String, Set<String>>> = emptyMap(),
+    /** Text of a message the relay refused, for the composer to put back. */
+    val rejectedDraft: String? = null,
 )
 
 /** Reactions on a message as (emoji, count, mine), most-reacted first. */
@@ -122,16 +124,78 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
     // Peers whose DMs the user actually opened — their windows join the sweep.
     private val interestPeers = java.util.Collections.synchronizedSet(HashSet<String>())
 
+    // Backfill.
+    //
+    // On connect the relay replays history: channel messages, hundreds of reactions and DMs, one
+    // frame each. Every one of those used to rebuild the whole UI state with .copy(), so opening
+    // the chat recomposed the list hundreds of times in a second — and because events arrive
+    // newest-first, the LAST message changed identity on nearly every one. The screen scrolls to
+    // the last message, so it chased a moving target through the entire replay. That is the scroll
+    // "behaving oddly when messages load". The replay is now collected aside and applied once.
+    private val backfillSubs = java.util.Collections.synchronizedSet(HashSet<String>())
+    @Volatile private var backfilling = false
+    private val pendingMessages = java.util.Collections.synchronizedList(ArrayList<NostrEvent>())
+    private val pendingDMs = java.util.Collections.synchronizedList(ArrayList<DMMessage>())
+    private var backfillDeadline: Job? = null
+
+    // Reconnect. Nothing used to bring the socket back: onFailure/onClosed dropped it and that was
+    // that, so a relay restart or a spell in the background left the chat dead until the user
+    // happened to leave the tab and return.
+    @Volatile private var wantsConnection = false
+    @Volatile private var reconnectAttempt = 0
+    private var reconnectJob: Job? = null
+
     private val ctx get() = getApplication<Application>()
+
+    /** Write the archive, coalesced — a backfill touches conversations hundreds of times. */
+    private var archiveJob: Job? = null
+    private fun scheduleArchive() {
+        if (archiveJob != null) return
+        archiveJob = viewModelScope.launch {
+            delay(800)
+            archiveJob = null
+            val snapshot = _state.value.conversations
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { DMArchive.save(ctx, snapshot) }
+        }
+    }
+
+    /** Newest DM we hold, so the subscription can ask only for what came after it. */
+    private fun newestDMTimestamp(): Long =
+        _state.value.conversations.values.mapNotNull { it.lastOrNull()?.createdAt }.maxOrNull() ?: 0L
 
     init {
         loadModeration()
+        // Conversations from disk, before anything asks the relay. Everything already stored must
+        // not be re-inserted when the replay brings it back.
+        val stored = DMArchive.load(ctx)
+        if (stored.isNotEmpty()) {
+            for (list in stored.values) for (m in list) seen.add(m.id)
+            _state.update { it.copy(conversations = stored) }
+        }
         // Collaborative Send (PayJoin) transport: outbound DM + name lookup. Inbound
         // pj-* DMs are routed to the coordinator from the kind-4 handler below.
         PayJoinCoordinator.attach(ctx, object : PayJoinCoordinator.Transport {
             override fun sendDM(peer: String, content: String) = this@NostrClient.sendDM(peer, content)
             override fun nameFor(pubkey: String): String = name(pubkey)
         })
+    }
+
+    /**
+     * Is this event worth looking at at all?
+     *
+     * One relay stands between this app and everyone else in the room, so an event is a claim until
+     * its signature says otherwise. And created_at is written by whoever sent it: it is the sort
+     * key, so one message dated next year sits at the bottom of everybody's room forever.
+     */
+    private val verifiedIds = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+    private fun accept(ev: NostrEvent): Boolean {
+        val now = System.currentTimeMillis() / 1000
+        if (ev.created_at > now + 900) return false      // 15 min of clock skew, no more
+        if (verifiedIds.contains(ev.id)) return true
+        if (!Nostr.verify(ev)) return false
+        if (verifiedIds.size > 4_000) verifiedIds.clear()
+        verifiedIds.add(ev.id)
+        return true
     }
 
     /** Human name for a pubkey: their profile name, else a short handle. */
@@ -147,23 +211,51 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
     // MARK: Lifecycle
 
     fun connect() {
-        if (sockets.isNotEmpty()) return
+        wantsConnection = true
+        openSockets()
+    }
+
+    private fun openSockets() {
+        if (!wantsConnection || sockets.isNotEmpty()) return
+        reconnectJob?.cancel(); reconnectJob = null
         for (r in relays) {
             val req = Request.Builder().url(r).build()
             sockets.add(http.newWebSocket(req, Listener()))
         }
         Nostr.displayName(ctx)?.let { name -> _state.update { it.copy(profiles = it.profiles + (myPubkey to name)) } }
-        sweepParent = SupervisorJob()
+        if (sweepParent == null) sweepParent = SupervisorJob()
         startPaynymSweep()
         startMempoolPump()
     }
 
     fun disconnect() {
-        for (ws in sockets) ws.close(1000, null)
-        sockets.clear()
+        wantsConnection = false
+        reconnectJob?.cancel(); reconnectJob = null
+        closeSockets()
         paynymSweepJob?.cancel(); paynymSweepJob = null
         sweepParent?.cancel(); sweepParent = null    // stops one-shot scans too, not just the loop
+    }
+
+    private fun closeSockets() {
+        for (ws in sockets) ws.close(1000, null)
+        sockets.clear()
         _state.update { it.copy(connected = false) }
+    }
+
+    /**
+     * Back off so a relay that is down isn't hammered, but recover fast from a blip. Capped at 30
+     * seconds, with jitter so every phone in the room doesn't retry on the same tick.
+     */
+    private fun scheduleReconnect() {
+        if (!wantsConnection || reconnectJob != null) return
+        val step = minOf(30_000L, 1_000L shl minOf(reconnectAttempt, 5))
+        reconnectAttempt++
+        val delayMs = step + (0..1_500).random()
+        reconnectJob = viewModelScope.launch {
+            delay(delayMs)
+            reconnectJob = null
+            openSockets()
+        }
     }
 
     /**
@@ -325,6 +417,64 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
         publishMetadata()
     }
 
+    // MARK: Backfill
+
+    private fun beginBackfill(subs: List<String>) {
+        backfilling = true
+        backfillSubs.clear(); backfillSubs.addAll(subs)
+        backfillDeadline?.cancel()
+        // A relay that never sends EOSE must not leave the chat empty forever.
+        backfillDeadline = viewModelScope.launch {
+            delay(4_000)
+            endBackfill()
+        }
+    }
+
+    private fun backfillEOSE(sub: String) {
+        backfillSubs.remove(sub)
+        if (backfillSubs.isEmpty()) endBackfill()
+    }
+
+    /** Apply everything collected during the replay as ONE state change. */
+    private fun endBackfill() {
+        if (!backfilling) return
+        backfilling = false
+        backfillDeadline?.cancel(); backfillDeadline = null
+
+        val msgs = synchronized(pendingMessages) { pendingMessages.toList().also { pendingMessages.clear() } }
+        val dms = synchronized(pendingDMs) { pendingDMs.toList().also { pendingDMs.clear() } }
+        if (msgs.isEmpty() && dms.isEmpty()) return
+
+        _state.update { s ->
+            var community = s.messages
+            var whale = s.whaleMessages
+            if (msgs.isNotEmpty()) {
+                val (w, c) = msgs.partition { isWhaleEvent(it) }
+                if (c.isNotEmpty()) community = (community + c).sortedWith(EVENT_ORDER).takeLastCapped()
+                if (w.isNotEmpty()) whale = (whale + w).sortedWith(EVENT_ORDER).takeLastCapped()
+            }
+            var convs = s.conversations
+            if (dms.isNotEmpty()) {
+                val grouped = dms.groupBy { it.peer }
+                val next = convs.toMutableMap()
+                for ((peer, list) in grouped) {
+                    val merged = ((next[peer] ?: emptyList()) + list)
+                        .distinctBy { it.id }
+                        .sortedBy { it.createdAt }
+                    next[peer] = if (merged.size > DMArchive.PER_PEER_LIMIT)
+                        merged.drop(merged.size - DMArchive.PER_PEER_LIMIT) else merged
+                }
+                convs = next
+            }
+            s.copy(messages = community, whaleMessages = whale, conversations = convs)
+        }
+        if (dms.isNotEmpty()) scheduleArchive()
+        requestProfiles(_state.value.messages.map { it.pubkey }.toSet())
+    }
+
+    private fun List<NostrEvent>.takeLastCapped(): List<NostrEvent> =
+        if (size > 500) drop(size - 500) else this
+
     // MARK: Subscriptions
 
     private fun subscribe(ws: WebSocket) {
@@ -333,10 +483,19 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
             .put("#e", JSONArray().put(Nostr.channelId).put(Nostr.whaleChannelId)).put("limit", 100)
         ws.send(JSONArray().put("REQ").put("pyblock-chat").put(channel).toString())
         // Encrypted DMs (kind 4): to me + from me (history/echo).
+        // Only what we don't already have on disk, with an hour of overlap for clock skew — the
+        // duplicate check drops anything that comes back twice. Asking for the last 200 every time
+        // meant re-decrypting a conversation the app already knew by heart, on every launch, and it
+        // is why the relay could never be allowed to forget a DM.
+        val since = newestDMTimestamp()
         val toMe = JSONObject().put("kinds", JSONArray().put(4))
             .put("#p", JSONArray().put(myPubkey)).put("limit", 200)
         val fromMe = JSONObject().put("kinds", JSONArray().put(4))
             .put("authors", JSONArray().put(myPubkey)).put("limit", 200)
+        if (since > 0) {
+            toMe.put("since", since - 3600)
+            fromMe.put("since", since - 3600)
+        }
         ws.send(JSONArray().put("REQ").put("pyblock-dms").put(toMe).put(fromMe).toString())
         // Reactions (kind 7). The relay is app-only, so every reaction targets one
         // of our channel messages — aggregate by its "e" tag on receive.
@@ -365,6 +524,7 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
     fun republishProfile() { if (sockets.isNotEmpty()) publishMetadata() }
 
     fun clearRejection() { _state.update { it.copy(lastRejection = null) } }
+    fun consumeRejectedDraft() { _state.update { it.copy(rejectedDraft = null) } }
 
     /** Surface a transient banner (e.g. image-upload failed); auto-clears after 5s. */
     fun setRejection(msg: String) { _state.update { it.copy(lastRejection = msg) } }
@@ -388,8 +548,18 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
 
     private fun requestProfile(pubkey: String) {
         if (!profileAuthors.add(pubkey)) return
+        sendProfileRequest()
+    }
+
+    /** Everyone at once. After a backfill this used to re-send the growing REQ once per author. */
+    private fun requestProfiles(pubkeys: Collection<String>) {
+        if (!profileAuthors.addAll(pubkeys)) return
+        sendProfileRequest()
+    }
+
+    private fun sendProfileRequest() {
         val filter = JSONObject().put("kinds", JSONArray().put(0))
-            .put("authors", JSONArray(profileAuthors.toList()))
+            .put("authors", JSONArray(profileAuthors.toList().takeLast(200)))
         val msg = JSONArray().put("REQ").put("profiles").put(filter).toString()
         for (ws in sockets) ws.send(msg)
     }
@@ -399,6 +569,8 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
     fun post(content: String, replyTo: NostrEvent? = null, toWhaleLounge: Boolean = false) {
         val trimmed = content.trim()
         if (trimmed.isEmpty()) return
+        // No length limit at all meant one person could post pages of text everyone had to scroll past.
+        if (trimmed.length > 2_000) { setRejection("that message is too long — keep it under 2,000 characters"); return }
         // Lounge posting is a Whale perk — the relay's write policy enforces
         // this too, this is just the client-side seatbelt.
         if (toWhaleLounge && !com.astrolexis.pyblock.data.store.EntitlementsStore.isWhale) return
@@ -440,7 +612,11 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
     private fun addReaction(ev: NostrEvent) {
         if (!seen.add(ev.id) || isBlocked(ev.pubkey)) return
         val target = ev.tags.lastOrNull { it.firstOrNull() == "e" }?.getOrNull(1) ?: return
-        val emoji = if (ev.content.isBlank() || ev.content == "+") "👍" else ev.content
+        // "Emoji" was whatever arrived: a 500-character reaction destroyed the bubble for everyone
+        // who loaded it.
+        val raw = ev.content.trim()
+        val emoji = if (raw.isBlank() || raw == "+") "👍" else raw
+        if (emoji.length > 8 || emoji.any { it == '\n' || it == '\r' }) return
         addReactionLocal(target, emoji, ev.pubkey)
     }
 
@@ -543,13 +719,23 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
         val ws = sockets.firstOrNull()
         if (ws == null) { connect(); return }
         val pending = outbox.toList(); outbox.clear()
-        for (ev in pending) ws.send(JSONArray().put("EVENT").put(eventJson(ev)).toString())
+        for (ev in pending) {
+            // send() returns false when the socket is closing or its queue is full. The result used
+            // to be ignored, so a message handed to a dying socket was gone from both the socket
+            // and the queue while the optimistic echo showed it as sent.
+            if (!ws.send(JSONArray().put("EVENT").put(eventJson(ev)).toString())) {
+                outbox.add(ev)
+                scheduleReconnect()
+            }
+        }
     }
 
     // MARK: Receive
 
     private inner class Listener : WebSocketListener() {
         override fun onOpen(ws: WebSocket, response: Response) {
+            reconnectAttempt = 0
+            beginBackfill(listOf("pyblock-chat", "pyblock-dms", "pyblock-reacts"))
             subscribe(ws)
             _state.update { it.copy(connected = true) }
             publishMetadata()
@@ -559,15 +745,18 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
         override fun onFailure(ws: WebSocket, t: Throwable, response: Response?) {
             sockets.remove(ws)   // drop the dead socket so connect() can re-open (else sends are lost)
             _state.update { it.copy(connected = false) }
+            scheduleReconnect()
         }
         override fun onClosed(ws: WebSocket, code: Int, reason: String) {
             sockets.remove(ws)
             _state.update { it.copy(connected = false) }
+            scheduleReconnect()
         }
     }
 
     private fun handle(text: String) {
         val arr = try { JSONArray(text) } catch (e: Exception) { return }
+        if (arr.optString(0) == "EOSE") { backfillEOSE(arr.optString(1)); return }
         // Relay refused one of our events → roll back the optimistic echo and
         // surface the reason, instead of lying that it was sent.
         if (arr.optString(0) == "OK" && arr.length() >= 3 && !arr.optBoolean(2, true)) {
@@ -576,19 +765,24 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
             // own reaction, no scary banner. (Relay allows kind-7 now; belt-and-braces.)
             if (pendingReactions.remove(evId) != null) return
             val reason = arr.optString(3).ifEmpty { "rejected by relay" }
-            seen.remove(evId)
+            seen.remove(evId); verifiedIds.remove(evId)
             _state.update { s ->
+                // A refused room message used to take the user's typed text with it. Keep the
+                // words so the composer can put them back.
+                val refused = (s.messages + s.whaleMessages).firstOrNull { it.id == evId }?.content
                 s.copy(
                     messages = s.messages.filter { it.id != evId },
                     whaleMessages = s.whaleMessages.filter { it.id != evId },
                     conversations = s.conversations.mapValues { (_, list) -> list.filter { it.id != evId } },
                     lastRejection = reason,
+                    rejectedDraft = refused ?: s.rejectedDraft,
                 )
             }
             return
         }
         if (arr.length() < 3 || arr.optString(0) != "EVENT") return
         val ev = decode(arr.optJSONObject(2) ?: return) ?: return
+        if (!accept(ev)) return
         when (ev.kind) {
             0 -> {
                 parseName(ev.content)?.let { n ->
@@ -614,7 +808,10 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
                     }
                 }
             }
-            42 -> if (seen.add(ev.id)) { insertMessage(ev); requestProfile(ev.pubkey) }
+            42 -> if (seen.add(ev.id)) {
+                if (backfilling) pendingMessages.add(ev)
+                else { insertMessage(ev); requestProfile(ev.pubkey) }
+            }
             7 -> addReaction(ev)
             // Decrypt FIRST (guarded — secretKey() can throw on a transient Keystore
             // failure) and mark the event seen only after a successful decrypt, so a
@@ -650,6 +847,12 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /**
+     * Oldest first, id breaking ties. created_at is a whole second and a busy room puts several
+     * messages inside one, so sorting on it alone lets equal rows swap places between renders.
+     */
+    private val EVENT_ORDER = compareBy<NostrEvent>({ it.created_at }, { it.id })
+
     /** Which NIP-28 channel a kind-42 event belongs to (by its root e-tag). */
     private fun isWhaleEvent(ev: NostrEvent): Boolean =
         ev.tags.any { it.size >= 2 && it[0] == "e" && it[1] == Nostr.whaleChannelId }
@@ -681,9 +884,10 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
                 blockedUsers = next,
                 messages = s.messages.filter { it.pubkey != pubkey },
                 whaleMessages = s.whaleMessages.filter { it.pubkey != pubkey },
-                conversations = s.conversations - pubkey,
+                conversations = s.conversations - pubkey,   // and off the disk on the next write
             )
         }
+        scheduleArchive()
         viewModelScope.launch { runCatching { ProRepo.moderationReport("block", pubkey, null) } }
     }
 
@@ -732,12 +936,15 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
         val s0 = _state.value
         if (!m.mine && s0.blockedUsers.contains(m.peer)) return
         if (s0.reportedIds.contains(m.id)) return
+        if (backfilling) { pendingDMs.add(m); return }
         _state.update { s ->
             val existing = s.conversations[m.peer] ?: emptyList()
             if (existing.any { it.id == m.id }) return@update s
-            val list = (existing + m).sortedBy { it.createdAt }
+            val all = (existing + m).sortedBy { it.createdAt }
+            val list = if (all.size > DMArchive.PER_PEER_LIMIT) all.drop(all.size - DMArchive.PER_PEER_LIMIT) else all
             s.copy(conversations = s.conversations + (m.peer to list))
         }
+        scheduleArchive()
     }
 
     // MARK: JSON

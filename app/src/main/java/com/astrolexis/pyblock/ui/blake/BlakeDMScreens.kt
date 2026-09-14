@@ -22,6 +22,8 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.layout.height
+import com.astrolexis.pyblock.data.nostr.ChatMedia
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -64,15 +66,31 @@ fun BlakeDMInbox(client: NostrClient, onOpen: (String) -> Unit, onClose: () -> U
         } else LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(peers, key = { it }) { peer ->
                 val last = state.conversations[peer]?.lastOrNull()
+                val lastIn = state.conversations[peer]?.lastOrNull { !it.mine }
+                val unread = lastIn != null && (state.myReadUpTo[peer] ?: 0L) < lastIn.createdAt
                 Row(Modifier.fillMaxWidth().border(1.dp, Blake.line, Blake.shape).padding(12.dp).clickableNoRipple { onOpen(peer) },
                     verticalAlignment = Alignment.CenterVertically) {
                     BlakeIdenticon(seed = peer, dimen = 30.dp)
                     Spacer(Modifier.width(10.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(client.name(peer), style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.fg, maxLines = 1)
-                        Text(last?.let { (if (it.mine) "you: " else "") + it.text } ?: "", style = Blake.mono(9f), color = Blake.faint, maxLines = 1)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(client.name(peer), style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.fg, maxLines = 1, modifier = Modifier.weight(1f, fill = false))
+                            Spacer(Modifier.width(6.dp))
+                            last?.let { Text(ChatMedia.clock(it.createdAt), style = Blake.mono(7f), color = Blake.faint) }
+                        }
+                        // An image or a payment is not its raw marker text.
+                        val preview = last?.let { m ->
+                            val body = when {
+                                m.text.startsWith("pyblock:img?") -> "image"
+                                m.text.startsWith("pyblock:paid?") || m.text.startsWith("bitcoin:") -> "payment"
+                                else -> m.text
+                            }
+                            (if (m.mine) "you: " else "") + body
+                        } ?: ""
+                        Text(preview, style = Blake.mono(9f), color = if (unread) Blake.fg else Blake.faint, maxLines = 1)
                     }
-                    Text("›", style = Blake.mono(16f), color = Blake.ppDim)
+                    if (unread) Box(Modifier.size(8.dp).background(Blake.pp, androidx.compose.foundation.shape.CircleShape))
+                    else Text("›", style = Blake.mono(16f), color = Blake.ppDim)
                 }
             }
         }
@@ -87,8 +105,17 @@ fun BlakeDMThread(client: NostrClient, peer: String, onClose: () -> Unit) {
     var draft by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
 
+    // Same treatment as the room: land without animation, then animate only for what arrives
+    // afterwards. Animating on every size change ran the scroll once per replayed message when a
+    // thread loaded.
+    var primed by remember { mutableStateOf(false) }
     LaunchedEffect(peer) { client.markRead(peer) }
-    LaunchedEffect(thread.size) { if (thread.isNotEmpty()) listState.animateScrollToItem(thread.size - 1) }
+    LaunchedEffect(thread.lastOrNull()?.id) {
+        if (thread.isEmpty()) return@LaunchedEffect
+        if (primed) listState.animateScrollToItem(thread.size - 1)
+        else { listState.scrollToItem(thread.size - 1); primed = true }
+        client.markRead(peer)
+    }
 
     Column(Modifier.fillMaxSize().background(Blake.bg)) {
         Row(Modifier.fillMaxWidth().background(Blake.ink).statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
@@ -108,8 +135,21 @@ fun BlakeDMThread(client: NostrClient, peer: String, onClose: () -> Unit) {
             contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             items(thread, key = { it.id }) { m ->
                 Column(Modifier.fillMaxWidth(), horizontalAlignment = if (m.mine) Alignment.End else Alignment.Start) {
-                    Text(m.text, style = Blake.mono(12f), color = Blake.fg,
-                        modifier = Modifier.background(if (m.mine) Blake.pp.copy(alpha = 0.14f) else Blake.ink, Blake.shape).border(1.dp, Blake.line, Blake.shape).padding(10.dp))
+                    val img = ChatMedia.imageUrl(m.text)
+                    val foreign = ChatMedia.foreignImageUrl(m.text)
+                    when {
+                        foreign != null -> Column(Modifier.background(Blake.ink, Blake.shape).border(1.dp, Blake.warn.copy(alpha = 0.5f), Blake.shape).padding(10.dp)) {
+                            Text("image from another site", style = Blake.mono(9f), color = Blake.warn)
+                            Text(foreign, style = Blake.mono(7f), color = Blake.faint, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                        }
+                        img != null -> coil.compose.AsyncImage(model = img, contentDescription = null,
+                            modifier = Modifier.width(220.dp).height(165.dp).border(1.dp, Blake.line, Blake.shape))
+                        else -> androidx.compose.foundation.text.selection.SelectionContainer {
+                            Text(m.text, style = Blake.mono(12f), color = Blake.fg,
+                                modifier = Modifier.background(if (m.mine) Blake.pp.copy(alpha = 0.14f) else Blake.ink, Blake.shape).border(1.dp, Blake.line, Blake.shape).padding(10.dp))
+                        }
+                    }
+                    Text(ChatMedia.clock(m.createdAt), style = Blake.mono(7f), color = Blake.faint, modifier = Modifier.padding(top = 2.dp))
                 }
             }
         }

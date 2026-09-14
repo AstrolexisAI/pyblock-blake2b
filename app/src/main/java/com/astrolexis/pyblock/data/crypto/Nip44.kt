@@ -37,7 +37,23 @@ object Nip44 {
 
     // MARK: Conversation key (ECDH → HKDF-extract)
 
+    /**
+     * Derived keys, by peer. The secret doesn't change while the app runs, so neither does the
+     * conversation key for a given peer — but every DM used to redo the whole ECDH. The relay
+     * replays hundreds of DMs on connect, and each one paid for a fresh key agreement.
+     */
+    private val ckCache = java.util.concurrent.ConcurrentHashMap<String, ByteArray>()
+
     fun conversationKey(mySecret: ByteArray, theirPubkeyHex: String): ByteArray? {
+        ckCache[theirPubkeyHex]?.let { return it }
+        val ck = deriveConversationKey(mySecret, theirPubkeyHex) ?: return null
+        if (ckCache.size > 500) ckCache.clear()
+        ckCache[theirPubkeyHex] = ck
+        return ck
+    }
+
+    /** The derivation itself, uncached — this is what the self-test checks against the spec vector. */
+    fun deriveConversationKey(mySecret: ByteArray, theirPubkeyHex: String): ByteArray? {
         val xonly = theirPubkeyHex.hexBytes() ?: return null
         if (xonly.size != 32) return null
         val compressed = byteArrayOf(0x02) + xonly       // lift x-only to even-Y point
@@ -122,10 +138,18 @@ object Nip44 {
         return out
     }
 
+    /**
+     * Unpad, canonically. The spec requires the padded length to be exactly what [calcPaddedLen]
+     * produces and the padding to be zero, and it requires both because a decoder that accepts
+     * anything else lets a sender vary the wire form of the same message — the padding exists to
+     * hide length, and slack in it hands the length back.
+     */
     fun unpad(padded: ByteArray): String? {
         if (padded.size < 2) return null
         val len = ((padded[0].toInt() and 0xff) shl 8) or (padded[1].toInt() and 0xff)
         if (len < 1 || 2 + len > padded.size) return null
+        if (padded.size != 2 + calcPaddedLen(len)) return null
+        for (i in (2 + len) until padded.size) if (padded[i].toInt() != 0) return null
         return String(padded.copyOfRange(2, 2 + len), Charsets.UTF_8)
     }
 
@@ -200,7 +224,7 @@ object Nip44 {
         val sec1 = ByteArray(32).also { it[31] = 1 }
         val sec2 = ByteArray(32).also { it[31] = 2 }
         val pub2 = xonlyPubkey(sec2) ?: return false
-        val ck = conversationKey(sec1, pub2.hexStr()) ?: return false
+        val ck = deriveConversationKey(sec1, pub2.hexStr()) ?: return false
         if (ck.hexStr() != "c41c775356fd92eadc63ff5a0dc1da211b268cbea22316767095b2871ea1412d") return false
 
         // 3) Round-trip.

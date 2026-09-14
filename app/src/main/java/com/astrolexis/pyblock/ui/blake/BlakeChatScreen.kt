@@ -26,6 +26,12 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.height
+import kotlinx.coroutines.delay
+import androidx.compose.runtime.derivedStateOf
+import com.astrolexis.pyblock.data.nostr.ChatMedia
+import com.astrolexis.pyblock.data.nostr.unreadDmCount
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -78,11 +84,46 @@ fun BlakeChatScreen(client: NostrClient, onPay: (String, Long?, String) -> Unit)
     }
 
     LaunchedEffect(Unit) { client.connect() }
-    LaunchedEffect(state.messages.size) {
-        // Snap instantly to the newest message (no animated scroll journey) so streaming/loading
-        // history doesn't visibly travel the list.
-        if (state.messages.isNotEmpty()) listState.scrollToItem(state.messages.size - 1)
+    // The relay refused a message: give the words back instead of losing them.
+    LaunchedEffect(state.rejectedDraft) {
+        val text = state.rejectedDraft ?: return@LaunchedEffect
+        if (draft.isBlank()) draft = text
+        client.consumeRejectedDraft()
     }
+
+    // Whether the newest message is on screen. That decides whether an arriving message pulls the
+    // view down or waits behind a button — being yanked to the bottom mid-sentence was the other
+    // half of what made this chat unpleasant. Scrolling to the LAST message on every size change
+    // was the first half: the id changes on every arrival, so during the backfill the target moved
+    // constantly and the list visibly chased it.
+    val atBottom by remember {
+        derivedStateOf {
+            val info = listState.layoutInfo
+            val last = info.visibleItemsInfo.lastOrNull()
+            last == null || last.index >= info.totalItemsCount - 1
+        }
+    }
+    var primed by remember { mutableStateOf(false) }
+    var unread by remember { mutableStateOf(0) }
+    val lastId = state.messages.lastOrNull()?.id
+    LaunchedEffect(lastId) {
+        val n = state.messages.size
+        if (n == 0) return@LaunchedEffect
+        val lastMine = state.messages.last().pubkey == myPubkey
+        when {
+            !primed -> {
+                // Land on the newest, no animation. Rows measure late (an image resolving its
+                // size), so correct once more a moment later.
+                listState.scrollToItem(n - 1)
+                delay(150)
+                listState.scrollToItem(state.messages.size - 1)
+                primed = true
+            }
+            atBottom || lastMine -> { listState.animateScrollToItem(n - 1); unread = 0 }
+            else -> unread++
+        }
+    }
+    LaunchedEffect(atBottom) { if (atBottom) unread = 0 }
 
     // DM overlays.
     val peer = dmPeer
@@ -96,25 +137,39 @@ fun BlakeChatScreen(client: NostrClient, onPay: (String, Long?, String) -> Unit)
             Spacer(Modifier.width(8.dp))
             Box(Modifier.size(7.dp).background(if (state.connected) Blake.ok else Blake.warn, CircleShape))
             Spacer(Modifier.weight(1f))
-            Text("✉ DMS", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.pp, modifier = Modifier.clickableNoRipple { showDMs = true })
+            val unreadDMs = state.unreadDmCount()
+            if (unreadDMs > 0)
+                Text("✉ DMS $unreadDMs", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.bg,
+                    modifier = Modifier.background(Blake.pp, Blake.shape).padding(horizontal = 6.dp, vertical = 2.dp).clickableNoRipple { showDMs = true })
+            else
+                Text("✉ DMS", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.pp, modifier = Modifier.clickableNoRipple { showDMs = true })
             Spacer(Modifier.width(12.dp))
             Text("⚙ NAME", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.pp, modifier = Modifier.clickableNoRipple { showName = true })
         }
         Box(Modifier.fillMaxWidth().size(1.dp).background(Blake.line))
 
-        LazyColumn(Modifier.weight(1f).fillMaxWidth(), state = listState,
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            if (state.messages.isEmpty()) {
-                item { Text("No messages yet. Say hi to the PyBLØCK community.", style = Blake.mono(10f), color = Blake.faint, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(top = 40.dp)) }
+        Box(Modifier.weight(1f).fillMaxWidth()) {
+            LazyColumn(Modifier.fillMaxSize(), state = listState,
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (state.messages.isEmpty()) {
+                    item { Text("No messages yet. Say hi to the PyBLØCK community.", style = Blake.mono(10f), color = Blake.faint, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(top = 40.dp)) }
+                }
+                items(state.messages, key = { it.id }) { m ->
+                    Bubble(m, mine = m.pubkey == myPubkey, name = state.profiles[m.pubkey],
+                        reactions = state.reactionSummary(m.id, myPubkey),
+                        onReact = { e -> client.react(m.id, m.pubkey, e) },
+                        onDm = { if (m.pubkey != myPubkey) dmPeer = m.pubkey },
+                        onBlock = { client.blockUser(m.pubkey) },
+                        onReport = { client.reportMessage(m.id, m.pubkey) })
+                }
             }
-            items(state.messages, key = { it.id }) { m ->
-                Bubble(m, mine = m.pubkey == myPubkey, name = state.profiles[m.pubkey],
-                    reactions = state.reactionSummary(m.id, myPubkey),
-                    onReact = { e -> client.react(m.id, m.pubkey, e) },
-                    onDm = { if (m.pubkey != myPubkey) dmPeer = m.pubkey },
-                    onBlock = { client.blockUser(m.pubkey) },
-                    onReport = { client.reportMessage(m.id, m.pubkey) })
+            if (!atBottom && unread > 0) {
+                Text(if (unread == 1) "↓ 1 NEW MESSAGE" else "↓ $unread NEW MESSAGES",
+                    style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.bg, letterSpacing = 1.sp,
+                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp)
+                        .background(Blake.pp, Blake.shape).padding(horizontal = 12.dp, vertical = 7.dp)
+                        .clickableNoRipple { scope.launch { listState.animateScrollToItem(state.messages.size - 1) }; unread = 0 })
             }
         }
 
@@ -148,17 +203,36 @@ private val REACTIONS = listOf("⚡", "🔥", "👍", "😂", "🧡", "🫡")
 private fun Bubble(m: NostrEvent, mine: Boolean, name: String?, reactions: List<Triple<String, Int, Boolean>>,
                    onReact: (String) -> Unit, onDm: () -> Unit, onBlock: () -> Unit, onReport: () -> Unit) {
     val label = name ?: "…${m.pubkey.takeLast(6)}"
-    val imgUrl = imageUrl(m.content)
+    val imgUrl = ChatMedia.imageUrl(m.content)
+    val foreign = ChatMedia.foreignImageUrl(m.content)
     var menu by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth().combinedClickable(onClick = {}, onLongClick = { menu = true }),
         horizontalAlignment = if (mine) Alignment.End else Alignment.Start) {
-        Text(label, style = Blake.mono(9f, FontWeight.ExtraBold), color = flair(m.pubkey))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(label, style = Blake.mono(9f, FontWeight.ExtraBold), color = flair(m.pubkey), maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 200.dp))
+            Spacer(Modifier.width(6.dp))
+            // The time was fetched, stored and sorted on, and never shown to anyone.
+            Text(ChatMedia.clock(m.created_at), style = Blake.mono(7f), color = Blake.faint)
+        }
         Spacer(Modifier.size(3.dp))
-        if (imgUrl != null) {
-            AsyncImage(model = imgUrl, contentDescription = null, modifier = Modifier.width(220.dp).border(1.dp, Blake.line, Blake.shape))
+        if (foreign != null) {
+            // Hosted somewhere we don't load from. Loading it would hand that host the reader's IP
+            // address, so it stays a link the reader can choose to open.
+            Column(Modifier.background(Blake.ink, Blake.shape).border(1.dp, Blake.warn.copy(alpha = 0.5f), Blake.shape).padding(10.dp)) {
+                Text("image from another site", style = Blake.mono(9f), color = Blake.warn)
+                Text(foreign, style = Blake.mono(7f), color = Blake.faint, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            }
+        } else if (imgUrl != null) {
+            // One fixed box, so an image that finishes loading doesn't shove the rest of the
+            // conversation down under the reader's thumb.
+            AsyncImage(model = imgUrl, contentDescription = null,
+                modifier = Modifier.width(220.dp).height(165.dp).border(1.dp, Blake.line, Blake.shape))
         } else {
-            Text(m.content, style = Blake.mono(12f), color = Blake.fg,
-                modifier = Modifier.background(if (mine) Blake.pp.copy(alpha = 0.14f) else Blake.ink, Blake.shape).border(1.dp, Blake.line, Blake.shape).padding(10.dp))
+            androidx.compose.foundation.text.selection.SelectionContainer {
+                Text(m.content, style = Blake.mono(12f), color = Blake.fg,
+                    modifier = Modifier.background(if (mine) Blake.pp.copy(alpha = 0.14f) else Blake.ink, Blake.shape).border(1.dp, Blake.line, Blake.shape).padding(10.dp))
+            }
         }
         if (reactions.isNotEmpty()) {
             Spacer(Modifier.size(3.dp))
@@ -214,5 +288,3 @@ private fun NameSheet(client: NostrClient, onClose: () -> Unit) {
 private val flairs = listOf(Blake.pp, Blake.hero, Blake.ok, Blake.warn, Blake.danger, Blake.fg)
 private fun flair(pubkey: String): Color = flairs[(pubkey.hashCode() and 0x7fffffff) % flairs.size]
 
-private fun imageUrl(content: String): String? =
-    Regex("pyblock:img\\?url=(\\S+)").find(content)?.groupValues?.get(1)
