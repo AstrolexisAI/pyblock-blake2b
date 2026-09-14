@@ -85,11 +85,17 @@ fun BlakeWaviclesScreen() {
                 Text("WAVICLES", style = Blake.mono(24f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 3.sp)
             }
             Spacer(Modifier.height(6.dp))
-            // Both fees, from the server: 0.4% with your own node (DATUM), 2.9% when the block comes
-            // through PyBLØCK's stratum. This line claimed 0.4% for every case.
-            val ownPct = (stats?.pool?.feeBps ?: 40) / 100.0
-            val stratumPct = (stats?.pool?.stratumFeeBps ?: 290) / 100.0
-            Text("DATUM · bring your own node · ${wpct(ownPct)} fee · ${wpct(stratumPct)} via our stratum",
+            // Both fees come from the server: one rate when the block comes from your own node
+            // (DATUM), another when it comes through PyBLØCK's stratum. This line used to claim the
+            // first for every case, and before that it fell back to two literals — so a pool that
+            // was slow or offline still printed two confident percentages nobody had checked. The
+            // split has moved three times in two days. When we don't know it, we say nothing.
+            val ownPct = stats?.pool?.feeBps?.let { it / 100.0 }
+            val stratumPct = stats?.pool?.stratumFeeBps?.let { it / 100.0 }
+            Text(
+                if (ownPct != null && stratumPct != null)
+                    "DATUM · bring your own node · ${wpct(ownPct)} fee · ${wpct(stratumPct)} via our stratum"
+                else "DATUM · bring your own node",
                 style = Blake.mono(10f), color = Blake.ppDim)
             Spacer(Modifier.height(22.dp))
             if (!loaded) { Text("⟳ loading…", style = Blake.mono(10f), color = Blake.wave); Spacer(Modifier.height(14.dp)) }
@@ -196,9 +202,12 @@ fun BlakeWaviclesScreen() {
             Column(Modifier.fillMaxWidth().blakeCard()) {
                 Text("HOW IT WORKS", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
                 Spacer(Modifier.height(8.dp))
-                val own = (stats?.pool?.feeBps ?: 40) / 100.0
-                val strat = (stats?.pool?.stratumFeeBps ?: 290) / 100.0
-                Text("${wpct(100 - own)} of every block goes to the work window — split by share of work (TIDES), paid in that block's coinbase. The fee is ${wpct(own)} when you bring your own node, ${wpct(strat)} when the block comes through PyBLØCK's stratum.",
+                val own = stats?.pool?.feeBps?.let { it / 100.0 }
+                val strat = stats?.pool?.stratumFeeBps?.let { it / 100.0 }
+                Text(
+                    if (own != null && strat != null)
+                        "${wpct(100 - own)} of every block goes to the work window — split by share of work (TIDES), paid in that block's coinbase. The fee is ${wpct(own)} when you bring your own node, ${wpct(strat)} when the block comes through PyBLØCK's stratum."
+                    else "Every block goes to the work window — split by share of work (TIDES), paid in that block's coinbase.",
                     style = Blake.mono(9f), color = Blake.fg)
                 Spacer(Modifier.height(6.dp))
                 Text("Not solo: every block found by anyone in the window pays everyone in the window.",

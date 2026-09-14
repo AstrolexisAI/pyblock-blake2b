@@ -126,7 +126,8 @@ fun BlakeChirpScreen() {
                             style = Blake.mono(8f), color = Blake.faint)
                     } else {
                         Spacer(Modifier.height(8.dp))
-                        Text("No miners are eligible for the split yet — it needs the ${pool?.minDays ?: 7}-day loyalty floor. ${online.size} mining now; the bar fills in as they qualify.",
+                        Text(pool?.minDays?.let { "No miners are eligible for the split yet — it needs the $it-day loyalty floor. ${online.size} mining now; the bar fills in as they qualify." }
+                            ?: "No miners are eligible for the split yet. ${online.size} mining now; the bar fills in as they qualify.",
                             style = Blake.mono(8f), color = Blake.faint)
                     }
                 }
@@ -164,7 +165,7 @@ fun BlakeChirpScreen() {
             Column(Modifier.fillMaxWidth().blakeCard()) {
                 Text("ELIGIBILITY", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
                 Spacer(Modifier.height(10.dp))
-                rule("min loyalty", "${pool?.minDays ?: 7} days")
+                rule("min loyalty", pool?.minDays?.let { "$it days" } ?: "—")
                 rule("min power", powerStr(pool?.minPower))
                 Spacer(Modifier.height(6.dp))
                 Text("Below the floor you still mine but don't share the reward split.",
