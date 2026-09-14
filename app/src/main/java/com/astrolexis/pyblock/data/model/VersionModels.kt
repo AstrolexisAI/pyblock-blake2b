@@ -7,9 +7,11 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class DeviceRegPush(
     val platform: String = "android",
-    val bundle: String = "com.astrolexis.pyblock",
+    val bundle: String = "com.astrolexis.pyblockblake2b",
     @SerialName("push_provider") val pushProvider: String = "unifiedpush",
     val endpoint: String = "",
+    /** May the runes this device's mining earned be shown beside its chat name? */
+    val marks: Boolean = true,
     // Chat identity so the server can route "you got a DM" pushes
     // (kind-4 p-tag → device). Empty clears the npub↔device mapping.
     @SerialName("nostr_pubkey") val nostrPubkey: String = "",

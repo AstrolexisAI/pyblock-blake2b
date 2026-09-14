@@ -36,7 +36,8 @@ object PushRepo {
             if (endpoint.isBlank()) return@withContext false
             val creds = DeviceStore.credentials() ?: return@withContext false
             val npub = runCatching { Nostr.pubkeyHex(ctx) }.getOrDefault("")
-            val bytes = json.encodeToString(DeviceRegPush(endpoint = endpoint, nostrPubkey = npub)).toByteArray()
+            val bytes = json.encodeToString(DeviceRegPush(endpoint = endpoint, nostrPubkey = npub,
+                marks = Nostr.showMarks(ctx))).toByteArray()
             val s = HmacSigner.sign("POST", PATH, bytes, creds.second)
             val req = Request.Builder()
                 .url(URL)

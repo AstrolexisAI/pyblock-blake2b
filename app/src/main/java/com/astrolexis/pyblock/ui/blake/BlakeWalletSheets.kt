@@ -617,6 +617,20 @@ fun SettingsSheet(operational: Boolean, rc: String?, height: Int, onClose: () ->
             Spacer(Modifier.weight(1f))
             Text("${contacts.size} saved ▸", style = Blake.mono(11f), color = Blake.pp)
         }
+        Spacer(Modifier.height(10.dp))
+        // Runes earned mining, beside the name in the room. Tiers only, never numbers.
+        var showMarks by remember { mutableStateOf(com.astrolexis.pyblock.data.nostr.Nostr.showMarks(ctx)) }
+        Row(Modifier.fillMaxWidth().clickableNoRipple {
+                showMarks = !showMarks
+                com.astrolexis.pyblock.data.nostr.Nostr.setShowMarks(ctx, showMarks)
+                com.astrolexis.pyblock.data.net.PushRepo.syncAddressesAsync(ctx)   // re-register carries the flag
+            }, verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("SHOW THE RUNES I EARNED", style = Blake.mono(10f), color = Blake.faint, letterSpacing = 1.sp)
+                Text("Blocks found, time mining, your own gateway — as runes beside your name.", style = Blake.mono(8f), color = Blake.faint)
+            }
+            Text(if (showMarks) "on ▸" else "off ▸", style = Blake.mono(11f), color = if (showMarks) Blake.ok else Blake.ppDim)
+        }
         Spacer(Modifier.height(14.dp))
         Text("BLAKE2b is Bitcoin under a BLAKE2b proof-of-work. Coins are read from the PyBLØCK node; only mature mined coinbase is spendable (non-replayable).",
             style = Blake.mono(9f), color = Blake.faint)

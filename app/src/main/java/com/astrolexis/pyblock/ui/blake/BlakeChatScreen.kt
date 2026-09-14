@@ -157,6 +157,7 @@ fun BlakeChatScreen(client: NostrClient, onPay: (String, Long?, String) -> Unit)
                 }
                 items(state.messages, key = { it.id }) { m ->
                     Bubble(m, mine = m.pubkey == myPubkey, name = state.profiles[m.pubkey],
+                        marks = state.marks[m.pubkey].orEmpty(),
                         reactions = state.reactionSummary(m.id, myPubkey),
                         onReact = { e -> client.react(m.id, m.pubkey, e) },
                         onDm = { if (m.pubkey != myPubkey) dmPeer = m.pubkey },
@@ -199,7 +200,8 @@ fun BlakeChatScreen(client: NostrClient, onPay: (String, Long?, String) -> Unit)
 
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun Bubble(m: NostrEvent, mine: Boolean, name: String?, reactions: List<Triple<String, Int, Boolean>>,
+private fun Bubble(m: NostrEvent, mine: Boolean, name: String?, marks: List<com.astrolexis.pyblock.data.blake.BlakeApi.Mark> = emptyList(),
+                   reactions: List<Triple<String, Int, Boolean>>,
                    onReact: (String) -> Unit, onDm: () -> Unit, onBlock: () -> Unit, onReport: () -> Unit) {
     val label = name ?: "…${m.pubkey.takeLast(6)}"
     val imgUrl = ChatMedia.imageUrl(m.content)
@@ -210,6 +212,13 @@ private fun Bubble(m: NostrEvent, mine: Boolean, name: String?, reactions: List<
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(label, style = Blake.mono(9f, FontWeight.ExtraBold), color = flair(m.pubkey), maxLines = 1,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 200.dp))
+            // Runes earned mining, certified by the server. Not for sale.
+            marks.take(4).forEach { mk ->
+                runCatching { Rune.valueOf(mk.rune.uppercase()) }.getOrNull()?.let { r ->
+                    Spacer(Modifier.width(2.dp))
+                    RuneGlyph(r, ink = if (r == Rune.DAGAZ) Color(0xFF35C7E0) else Blake.pp, size = 10.dp)
+                }
+            }
             Spacer(Modifier.width(6.dp))
             // The time was fetched, stored and sorted on, and never shown to anyone.
             Text(ChatMedia.clock(m.created_at), style = Blake.mono(7f), color = Blake.faint)

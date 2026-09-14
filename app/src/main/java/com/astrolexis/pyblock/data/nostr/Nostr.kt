@@ -97,6 +97,11 @@ object Nostr {
     fun shareReceiveInChat(ctx: Context): Boolean =
         runCatching { prefs(ctx).getBoolean(KEY_SHARE_RECEIVE, false) }.getOrDefault(false)
 
+    /** Show the runes earned mining beside the name. On by default; the server only ever hands out
+     *  a rune name and a tier, never a number, and only for keys that said yes. */
+    fun showMarks(ctx: Context): Boolean = runCatching { prefs(ctx).getBoolean("marks_show", true) }.getOrDefault(true)
+    fun setShowMarks(ctx: Context, v: Boolean) { runCatching { prefs(ctx).edit().putBoolean("marks_show", v).apply() } }
+
     fun setShareReceiveInChat(ctx: Context, v: Boolean) {
         runCatching { prefs(ctx).edit().putBoolean(KEY_SHARE_RECEIVE, v).apply() }
     }

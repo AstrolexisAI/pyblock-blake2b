@@ -67,6 +67,8 @@ data class NostrUiState(
     val reactions: Map<String, Map<String, Set<String>>> = emptyMap(),
     /** Text of a message the relay refused, for the composer to put back. */
     val rejectedDraft: String? = null,
+    /** pubkey → runes the server certifies they earned mining. */
+    val marks: Map<String, List<com.astrolexis.pyblock.data.blake.BlakeApi.Mark>> = emptyMap(),
 )
 
 /** Reactions on a message as (emoji, count, mine), most-reacted first. */
@@ -479,7 +481,9 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
             s.copy(messages = community, whaleMessages = whale, conversations = convs)
         }
         if (dms.isNotEmpty()) scheduleArchive()
-        requestProfiles(_state.value.messages.map { it.pubkey }.toSet())
+        val authors = _state.value.messages.map { it.pubkey }.toSet()
+        requestProfiles(authors)
+        refreshMarks(authors)
     }
 
     private fun List<NostrEvent>.takeLastCapped(): List<NostrEvent> =
@@ -565,6 +569,19 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
     private fun requestProfiles(pubkeys: Collection<String>) {
         if (!profileAuthors.addAll(pubkeys)) return
         sendProfileRequest()
+    }
+
+    /** Marks for a set of authors, at most once an hour each. One call for the batch. */
+    private val marksFetchedAt = java.util.concurrent.ConcurrentHashMap<String, Long>()
+    private fun refreshMarks(pubkeys: Collection<String>) {
+        val now = System.currentTimeMillis()
+        val stale = pubkeys.filter { now - (marksFetchedAt[it] ?: 0L) > 3_600_000L }
+        if (stale.isEmpty()) return
+        for (pk in stale) marksFetchedAt[pk] = now
+        viewModelScope.launch {
+            val got = runCatching { com.astrolexis.pyblock.data.blake.BlakeApi.marks(stale) }.getOrDefault(emptyMap())
+            if (got.isNotEmpty()) _state.update { s -> s.copy(marks = s.marks + got) }
+        }
     }
 
     private fun sendProfileRequest() {
@@ -844,7 +861,7 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
             }
             42 -> if (seen.add(ev.id)) {
                 if (backfilling) pendingMessages.add(ev)
-                else { insertMessage(ev); requestProfile(ev.pubkey) }
+                else { insertMessage(ev); requestProfile(ev.pubkey); refreshMarks(listOf(ev.pubkey)) }
             }
             7 -> addReaction(ev)
             // Decrypt FIRST (guarded — secretKey() can throw on a transient Keystore

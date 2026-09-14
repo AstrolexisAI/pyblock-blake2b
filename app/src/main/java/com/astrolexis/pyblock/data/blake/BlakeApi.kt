@@ -311,6 +311,23 @@ object BlakeApi {
         }
     }
 
+    // ---- Marks (runes earned mining) ----
+
+    /** A rune the server certifies for a chat key, with a tier. Never a number. */
+    @Serializable data class Mark(val rune: String = "", val level: Int = 1)
+    @Serializable private data class MarksResp(val ok: Boolean = false, val marks: Map<String, List<Mark>> = emptyMap())
+
+    /** Marks for up to 100 chat keys in one call. A key that is unknown, or that said no, is simply
+     *  absent. Degrades to nothing while the endpoint does not exist yet. */
+    suspend fun marks(pubkeys: Collection<String>): Map<String, List<Mark>> {
+        val list = pubkeys.filter { it.length == 64 }.distinct().take(100)
+        if (list.isEmpty()) return emptyMap()
+        val r = get("/api/app/marks.php?chain=blake2b&pubkeys=${list.joinToString(",")}") {
+            runCatching { json.decodeFromString<MarksResp>(it) }.getOrNull()
+        } ?: return emptyMap()
+        return if (r.ok) r.marks else emptyMap()
+    }
+
     // ---- Push registration (payment notifications) ----
 
     /** Register this device's UnifiedPush endpoint + wallet addresses so the server can push
