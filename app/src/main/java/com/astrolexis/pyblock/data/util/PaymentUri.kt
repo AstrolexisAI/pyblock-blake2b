@@ -35,6 +35,21 @@ data class PaymentReceipt(val amountSats: Long?, val txid: String, val from: Str
 object PaymentUri {
     fun isReceipt(text: String): Boolean = text.trim().startsWith("pyblock:paid?")
     fun isReadMarker(text: String): Boolean = text.trim().startsWith("pyblock:read?")
+    /** A peer handing over their payment code (`pyblock:hello?code=PM…`). Control, never shown. */
+    fun isHello(text: String): Boolean = text.trim().startsWith("pyblock:hello?")
+    /** Anything that rides as a DM but is not a message. */
+    fun isControl(text: String): Boolean = isReadMarker(text) || isHello(text)
+    fun helloCode(text: String): String? {
+        if (!isHello(text)) return null
+        for (kv in text.trim().removePrefix("pyblock:hello?").split("&")) {
+            val i = kv.indexOf('='); if (i < 0) continue
+            if (kv.substring(0, i) == "code") {
+                val code = kv.substring(i + 1)
+                return code.takeIf { it.startsWith("PM") && com.astrolexis.pyblock.data.crypto.PaymentCode.decode(it) != null }
+            }
+        }
+        return null
+    }
 
     /** Parse a `pyblock:paid?...` receipt, or null. */
     fun parseReceipt(text: String): PaymentReceipt? {

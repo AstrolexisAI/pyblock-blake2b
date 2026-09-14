@@ -628,14 +628,35 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /**
+     * Hand a peer our payment code, privately, the first time we write to them.
+     *
+     * This is what BIP-47's on-chain notification does, done over the encrypted DM instead: the
+     * other side learns the code it needs to pay us and to find what we pay them, without a
+     * transaction and without anyone having to "add a contact". Until now that code only moved
+     * through the public profile, and only if the user had opted in — which is why a payment could
+     * arrive and be undiscoverable. Once per peer; a control message, never shown. Mirrors iOS.
+     */
+    private fun introducedPrefs() = ctx.getSharedPreferences("pyblock_paynym_intro", android.content.Context.MODE_PRIVATE)
+    private fun introduce(peer: String) {
+        if (!Nostr.shareReceiveInChat(ctx)) return
+        val p = introducedPrefs()
+        if (p.getBoolean(peer, false)) return
+        val code = runCatching { PaymentCode.myCode(ctx) }.getOrNull() ?: return
+        if (!code.startsWith("PM")) return
+        p.edit().putBoolean(peer, true).apply()
+        sendDM(peer, "pyblock:hello?code=$code")
+    }
+
     fun sendDM(peer: String, content: String) {
         val trimmed = content.trim()
         if (trimmed.isEmpty()) return
+        if (!trimmed.startsWith("pyblock:")) introduce(peer)   // a real message: say who we are first
         val t = now()
         val ev = Nostr.makeDMEvent(ctx, peer, trimmed, t) ?: return
         seen.add(ev.id)
-        // Read markers ride as DMs but aren't shown as bubbles.
-        if (!com.astrolexis.pyblock.data.util.PaymentUri.isReadMarker(trimmed)) {
+        // Control messages ride as DMs but aren't shown as bubbles.
+        if (!com.astrolexis.pyblock.data.util.PaymentUri.isControl(trimmed)) {
             insertDM(DMMessage(ev.id, peer, true, trimmed, t))   // optimistic echo
         }
         broadcast(ev)
@@ -822,6 +843,16 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
                 // orchestration, not chat — route them and never show a bubble.
                 if (PayJoin.looksLikePayJoin(textDec)) {
                     PayJoinCoordinator.handleIncoming(peer, ev.pubkey == myPubkey, textDec)
+                    return@let
+                }
+                // A peer handing us their payment code: remember it, look for anything they may
+                // already have paid us, and never show it.
+                if (com.astrolexis.pyblock.data.util.PaymentUri.isHello(textDec)) {
+                    if (ev.pubkey != myPubkey) com.astrolexis.pyblock.data.util.PaymentUri.helloCode(textDec)?.let { code ->
+                        _state.update { s -> s.copy(peerPaynyms = s.peerPaynyms + (peer to code)) }
+                        interestPeers.add(peer)
+                        viewModelScope.launch { PaynymClaims.mutex.withLock { claimIncomingPaynym(peer) } }
+                    }
                     return@let
                 }
                 // Read receipts ride as encrypted DMs but aren't shown as bubbles.
