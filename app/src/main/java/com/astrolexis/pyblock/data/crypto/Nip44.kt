@@ -1,6 +1,6 @@
 package com.astrolexis.pyblock.data.crypto
 
-import android.util.Base64
+import java.util.Base64
 import fr.acinq.secp256k1.Secp256k1
 import java.security.MessageDigest
 import java.security.SecureRandom
@@ -72,11 +72,11 @@ object Nip44 {
         val ciphertext = chacha20(chachaKey, chachaNonce, 0, pad(plaintext.toByteArray()))
         val mac = hmacSha256(hmacKey, nonce + ciphertext)
         val out = byteArrayOf(0x02) + nonce + ciphertext + mac
-        return Base64.encodeToString(out, Base64.NO_WRAP)
+        return Base64.getEncoder().encodeToString(out)   // java.util, so the self-test runs on the JVM too
     }
 
     fun decrypt(payload: String, conversationKey: ByteArray): String? {
-        val bytes = try { Base64.decode(payload, Base64.NO_WRAP) } catch (e: Exception) { return null }
+        val bytes = try { Base64.getDecoder().decode(payload) } catch (e: Exception) { return null }
         if (bytes.size < 1 + 32 + 32 || bytes[0].toInt() != 0x02) return null
         val nonce = bytes.copyOfRange(1, 33)
         val mac = bytes.copyOfRange(bytes.size - 32, bytes.size)

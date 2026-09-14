@@ -167,12 +167,18 @@ object Nostr {
      * everything is not a verifier. The content carries a slash on purpose — that is the character
      * the canonical serializer exists for.
      */
-    fun selfTestVerify(ctx: Context): Boolean {
-        val ev = makeEvent(ctx, 1, "verify self-test a/b \u2713", listOf(listOf("t", "self/test")), 1_700_000_000L)
-            ?: return false
-        if (!verify(ev)) return false
-        return !verify(ev.copy(content = ev.content + "!"))
-    }
+    fun selfTestVerify(ctx: Context): Boolean = runCatching { selfTestVerify(secretKey(ctx)) }.getOrDefault(false)
+
+    /** The same check with an explicit key, so it can run on the JVM with no device attached. */
+    fun selfTestVerify(sk: ByteArray): Boolean = try {
+        val pubkey = secp.pubKeyCompress(secp.pubkeyCreate(sk)).copyOfRange(1, 33).hexStr()
+        val tags = listOf(listOf("t", "self/test"))
+        val content = "verify self-test a/b \u2713"
+        val serialized = serializeForId(pubkey, 1_700_000_000L, 1, tags, content)
+        val digest = MessageDigest.getInstance("SHA-256").digest(serialized.toByteArray(Charsets.UTF_8))
+        val ev = NostrEvent(digest.hexStr(), pubkey, 1_700_000_000L, 1, tags, content, secp.signSchnorr(digest, sk, null).hexStr())
+        verify(ev) && !verify(ev.copy(content = "$content!")) && !verify(ev.copy(sig = ev.sig.reversed()))
+    } catch (e: Exception) { false }
 
     // MARK: Encrypted DMs (NIP-44)
 
