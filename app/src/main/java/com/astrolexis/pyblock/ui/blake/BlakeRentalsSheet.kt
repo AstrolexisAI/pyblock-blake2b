@@ -138,7 +138,9 @@ fun BlakeRentalsSheet(onClose: () -> Unit) {
                 if (live?.status != s.status && s.status == "paid") { Haptics.success(); Sfx.coin() }
                 if (live?.status != s.status && s.status == "active") Sfx.powerUp()
                 live = s
-                if (BlakeRentals.statusIsFinal(s.status)) { myOrders = BlakeRentals.myOrders(); return@LaunchedEffect }
+                // "expired" is final unless the invoice can still be paid — then keep watching, so a
+                // late payment flips the screen to paid instead of leaving it on a dead status.
+                if (BlakeRentals.statusIsFinal(s.status) && s.stillPayable != true) { myOrders = BlakeRentals.myOrders(); return@LaunchedEffect }
             }
             delay(5_000)
         }
@@ -178,7 +180,14 @@ fun BlakeRentalsSheet(onClose: () -> Unit) {
                 }
             }
             s?.errorMsg?.takeIf { it.isNotBlank() }?.let { Spacer(Modifier.height(8.dp)); Text(it, style = Blake.mono(9f), color = Blake.danger) }
-            if (status == "pending_payment" && invoice != null && s?.stillPayable != false) {
+            // An expired invoice stays payable for 23 hours and the order reopens on its own when
+            // paid — so when the server says so, keep the QR and say that, instead of hiding it.
+            if (status == "expired" && s?.stillPayable == true) {
+                Text("The price window closed, but this invoice can still be paid for the next day. Pay it and the rental starts on its own.",
+                    style = Blake.mono(8f), color = Blake.warn)
+                Spacer(Modifier.height(6.dp))
+            }
+            if (invoice != null && ((status == "pending_payment" && s?.stillPayable != false) || (status == "expired" && s?.stillPayable == true))) {
                 Spacer(Modifier.height(14.dp))
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     Box(Modifier.background(Blake.hero).padding(8.dp)) { QrCode(text = invoice.uppercase(), size = 220.dp) }

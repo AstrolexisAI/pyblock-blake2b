@@ -78,9 +78,35 @@ object PushRepo {
         BlakeApi.registerPush(endpoint, addrs)
     }
 
+    /**
+     * The wallet addresses that belong to this device, for the server to tie mining to the chat
+     * key. Replaces the list; ten at most. The runes beside a name are computed from these, and the
+     * server found that almost no device had ever sent any — the push registration above carries
+     * addresses too, but into a different table.
+     */
+    suspend fun syncDeviceAddresses(ctx: Context): Boolean = withContext(Dispatchers.IO) {
+        val creds = DeviceStore.credentials() ?: return@withContext false
+        WalletStore.ensureLoaded(ctx)
+        val addrs = WalletStore.wallets.value.map { it.address }.filter { it.isNotBlank() }.distinct().take(10)
+        if (addrs.isEmpty()) return@withContext false
+        val bytes = org.json.JSONObject().put("addresses", org.json.JSONArray(addrs)).toString().toByteArray()
+        val path = "/api/app/addresses.php"
+        val s = HmacSigner.sign("POST", path, bytes, creds.second)
+        val req = Request.Builder()
+            .url("https://pyblock.xyz:8443$path")
+            .post(bytes.toRequestBody(mediaType))
+            .addHeader("Content-Type", "application/json")
+            .addHeader("X-PyBLOCK-Device-Id", creds.first.toString())
+            .addHeader("X-PyBLOCK-Timestamp", s.ts)
+            .addHeader("X-PyBLOCK-Nonce", s.nonce)
+            .addHeader("X-PyBLOCK-Signature", s.sig)
+            .build()
+        runCatching { client.newCall(req).execute().use { it.isSuccessful } }.getOrDefault(false)
+    }
+
     /** Fire-and-forget, for callers with no scope of their own (WalletStore.add/remove). */
     fun syncAddressesAsync(ctx: Context) {
         val app = ctx.applicationContext
-        scope.launch { runCatching { syncAddresses(app) } }
+        scope.launch { runCatching { syncAddresses(app) }; runCatching { syncDeviceAddresses(app) } }
     }
 }
