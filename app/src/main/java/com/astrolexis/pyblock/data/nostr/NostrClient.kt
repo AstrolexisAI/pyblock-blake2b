@@ -53,6 +53,8 @@ data class NostrUiState(
     val peerPaynyms: Map<String, String> = emptyMap(),       // pubkey → BIP-47 payment code (PM8T…)
     val peerTiers: Map<String, String> = emptyMap(),         // pubkey → "whale"/"pro" (subscription flair)
     val peerColors: Map<String, String> = emptyMap(),        // pubkey → CHAT FLAIR palette key
+    val peerForges: Map<String, String> = emptyMap(),        // pubkey → how their runes are drawn
+    val peerSigils: Map<String, String> = emptyMap(),        // pubkey → bindrune, rune names comma-separated
     // Relay refusal of something WE published (e.g. lounge post without the
     // entitlement). The optimistic echo gets rolled back and the UI shows this.
     val lastRejection: String? = null,
@@ -524,11 +526,35 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
         // when the user opted into "let people pay me in chat". Default: name only.
         val name = Nostr.displayName(ctx) ?: PaynymName.mine(ctx)
         val myPaynym = if (Nostr.shareReceiveInChat(ctx)) PaymentCode.myCode(ctx) else null
+        val forge = advertisedForge(); val sigil = advertisedSigil()
         val ev = Nostr.metadataEvent(ctx, name, null, myPaynym,
             com.astrolexis.pyblock.data.store.EntitlementsStore.tierTag,
-            color = advertisedColor(), createdAt = now()) ?: return
+            color = advertisedColor(), forge = forge, sigil = sigil, createdAt = now()) ?: return
         broadcast(ev)
+        // Apply to ourselves at once: the room only learns a profile from the relay and never
+        // re-asks for one it already has, so a change reached everyone's screen but the owner's.
+        _state.update { s -> s.copy(
+            profiles = s.profiles + (myPubkey to name),
+            peerColors = advertisedColor()?.let { s.peerColors + (myPubkey to it) } ?: (s.peerColors - myPubkey),
+            peerForges = s.peerForges + (myPubkey to forge),
+            peerSigils = if (sigil.isEmpty()) s.peerSigils - myPubkey else s.peerSigils + (myPubkey to sigil)) }
     }
+
+    /** Never advertise a forge or a sigil the user isn't entitled to anymore (lapsed sub). */
+    private fun advertisedForge(): String {
+        val f = Nostr.forge(ctx)
+        return if (f == "tempered" && !com.astrolexis.pyblock.data.store.EntitlementsStore.isWhale) "cast" else f
+    }
+    private fun advertisedSigil(): String {
+        val limit = if (com.astrolexis.pyblock.data.store.EntitlementsStore.isWhale) 4
+            else if (com.astrolexis.pyblock.data.store.EntitlementsStore.isPro) 3 else 0
+        return Nostr.sigil(ctx).split(",").filter { it.isNotBlank() }.take(limit).joinToString(",")
+    }
+    fun setForge(v: String) { Nostr.setForge(ctx, v); publishMetadata() }
+    fun setSigil(runes: List<String>) { Nostr.setSigil(ctx, runes.joinToString(",")); publishMetadata() }
+    fun setColor(v: String) { Nostr.setFlairColor(ctx, v); publishMetadata() }
+    fun forgeFor(pubkey: String): String = _state.value.peerForges[pubkey] ?: "cast"
+    fun sigilFor(pubkey: String): String = _state.value.peerSigils[pubkey] ?: ""
 
     /// Never advertise a color the user isn't entitled to anymore (lapsed sub).
     private fun advertisedColor(): String? =
@@ -845,6 +871,8 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
                 parseTier(ev.content)?.let { t ->
                     _state.update { it.copy(peerTiers = it.peerTiers + (ev.pubkey to t)) }
                 }
+                jsonField(ev.content, "forge")?.let { f -> _state.update { it.copy(peerForges = it.peerForges + (ev.pubkey to f)) } }
+                jsonField(ev.content, "sigil")?.let { g -> _state.update { it.copy(peerSigils = it.peerSigils + (ev.pubkey to g)) } }
                 parseColor(ev.content)?.let { c ->
                     _state.update { it.copy(peerColors = it.peerColors + (ev.pubkey to c)) }
                 }
@@ -1049,6 +1077,9 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
     private fun parsePaynym(content: String): String? = try {
         JSONObject(content).optString("paynym").takeIf { it.startsWith("PM") }
     } catch (e: Exception) { null }
+
+    private fun jsonField(content: String, key: String): String? =
+        try { org.json.JSONObject(content).optString(key, "").takeIf { it.isNotBlank() } } catch (e: Exception) { null }
 
     private fun parseTier(content: String): String? = try {
         JSONObject(content).optString("tier").takeIf { it.isNotEmpty() }

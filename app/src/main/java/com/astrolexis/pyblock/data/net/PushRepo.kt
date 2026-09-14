@@ -75,7 +75,7 @@ object PushRepo {
         WalletStore.ensureLoaded(ctx)
         val addrs = WalletStore.wallets.value.map { it.address }.filter { it.isNotBlank() }.distinct()
         if (addrs.isEmpty()) return
-        BlakeApi.registerPush(endpoint, addrs)
+        BlakeApi.registerPush(endpoint, addrs, rigQuiet = Nostr.rigAlerts(ctx))
     }
 
     /**

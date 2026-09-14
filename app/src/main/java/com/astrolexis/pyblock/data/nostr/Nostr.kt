@@ -115,7 +115,20 @@ object Nostr {
         runCatching { prefs(ctx).edit().putString(KEY_COLOR, color).apply() }
     }
 
-    fun metadataEvent(ctx: Context, name: String, btcAddress: String?, paynym: String? = null, tier: String? = null, color: String? = null, createdAt: Long): NostrEvent? {
+    // MARK: Forge, sigil, alerts (prefs)
+
+    /** How my runes are drawn for everyone: engraved, cast (default) or tempered (WHALE). */
+    fun forge(ctx: Context): String = runCatching { prefs(ctx).getString("forge", null) }.getOrNull()?.takeIf { it.isNotBlank() } ?: "cast"
+    fun setForge(ctx: Context, v: String) { runCatching { prefs(ctx).edit().putString("forge", v).apply() } }
+    /** My bindrune: rune names, comma-separated. */
+    fun sigil(ctx: Context): String = runCatching { prefs(ctx).getString("sigil", null) }.getOrNull() ?: ""
+    fun setSigil(ctx: Context, v: String) { runCatching { prefs(ctx).edit().putString("sigil", v).apply() } }
+    /** Push me when a rig I track stops submitting shares. PRO. */
+    fun rigAlerts(ctx: Context): Boolean = runCatching { prefs(ctx).getBoolean("rig_quiet", false) }.getOrDefault(false)
+    fun setRigAlerts(ctx: Context, v: Boolean) { runCatching { prefs(ctx).edit().putBoolean("rig_quiet", v).apply() } }
+
+    fun metadataEvent(ctx: Context, name: String, btcAddress: String?, paynym: String? = null, tier: String? = null, color: String? = null,
+                      forge: String? = null, sigil: String? = null, createdAt: Long): NostrEvent? {
         // Optional `btc` field = your receive address, so peers can pay you directly.
         val btc = if (!btcAddress.isNullOrBlank()) ",\"btc\":${jsonStr(btcAddress)}" else ""
         // Optional `paynym` = BIP-47 reusable code (fresh addr per pay, no OP_RETURN).
@@ -124,7 +137,10 @@ object Nostr {
         val tr = if (!tier.isNullOrBlank()) ",\"tier\":${jsonStr(tier)}" else ""
         // Optional `color` = CHAT FLAIR name color (palette key).
         val cl = if (!color.isNullOrBlank()) ",\"color\":${jsonStr(color)}" else ""
-        val content = """{"name":${jsonStr(name)},"display_name":${jsonStr(name)}$btc$pc$tr$cl}"""
+        // Optional `forge` = how this person's runes are drawn; `sigil` = their bindrune.
+        val fg = if (!forge.isNullOrBlank()) ",\"forge\":${jsonStr(forge)}" else ""
+        val sg = if (!sigil.isNullOrBlank()) ",\"sigil\":${jsonStr(sigil)}" else ""
+        val content = """{"name":${jsonStr(name)},"display_name":${jsonStr(name)}$btc$pc$tr$cl$fg$sg}"""
         return makeEvent(ctx, 0, content, emptyList(), createdAt)
     }
 

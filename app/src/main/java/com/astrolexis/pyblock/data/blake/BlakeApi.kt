@@ -332,11 +332,11 @@ object BlakeApi {
 
     /** Register this device's UnifiedPush endpoint + wallet addresses so the server can push
      *  a notification when a watched address receives coins. Fire-and-forget. */
-    suspend fun registerPush(endpoint: String, addresses: List<String>) {
+    suspend fun registerPush(endpoint: String, addresses: List<String>, rigQuiet: Boolean = false) {
         withContext(Dispatchers.IO) {
             try {
                 val bodyJson = json.encodeToString(
-                    PushReg(endpoint = endpoint, addresses = addresses)
+                    PushReg(endpoint = endpoint, addresses = addresses, preferences = mapOf("rig_quiet" to rigQuiet))
                 )
                 val req = Request.Builder().url("$BASE/api/app/push/register.php?chain=blake2b")
                     .post(bodyJson.toRequestBody(JSON_MEDIA)).build()
@@ -350,6 +350,8 @@ object BlakeApi {
         val platform: String = "android",
         @SerialName("push_provider") val pushProvider: String = "unifiedpush",
         val bundle: String = "com.astrolexis.pyblockblake2b",
+        /** What this device wants pushed besides payments; the server decides "quiet" where the shares are. */
+        val preferences: Map<String, Boolean> = emptyMap(),
     )
 
     // ---- Chat image upload (shared community media) ----

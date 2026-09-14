@@ -169,12 +169,32 @@ fun BlakeMinerSheet(onClose: () -> Unit) {
                 Spacer(Modifier.height(14.dp))
                 // ---- Chart ----
                 Column(Modifier.fillMaxWidth().blakeCard()) {
+                // Rig alerts: a push when this address stops submitting shares. PRO. The server
+                // sees the shares, so it decides "quiet"; the switch only says this device wants it.
+                run {
+                    val pro = com.astrolexis.pyblock.data.store.EntitlementsStore.isPro
+                    var rigAlerts by remember { mutableStateOf(com.astrolexis.pyblock.data.nostr.Nostr.rigAlerts(ctx)) }
+                    Row(Modifier.fillMaxWidth().padding(vertical = 6.dp).clickableNoRipple {
+                            if (!pro) { toast(ctx, "Rig alerts are PRO."); return@clickableNoRipple }
+                            rigAlerts = !rigAlerts
+                            com.astrolexis.pyblock.data.nostr.Nostr.setRigAlerts(ctx, rigAlerts)
+                            com.astrolexis.pyblock.data.net.PushRepo.syncAddressesAsync(ctx)
+                        }, verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("ALERT ME WHEN A RIG GOES QUIET", style = Blake.mono(9f, FontWeight.ExtraBold), color = if (pro) Blake.fg else Blake.ppDim, letterSpacing = 1.sp)
+                            Text(if (pro) "A push if this address stops submitting shares." else "PRO. A push before a day of hash is lost.", style = Blake.mono(7f), color = Blake.faint)
+                        }
+                        Text(if (!pro) "PRO" else if (rigAlerts) "on ▸" else "off ▸", style = Blake.mono(9f, FontWeight.ExtraBold), color = if (rigAlerts && pro) Blake.ok else Blake.pp)
+                    }
+                }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         sectionTitle("HASHRATE")
                         Spacer(Modifier.weight(1f))
-                        listOf("1d", "7d", "30d").forEach { r ->
-                            Text(r, style = Blake.mono(9f, FontWeight.ExtraBold), color = if (range == r) Blake.pp else Blake.faint, letterSpacing = 1.sp,
-                                modifier = Modifier.padding(horizontal = 6.dp).clickableNoRipple { Haptics.tap(); range = r })
+                        val isPro = com.astrolexis.pyblock.data.store.EntitlementsStore.isPro
+                        listOf("1d", "7d", "30d", "1y").forEach { r ->
+                            val locked = r == "1y" && !isPro     // a year of history is PRO
+                            Text(r, style = Blake.mono(9f, FontWeight.ExtraBold), color = if (range == r) Blake.pp else if (locked) Blake.ppDim else Blake.faint, letterSpacing = 1.sp,
+                                modifier = Modifier.padding(horizontal = 6.dp).clickableNoRipple { if (locked) toast(ctx, "A year of history is PRO.") else { Haptics.tap(); range = r } })
                         }
                     }
                     Spacer(Modifier.height(10.dp))
@@ -309,3 +329,6 @@ private fun poolColor(p: String): Color = when (p) {
     else -> Blake.ppDim
 }
 private fun shortAgent(a: String?): String = if (a.isNullOrEmpty()) "miner" else if (a.length > 26) a.take(26) + "…" else a
+
+
+private fun toast(ctx: android.content.Context, msg: String) = android.widget.Toast.makeText(ctx, msg, android.widget.Toast.LENGTH_SHORT).show()
