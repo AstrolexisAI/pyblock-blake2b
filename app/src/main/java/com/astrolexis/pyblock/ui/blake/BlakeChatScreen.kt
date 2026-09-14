@@ -196,7 +196,6 @@ fun BlakeChatScreen(client: NostrClient, onPay: (String, Long?, String) -> Unit)
     if (showName) NameSheet(client) { showName = false }
 }
 
-private val REACTIONS = listOf("⚡", "🔥", "👍", "😂", "🧡", "🫡")
 
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
@@ -238,8 +237,16 @@ private fun Bubble(m: NostrEvent, mine: Boolean, name: String?, reactions: List<
             Spacer(Modifier.size(3.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                 reactions.forEach { (emoji, count, isMine) ->
-                    Text("$emoji$count", style = Blake.mono(9f), color = if (isMine) Blake.pp else Blake.ppDim,
-                        modifier = Modifier.border(1.dp, Blake.line, Blake.shape).padding(horizontal = 5.dp, vertical = 1.dp).clickableNoRipple { onReact(emoji) })
+                    val tint = if (isMine) Blake.pp else Blake.ppDim
+                    Row(verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.border(1.dp, Blake.line, Blake.shape).padding(horizontal = 5.dp, vertical = 2.dp).clickableNoRipple { onReact(emoji) }) {
+                        // A rune drawn as strokes when we know it; anything else (an emoji from an
+                        // older build, or the other app) stays as the text it is.
+                        val rune = Rune.fromGlyph(emoji)
+                        if (rune != null) RuneGlyph(rune, ink = tint, size = 11.dp) else Text(emoji, style = Blake.mono(9f), color = tint)
+                        Spacer(Modifier.width(3.dp))
+                        Text("$count", style = Blake.mono(9f), color = tint)
+                    }
                 }
             }
         }
@@ -247,7 +254,8 @@ private fun Bubble(m: NostrEvent, mine: Boolean, name: String?, reactions: List<
     if (menu) Dialog(onDismissRequest = { menu = false }) {
         Column(Modifier.fillMaxWidth().background(Blake.ink, Blake.shape).border(1.dp, Blake.line, Blake.shape).padding(16.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                REACTIONS.forEach { e -> Text(e, style = Blake.mono(20f), modifier = Modifier.clickableNoRipple { onReact(e); menu = false }) }
+                // Runes, not emoji. The glyph goes over the wire; the chip draws it as strokes.
+                Rune.reactions.forEach { r -> RuneGlyph(r, size = 24.dp, modifier = Modifier.clickableNoRipple { onReact(r.glyph); menu = false }) }
             }
             if (!mine) {
                 Spacer(Modifier.size(14.dp))

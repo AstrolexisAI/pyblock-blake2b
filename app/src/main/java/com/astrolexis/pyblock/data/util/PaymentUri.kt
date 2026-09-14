@@ -20,10 +20,14 @@ data class PaymentRequest(val address: String, val amountSats: Long?, val label:
 }
 
 /** A "payment sent" receipt posted back into the DM after a pay/send. */
-data class PaymentReceipt(val amountSats: Long?, val txid: String) {
+data class PaymentReceipt(val amountSats: Long?, val txid: String, val from: String? = null) {
+    /** [from] is the payer's own payment code. The receiver needs it to derive the address the coins
+     *  went to; it rides inside the encrypted DM, private to the two of them, and makes the receipt
+     *  self-sufficient even when the payer never advertises the code in their profile. */
     fun toUri(): String {
         var s = "pyblock:paid?txid=$txid"
         amountSats?.let { s += "&amount=$it" }   // sats (internal marker)
+        from?.takeIf { it.startsWith("PM") }?.let { s += "&from=$it" }
         return s
     }
 }
@@ -36,16 +40,21 @@ object PaymentUri {
     fun parseReceipt(text: String): PaymentReceipt? {
         val t = text.trim()
         if (!t.startsWith("pyblock:paid?")) return null
-        var txid = ""; var amountSats: Long? = null
+        var txid = ""; var amountSats: Long? = null; var from: String? = null
         for (kv in t.removePrefix("pyblock:paid?").split("&")) {
             val i = kv.indexOf('='); if (i < 0) continue
             when (kv.substring(0, i)) {
                 "txid" -> txid = kv.substring(i + 1)
                 "amount" -> amountSats = kv.substring(i + 1).toLongOrNull()
+                "from" -> from = kv.substring(i + 1).takeIf { it.startsWith("PM") }
             }
         }
-        return if (txid.isEmpty()) null else PaymentReceipt(amountSats, txid)
+        return if (txid.isEmpty()) null else PaymentReceipt(amountSats, txid, from)
     }
+
+    /** The payer's payment code carried in a receipt, if it has one and it decodes. */
+    fun receiptSender(text: String): String? =
+        parseReceipt(text)?.from?.takeIf { com.astrolexis.pyblock.data.crypto.PaymentCode.decode(it) != null }
 
     /** The `ts` from a `pyblock:read?ts=<n>` marker, or null. */
     fun readMarkerTs(text: String): Long? =

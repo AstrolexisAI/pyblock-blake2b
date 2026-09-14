@@ -838,8 +838,15 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
                     insertDM(DMMessage(ev.id, peer, mine, textDec, ev.created_at))
                     // Receipt-triggered PayNym receive: an incoming "paid" notice
                     // means a fresh stealth address of mine was funded — import it.
-                    if (!mine && textDec.startsWith("pyblock:paid?") && _state.value.peerPaynyms[peer] != null) {
-                        viewModelScope.launch { PaynymClaims.mutex.withLock { claimIncomingPaynym(peer) } }
+                    if (!mine && textDec.startsWith("pyblock:paid?")) {
+                        // The receipt may carry the payer's own code (`from=`), which makes it
+                        // self-sufficient: the receiver can derive the address even when the payer
+                        // never opted in to advertising their code in their profile.
+                        com.astrolexis.pyblock.data.util.PaymentUri.receiptSender(textDec)?.let { code ->
+                            _state.update { s -> s.copy(peerPaynyms = s.peerPaynyms + (peer to code)) }
+                        }
+                        if (_state.value.peerPaynyms[peer] != null)
+                            viewModelScope.launch { PaynymClaims.mutex.withLock { claimIncomingPaynym(peer) } }
                     }
                     requestProfile(peer)
                 }
