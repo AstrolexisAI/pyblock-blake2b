@@ -75,7 +75,7 @@ object PushRepo {
         WalletStore.ensureLoaded(ctx)
         val addrs = WalletStore.wallets.value.map { it.address }.filter { it.isNotBlank() }.distinct()
         if (addrs.isEmpty()) return
-        BlakeApi.registerPush(endpoint, addrs, rigQuiet = Nostr.rigAlerts(ctx))
+        registerPushSigned(ctx, endpoint, addrs)
     }
 
     /**
@@ -95,6 +95,34 @@ object PushRepo {
         val req = Request.Builder()
             .url("https://pyblock.xyz:8443$path")
             .post(bytes.toRequestBody(mediaType))
+            .addHeader("Content-Type", "application/json")
+            .addHeader("X-PyBLOCK-Device-Id", creds.first.toString())
+            .addHeader("X-PyBLOCK-Timestamp", s.ts)
+            .addHeader("X-PyBLOCK-Nonce", s.nonce)
+            .addHeader("X-PyBLOCK-Signature", s.sig)
+            .build()
+        runCatching { client.newCall(req).execute().use { it.isSuccessful } }.getOrDefault(false)
+    }
+
+    /**
+     * The push registration, signed by the device. It was born unsigned, with no reference to the
+     * device account — and the tier lives in the account. Without the signature the server cannot
+     * prove the person asking for a rig alert is PRO, so it sends nothing; its reply says
+     * `device_linked:false` when that happens. Same body BlakeApi.registerPush sends.
+     */
+    private suspend fun registerPushSigned(ctx: Context, endpoint: String, addrs: List<String>): Boolean = withContext(Dispatchers.IO) {
+        val creds = DeviceStore.credentials() ?: return@withContext BlakeApi.registerPush(endpoint, addrs, rigQuiet = Nostr.rigAlerts(ctx)).let { true }
+        val body = org.json.JSONObject()
+            .put("endpoint", endpoint).put("addresses", org.json.JSONArray(addrs))
+            .put("platform", "android").put("push_provider", "unifiedpush")
+            .put("bundle", "com.astrolexis.pyblockblake2b")
+            .put("preferences", org.json.JSONObject().put("rig_quiet", Nostr.rigAlerts(ctx)))
+            .toString().toByteArray()
+        val path = "/api/app/push/register.php"
+        val s = HmacSigner.sign("POST", path, body, creds.second)
+        val req = Request.Builder()
+            .url("https://pyblock.xyz:8443$path?chain=blake2b")
+            .post(body.toRequestBody(mediaType))
             .addHeader("Content-Type", "application/json")
             .addHeader("X-PyBLOCK-Device-Id", creds.first.toString())
             .addHeader("X-PyBLOCK-Timestamp", s.ts)
