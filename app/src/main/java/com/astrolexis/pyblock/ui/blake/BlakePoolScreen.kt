@@ -102,6 +102,7 @@ fun BlakePoolScreen() {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
             // header
             Row(verticalAlignment = Alignment.CenterVertically) {
+                BlakeTierBadge()
                 Spacer(Modifier.weight(1f))
                 Box(Modifier.size(7.dp).background(if (live) Blake.ok else Blake.warn, CircleShape))
                 Spacer(Modifier.size(5.dp))

@@ -147,6 +147,8 @@ fun BlakeChatScreen(client: NostrClient, onPay: (String, Long?, String) -> Unit)
             Spacer(Modifier.width(8.dp))
             Box(Modifier.size(7.dp).background(if (state.connected) Blake.ok else Blake.warn, CircleShape))
             Spacer(Modifier.weight(1f))
+            BlakeTierBadge()
+            Spacer(Modifier.width(10.dp))
             val unreadDMs = state.unreadDmCount()
             if (unreadDMs > 0)
                 Text("✉ DMS $unreadDMs", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.bg,

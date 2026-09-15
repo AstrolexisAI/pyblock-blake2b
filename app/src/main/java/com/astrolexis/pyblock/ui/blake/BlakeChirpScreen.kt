@@ -61,7 +61,7 @@ fun BlakeChirpScreen() {
           scope.launch { refreshing = true; load(); refreshing = false }
       }, modifier = Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
-            Text("CHIRP", style = Blake.mono(24f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 3.sp)
+            Row(verticalAlignment = Alignment.CenterVertically) { Text("CHIRP", style = Blake.mono(24f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 3.sp); Spacer(Modifier.weight(1f)); BlakeTierBadge() }
             Spacer(Modifier.height(6.dp))
             // From the gateway, never hardcoded: CHIRP is 1% + 1% on this chain, and this line used to
             // print the SHA-256 pool's 0.9%. No split from the server → say what it is, quote nothing.

@@ -181,6 +181,8 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit, onPaid: (peer: String, txid: S
             Column(Modifier.fillMaxWidth().padding(top = 6.dp)) {
                 Row(verticalAlignment = Alignment.Top) {
                     Text("${Blake.btc(total)} ${Blake.RUNE}", style = Blake.mono(34f, FontWeight.ExtraBold), color = Blake.pp, maxLines = 1, modifier = Modifier.weight(1f))
+                    BlakeTierBadge(Modifier.padding(top = 8.dp))
+                    Spacer(Modifier.width(10.dp))
                     Text("⚙", style = Blake.mono(15f), color = Blake.faint, modifier = Modifier.padding(top = 6.dp).clickableNoRipple { sheet = Sheet.Settings })
                 }
                 Spacer(Modifier.height(8.dp))

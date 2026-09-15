@@ -83,6 +83,8 @@ fun BlakeWaviclesScreen() {
                 DagazRune(24.dp, Blake.wave)
                 Spacer(Modifier.width(10.dp))
                 Text("WAVICLES", style = Blake.mono(24f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 3.sp)
+                Spacer(Modifier.weight(1f))
+                BlakeTierBadge()
             }
             Spacer(Modifier.height(6.dp))
             // Both fees come from the server: one rate when the block comes from your own node
