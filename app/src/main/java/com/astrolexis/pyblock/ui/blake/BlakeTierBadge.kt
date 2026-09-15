@@ -47,14 +47,14 @@ fun BlakeTierBadge(modifier: Modifier = Modifier) {
     Row(modifier
             .then(if (free) Modifier else Modifier.background(accent, Blake.shape))
             .border(1.dp, if (free) Blake.line else accent, Blake.shape)
-            .padding(horizontal = 7.dp, vertical = 4.dp)
+            .padding(horizontal = 5.dp, vertical = 3.dp)
             .clickableNoRipple { com.astrolexis.pyblock.ui.Haptics.tap(); open = true },
         verticalAlignment = Alignment.CenterVertically) {
         if (!free) {
-            RuneGlyph(if (tier == "whale") Rune.LAGUZ else Rune.FEHU, forge = if (tier == "whale") RuneForge.TEMPERED else RuneForge.CAST, ink = if (tier == "whale") Blake.bg else Blake.bg, size = 10.dp)
+            RuneGlyph(if (tier == "whale") Rune.LAGUZ else Rune.FEHU, forge = if (tier == "whale") RuneForge.TEMPERED else RuneForge.CAST, ink = Blake.bg, size = 8.dp)
             Spacer(Modifier.width(4.dp))
         }
-        Text(label, style = Blake.mono(8f, FontWeight.ExtraBold), color = if (free) Blake.faint else Blake.bg, letterSpacing = 1.sp)
+        Text(label, style = Blake.mono(7f, FontWeight.ExtraBold), color = if (free) Blake.faint else Blake.bg, letterSpacing = 1.sp, maxLines = 1, softWrap = false)
     }
     if (open) BlakeMembershipSheet(onClose = { open = false })
 }

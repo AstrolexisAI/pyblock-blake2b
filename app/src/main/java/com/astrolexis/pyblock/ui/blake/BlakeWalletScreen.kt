@@ -181,14 +181,13 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit, onPaid: (peer: String, txid: S
             Column(Modifier.fillMaxWidth().padding(top = 6.dp)) {
                 Row(verticalAlignment = Alignment.Top) {
                     Text("${Blake.btc(total)} ${Blake.RUNE}", style = Blake.mono(34f, FontWeight.ExtraBold), color = Blake.pp, maxLines = 1, modifier = Modifier.weight(1f))
-                    BlakeTierBadge(Modifier.padding(top = 8.dp))
-                    Spacer(Modifier.width(10.dp))
                     Text("⚙", style = Blake.mono(15f), color = Blake.faint, modifier = Modifier.padding(top = 6.dp).clickableNoRipple { sheet = Sheet.Settings })
                 }
                 Spacer(Modifier.height(8.dp))
                 val currentEvent by WalletEvents.current.collectAsState()
                 androidx.compose.animation.Crossfade(targetState = currentEvent, label = "statusline") { ev ->
                 if (ev != null) Row(Modifier.height(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    BlakeTierBadge(); Spacer(Modifier.width(6.dp))   // on the status line, not beside a 34-point number
                     // An event borrows this line for a few seconds, then it goes back to status.
                     Text(ev.glyph, style = Blake.mono(9f, FontWeight.ExtraBold), color = ev.color)
                     Spacer(Modifier.width(6.dp))

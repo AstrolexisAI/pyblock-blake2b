@@ -139,10 +139,10 @@ fun BlakeChatScreen(client: NostrClient, onPay: (String, Long?, String) -> Unit)
     Column(Modifier.fillMaxSize().background(Blake.bg)) {
         Row(Modifier.fillMaxWidth().background(Blake.ink).statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically) {
-            Text("COMMUNITY", style = Blake.mono(if (lounge) 12f else 18f, FontWeight.ExtraBold), color = if (lounge) Blake.faint else Blake.hero, letterSpacing = 2.sp,
+            Text("COMMUNITY", style = Blake.mono(if (lounge) 10f else 14f, FontWeight.ExtraBold), maxLines = 1, softWrap = false, color = if (lounge) Blake.faint else Blake.hero, letterSpacing = 2.sp,
                 modifier = Modifier.clickableNoRipple { lounge = false; primed = false })
             Spacer(Modifier.width(10.dp))
-            Text("LOUNGE", style = Blake.mono(if (lounge) 18f else 12f, FontWeight.ExtraBold), color = if (lounge) Blake.hero else Blake.faint, letterSpacing = 2.sp,
+            Text("LOUNGE", style = Blake.mono(if (lounge) 14f else 10f, FontWeight.ExtraBold), maxLines = 1, softWrap = false, color = if (lounge) Blake.hero else Blake.faint, letterSpacing = 2.sp,
                 modifier = Modifier.clickableNoRipple { lounge = true; primed = false })
             Spacer(Modifier.width(8.dp))
             Box(Modifier.size(7.dp).background(if (state.connected) Blake.ok else Blake.warn, CircleShape))
