@@ -137,26 +137,34 @@ fun BlakeChatScreen(client: NostrClient, onPay: (String, Long?, String) -> Unit)
     if (showDMs) { BlakeDMInbox(client, onOpen = { dmPeer = it }, onClose = { showDMs = false }); return }
 
     Column(Modifier.fillMaxSize().background(Blake.bg)) {
-        Row(Modifier.fillMaxWidth().background(Blake.ink).statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically) {
-            Text("COMMUNITY", style = Blake.mono(if (lounge) 10f else 14f, FontWeight.ExtraBold), maxLines = 1, softWrap = false, color = if (lounge) Blake.faint else Blake.hero, letterSpacing = 2.sp,
-                modifier = Modifier.clickableNoRipple { lounge = false; primed = false })
-            Spacer(Modifier.width(10.dp))
-            Text("LOUNGE", style = Blake.mono(if (lounge) 14f else 10f, FontWeight.ExtraBold), maxLines = 1, softWrap = false, color = if (lounge) Blake.hero else Blake.faint, letterSpacing = 2.sp,
-                modifier = Modifier.clickableNoRipple { lounge = true; primed = false })
-            Spacer(Modifier.width(8.dp))
-            Box(Modifier.size(7.dp).background(if (state.connected) Blake.ok else Blake.warn, CircleShape))
-            Spacer(Modifier.weight(1f))
-            BlakeTierBadge()
-            Spacer(Modifier.width(10.dp))
-            val unreadDMs = state.unreadDmCount()
-            if (unreadDMs > 0)
-                Text("✉ DMS $unreadDMs", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.bg,
-                    modifier = Modifier.background(Blake.pp, Blake.shape).padding(horizontal = 6.dp, vertical = 2.dp).clickableNoRipple { showDMs = true })
-            else
-                Text("✉ DMS", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.pp, modifier = Modifier.clickableNoRipple { showDMs = true })
-            Spacer(Modifier.width(12.dp))
-            Text("⚙ NAME", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.pp, modifier = Modifier.clickableNoRipple { showName = true })
+        // Two rows. One row could not hold a room name, the badge, DMS and NAME at a readable size.
+        Column(Modifier.fillMaxWidth().background(Blake.ink).statusBarsPadding().padding(horizontal = 16.dp, vertical = 10.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(if (lounge) "LOUNGE" else "COMMUNITY", style = Blake.mono(18f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 2.sp, maxLines = 1)
+                Spacer(Modifier.width(8.dp))
+                Box(Modifier.size(7.dp).background(if (state.connected) Blake.ok else Blake.warn, CircleShape))
+                Spacer(Modifier.weight(1f))
+                BlakeTierBadge()
+                Spacer(Modifier.width(8.dp))
+                val unreadDMs = state.unreadDmCount()
+                if (unreadDMs > 0)
+                    Text("✉ DMS $unreadDMs", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.bg, maxLines = 1, softWrap = false,
+                        modifier = Modifier.background(Blake.pp, Blake.shape).padding(horizontal = 6.dp, vertical = 2.dp).clickableNoRipple { showDMs = true })
+                else
+                    Text("✉ DMS", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.pp, maxLines = 1, softWrap = false, modifier = Modifier.clickableNoRipple { showDMs = true })
+                Spacer(Modifier.width(12.dp))
+                Text("⚙ NAME", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.pp, maxLines = 1, softWrap = false, modifier = Modifier.clickableNoRipple { showName = true })
+            }
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(false to "COMMUNITY", true to "LOUNGE").forEach { (l, label) ->
+                    val on = lounge == l
+                    Text(label, style = Blake.mono(8f, FontWeight.ExtraBold), color = if (on) Blake.bg else Blake.ppDim, letterSpacing = 1.sp, maxLines = 1, softWrap = false,
+                        modifier = Modifier.then(if (on) Modifier.background(Blake.pp, Blake.shape) else Modifier.border(1.dp, Blake.line, Blake.shape))
+                            .padding(horizontal = 8.dp, vertical = 4.dp).clickableNoRipple { if (lounge != l) { com.astrolexis.pyblock.ui.Haptics.tap(); lounge = l; primed = false } })
+                }
+                if (!lounge && state.whaleMessages.isNotEmpty()) Text("${state.whaleMessages.size} inside", style = Blake.mono(8f), color = Blake.faint)
+            }
         }
         Box(Modifier.fillMaxWidth().size(1.dp).background(Blake.line))
 
