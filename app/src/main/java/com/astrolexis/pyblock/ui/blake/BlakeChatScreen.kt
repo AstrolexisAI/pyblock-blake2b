@@ -401,7 +401,7 @@ private fun ProfileCard(client: NostrClient, pubkey: String, onClose: () -> Unit
                     marks.take(6).forEach { mk ->
                         runCatching { Rune.valueOf(mk.rune.uppercase()) }.getOrNull()?.let { r ->
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                RuneGlyph(r, forge = forge, ink = if (r == Rune.DAGAZ) Color(0xFF35C7E0) else Blake.pp, size = 22.dp)
+                                RuneGlyph(r, forge = forge, ink = Rune.markInk(r), size = 22.dp)
                                 Text(r.name, style = Blake.mono(6f), color = Blake.faint)
                             }
                         }
@@ -472,7 +472,7 @@ private fun Bubble(m: NostrEvent, mine: Boolean, name: String?, header: Boolean 
                 marks.take(4).forEach { mk ->
                     runCatching { Rune.valueOf(mk.rune.uppercase()) }.getOrNull()?.let { r ->
                         Spacer(Modifier.width(2.dp))
-                        RuneGlyph(r, forge = forge, ink = if (r == Rune.DAGAZ) Color(0xFF35C7E0) else Blake.pp, size = 10.dp)
+                        RuneGlyph(r, forge = forge, ink = Rune.markInk(r), size = 10.dp)
                     }
                 }
             }

@@ -157,7 +157,8 @@ fun BlakePoolScreen() {
                     Text(stringResource(R.string.blk_hashrate_by_stratum), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
                     Spacer(Modifier.height(10.dp))
                     val labels = mapOf("lotto" to stringResource(R.string.blk_lotto), "lotto_asic" to stringResource(R.string.blk_lotto_asic),
-                        "chirp" to stringResource(R.string.blk_chirp), "carousel" to stringResource(R.string.blk_carousel), "wavicles" to stringResource(R.string.blk_wavicles))
+                        "chirp" to stringResource(R.string.blk_chirp), "carousel" to stringResource(R.string.blk_carousel), "wavicles" to stringResource(R.string.blk_wavicles),
+                        "datum" to stringResource(R.string.blk_datum))
                     // Flagship first (LOTTO before 970000, CAROUSEL after — lotto's ASIC tier tags along
                     // while lotto is flagship), then the rest by hashrate desc. Leads with the flagship
                     // through the swap regardless of its size.
@@ -171,6 +172,9 @@ fun BlakePoolScreen() {
                     rows.forEach { (k, label, ths) ->
                         Column(Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
+                                // The two products with a rune of their own carry it beside the name.
+                                if (k == "wavicles") { DagazRune(9.dp, stratumColor(k, tip, stats?.flagship)); Spacer(Modifier.width(5.dp)) }
+                                if (k == "datum") { AnsuzRune(10.dp, stratumColor(k, tip, stats?.flagship)); Spacer(Modifier.width(5.dp)) }
                                 Text(label, style = Blake.mono(9f, FontWeight.ExtraBold), color = stratumColor(k, tip, stats?.flagship), letterSpacing = 0.5.sp)
                                 Spacer(Modifier.weight(1f))
                                 Text(hashrate(ths), style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.fg)
@@ -239,7 +243,7 @@ private fun stratumColor(s: String?, tip: Int, serverFlagship: String? = null): 
         "chirp" -> Blake.ok
         "carousel", "lotto" -> Blake.warn
         "wavicles" -> Blake.wave
-        "datum" -> Blake.hero
+        "datum" -> Blake.datum
         else -> Blake.faint
     }
 }
@@ -270,8 +274,10 @@ private fun BlockDetailDialog(b: BlakeApi.Block, tip: Int, serverFlagship: Strin
         // Since the swap the feed's protocol is the stratum name itself; showing it twice says nothing.
         b.protocolName?.takeIf { it.lowercase() != b.stratum?.lowercase() }?.let { kv(stringResource(R.string.blk_protocol), it, Blake.fg) }
         detail?.architect?.takeIf { it.isNotBlank() }?.let {
-            kv(if (b.stratum?.lowercase() == "wavicles") "BUILT BY" else "ARCHITECT",
-               if (b.stratum?.lowercase() == "wavicles") stringResource(R.string.blk_s_node, it) else it, Blake.fg)
+            // WAVICLES and DATUM blocks are built by the finder's own node.
+            val ownNode = b.stratum?.lowercase() in setOf("wavicles", "datum")
+            kv(if (ownNode) stringResource(R.string.blk_built_by) else stringResource(R.string.blk_architect),
+               if (ownNode) stringResource(R.string.blk_s_node, it) else it, Blake.fg)
         }
         kv(stringResource(R.string.blk_time), b.timestamp?.let { relTime(ctx, it) } ?: "—", Blake.fg)
         Spacer(Modifier.height(10.dp))

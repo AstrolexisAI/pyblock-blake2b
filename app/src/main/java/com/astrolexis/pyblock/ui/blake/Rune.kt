@@ -51,6 +51,9 @@ enum class Rune(val glyph: String, val segments: List<FloatArray>) {
         fun fromGlyph(g: String): Rune? = entries.firstOrNull { it.glyph == g }
         /** The six a message can be answered with. Runes, not emoji: the room is ours. */
         val reactions = listOf(TIWAZ, WUNJO, KENAZ, GEBO, FEHU, ALGIZ)
+        /** The ink an earned mark is drawn in: the two product runes keep their product's colour
+         *  (Dagaz → WAVICLES, Ansuz → DATUM) so the mark says where it was won. */
+        fun markInk(r: Rune): androidx.compose.ui.graphics.Color = when (r) { DAGAZ -> Blake.wave; ANSUZ -> Blake.datum; else -> Blake.pp }
     }
 }
 

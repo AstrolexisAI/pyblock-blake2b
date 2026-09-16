@@ -70,6 +70,16 @@ fun BlakeMinerSheet(onClose: () -> Unit) {
     var found by remember { mutableStateOf<List<String>>(emptyList()) }
     var copied by remember { mutableStateOf<String?>(null) }
 
+    // Your own gateway (DATUM). The list is the user's; the pool never sees it.
+    LaunchedEffect(Unit) { com.astrolexis.pyblock.data.blake.OwnGateways.init(ctx) }
+    val gateways by com.astrolexis.pyblock.data.blake.OwnGateways.all.collectAsState()
+    var addingGateway by remember { mutableStateOf(false) }
+    var gwProduct by remember { mutableStateOf("carousel") }
+    var gwInput by remember { mutableStateOf("") }
+    var gwError by remember { mutableStateOf<String?>(null) }
+    var probing by remember { mutableStateOf<String?>(null) }
+    var probeResult by remember { mutableStateOf<Map<String, Pair<Boolean, String>>>(emptyMap()) }
+
     fun select(a: String) { address = a; stats = null; loaded = false; editing = false; showPick = false; prefs.edit().putString("address", a).apply() }
     val scanWallet: suspend () -> Unit = {
         scanning = true
@@ -217,6 +227,81 @@ fun BlakeMinerSheet(onClose: () -> Unit) {
             }
         }
 
+        // ---- Your own gateway (DATUM) ----
+        // DATUM is the same product with the user's node in front: their gateway builds and
+        // publishes the block, PyBLØCK only dictates the coinbase. Rigs point at their machine, so
+        // the endpoint is theirs to keep here — a LAN address is the normal case.
+        Spacer(Modifier.height(22.dp))
+        Column(Modifier.fillMaxWidth().blakeCard()) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                AnsuzRune(15.dp, Blake.datum); Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.blk_datum_your_own_gateway), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.datum, letterSpacing = 2.sp)
+                Spacer(Modifier.weight(1f))
+                Text(if (addingGateway) stringResource(R.string.blk_cancel) else stringResource(R.string.blk_add_2), style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 1.sp,
+                    modifier = Modifier.clickableNoRipple { Haptics.tap(); addingGateway = !addingGateway; gwError = null })
+            }
+            Spacer(Modifier.height(6.dp))
+            Text(stringResource(R.string.blk_your_node_builds_and_publishes_the_block), style = Blake.mono(8f), color = Blake.faint)
+            gateways.forEach { g ->
+                Column(Modifier.fillMaxWidth().hairline().padding(vertical = 6.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(g.product.uppercase(), style = Blake.mono(8f, FontWeight.ExtraBold), color = poolColor(g.product), letterSpacing = 1.sp)
+                        Spacer(Modifier.width(8.dp))
+                        Text(if (copied == g.stratumUrl) stringResource(R.string.blk_copied_2) else g.target, style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.fg, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f).clickableNoRipple {
+                                Haptics.tap(); clip.setText(AnnotatedString(g.stratumUrl)); copied = g.stratumUrl
+                                scope.launch { delay(1500); if (copied == g.stratumUrl) copied = null }
+                            })
+                        Text(if (probing == g.id) stringResource(R.string.blk_testing) else stringResource(R.string.blk_test), style = Blake.mono(8f, FontWeight.ExtraBold), color = if (probing == g.id) Blake.faint else Blake.datum, letterSpacing = 1.sp,
+                            modifier = Modifier.clickableNoRipple {
+                                if (probing == null) { Haptics.tap(); probing = g.id
+                                    scope.launch { probeResult = probeResult + (g.id to com.astrolexis.pyblock.data.blake.OwnGateways.probe(g.host, g.port)); probing = null; Haptics.tap() } }
+                            })
+                        Spacer(Modifier.width(10.dp))
+                        Text("✕", style = Blake.mono(11f), color = Blake.faint, modifier = Modifier.clickableNoRipple { Haptics.tap(); com.astrolexis.pyblock.data.blake.OwnGateways.remove(ctx, g.id); probeResult = probeResult - g.id })
+                    }
+                    probeResult[g.id]?.let { (ok, text) -> Text(text, style = Blake.mono(7f), color = if (ok) Blake.ok else Blake.danger) }
+                }
+            }
+            if (addingGateway) {
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
+                    listOf("carousel", "chirp", "wavicles").forEach { p ->
+                        val on = gwProduct == p
+                        Text(p.uppercase(), style = Blake.mono(8f, FontWeight.ExtraBold), color = if (on) Blake.bg else poolColor(p), letterSpacing = 1.sp,
+                            modifier = Modifier.then(if (on) Modifier.background(poolColor(p), RectangleShape) else Modifier).border(1.dp, poolColor(p).copy(alpha = if (on) 1f else 0.5f), RectangleShape)
+                                .padding(horizontal = 8.dp, vertical = 4.dp).clickableNoRipple { Haptics.tap(); gwProduct = p })
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                sheetField(gwInput, "192.168.1.20:23334", androidx.compose.ui.text.input.KeyboardType.Uri) { gwInput = it }
+                gwError?.let { Text(it, style = Blake.mono(8f), color = Blake.danger) }
+                Spacer(Modifier.height(8.dp))
+                Text(stringResource(R.string.blk_save_gateway), style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.bg, letterSpacing = 1.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().background(Blake.datum, RectangleShape).padding(vertical = 9.dp).clickableNoRipple {
+                        val parsed = com.astrolexis.pyblock.data.blake.OwnGateways.parse(gwInput)
+                        if (parsed == null) { gwError = ctx.getString(R.string.blk_write_it_as_host_port_the_installer_prin); return@clickableNoRipple }
+                        val problem = com.astrolexis.pyblock.data.blake.OwnGateways.problem(parsed.first, parsed.second)
+                        if (problem != null) { gwError = problem; return@clickableNoRipple }
+                        Haptics.success()
+                        com.astrolexis.pyblock.data.blake.OwnGateways.save(ctx, com.astrolexis.pyblock.data.blake.OwnGateway(product = gwProduct, host = parsed.first, port = parsed.second))
+                        gwInput = ""; gwError = null; addingGateway = false
+                    })
+            }
+            // The one-liner that leaves a gateway on the machine with the node. WAVICLES has its
+            // own gateway config in its tab; the installer covers CAROUSEL and CHIRP.
+            Spacer(Modifier.height(8.dp))
+            val cmd = "curl -fsSL https://b.pyblock.xyz:8443/gateway | sh -s -- ${if (gwProduct == "wavicles") "carousel" else gwProduct} ${address.ifEmpty { "<your address>" }}"
+            Text(stringResource(R.string.blk_run_this_on_the_machine_with_your_blake2), style = Blake.mono(7f), color = Blake.faint)
+            Spacer(Modifier.height(4.dp))
+            Text(if (copied == cmd) stringResource(R.string.blk_copied) else cmd, style = Blake.mono(8f), color = Blake.datum,
+                modifier = Modifier.fillMaxWidth().border(1.dp, Blake.datum.copy(alpha = 0.4f), RectangleShape).padding(8.dp).clickableNoRipple {
+                    Haptics.tap(); clip.setText(AnnotatedString(cmd)); copied = cmd
+                    scope.launch { delay(1500); if (copied == cmd) copied = null }
+                })
+            if (gwProduct == "wavicles") Text(stringResource(R.string.blk_the_wavicles_gateway_config_is_in_the_wa), style = Blake.mono(7f), color = Blake.wave)
+        }
+
         // ---- Connect ----
         Spacer(Modifier.height(22.dp))
         sectionTitle(stringResource(R.string.blk_connect_a_miner))
@@ -329,6 +414,7 @@ private fun blocksList(list: List<BlakeMiner.MinerBlock>) {
 private fun poolColor(p: String): Color = when (p) {
     "chirp" -> Blake.ok
     "wavicles" -> Blake.wave
+    "datum" -> Blake.datum
     "carousel", "lotto", "lotto_asic" -> Blake.pp
     else -> Blake.ppDim
 }

@@ -860,12 +860,15 @@
     <!-- PyBLØCK ᛒ (blake UI) — generated; keys are the English text -->
     <string name="blk_1_new_message">1 NUOVO MESSAGGIO</string>
     <string name="blk_a_bindrune_is_pro_three_runes_whale_four">La bindrune è PRO: tre rune. WHALE: quattro.</string>
+    <string name="blk_a_host_is_letters_digits_dots_and_dashes">Un host è fatto di lettere, cifre, punti e trattini.</string>
+    <string name="blk_a_host_never_has_a_space_in_it">Un host non ha mai uno spazio.</string>
     <string name="blk_a_month">al mese</string>
     <string name="blk_a_push_if_this_address_stops_submitting_">Una notifica se questo indirizzo smette di inviare share.</string>
     <string name="blk_a_year">all\'anno</string>
     <string name="blk_a_year_of_history_is_pro">Un anno di storico è PRO.</string>
     <string name="blk_activity">ATTIVITÀ</string>
     <string name="blk_add">AGGIUNGI</string>
+    <string name="blk_add_2">+ AGGIUNGI</string>
     <string name="blk_add_contact">+ AGGIUNGI CONTATTO</string>
     <string name="blk_add_contact_2">AGGIUNGI CONTATTO</string>
     <string name="blk_add_key">AGGIUNGI CHIAVE</string>
@@ -881,6 +884,7 @@
     <string name="blk_annual">ANNUALE</string>
     <string name="blk_anyone_holding_this_key_can_derive_every">⚠ Chiunque abbia questa chiave può derivare ogni pagamento mai inviato al tuo PayNym. Non condividerla mai e non conservarla su un dispositivo connesso.</string>
     <string name="blk_app">APP</string>
+    <string name="blk_architect">ARCHITETTO</string>
     <string name="blk_arriving">in arrivo · %1$s</string>
     <string name="blk_ask_each_time">chiedi ogni volta ▸</string>
     <string name="blk_awaiting_payment">IN ATTESA DI PAGAMENTO</string>
@@ -903,6 +907,8 @@
     <string name="blk_blocks_paid_to_this_address">BLOCCHI PAGATI A QUESTO INDIRIZZO</string>
     <string name="blk_blocks_payouts">Blocchi e pagamenti</string>
     <string name="blk_broadcasting">TRASMISSIONE…</string>
+    <string name="blk_built_by">REALIZZATO DA</string>
+    <string name="blk_can_t_connect">Impossibile connettersi: %1$s</string>
     <string name="blk_can_t_reach_the_server">⚠ server non raggiungibile.</string>
     <string name="blk_can_t_reach_the_server_2">Server non raggiungibile.</string>
     <string name="blk_cancel">ANNULLA</string>
@@ -935,6 +941,7 @@
     <string name="blk_confirmed_2">CONFERMATO  %1$s %2$s</string>
     <string name="blk_connect">CONNETTI</string>
     <string name="blk_connect_a_miner">COLLEGA UN MINER</string>
+    <string name="blk_connected_but_nothing_came_back_is_the_g">Connesso, ma non è tornato nulla: il gateway sta ancora sincronizzando?</string>
     <string name="blk_connected_to_your_pool_s_relay">Connesso al relay del tuo pool</string>
     <string name="blk_contacts">☰ CONTATTI</string>
     <string name="blk_contacts_2">CONTATTI</string>
@@ -959,8 +966,10 @@
     <string name="blk_currency">VALUTA</string>
     <string name="blk_custom">PERSONALIZZATO</string>
     <string name="blk_d_ago">%1$sg fa</string>
+    <string name="blk_datum">DATUM</string>
     <string name="blk_datum_bring_your_own_node">DATUM · porta il tuo nodo</string>
     <string name="blk_datum_bring_your_own_node_fee_via_our_st">DATUM · porta il tuo nodo · %1$s di commissione · %2$s via il nostro stratum</string>
+    <string name="blk_datum_your_own_gateway">DATUM · IL TUO GATEWAY</string>
     <string name="blk_default_worker">(worker predefinito)</string>
     <string name="blk_deliver_to">CONSEGNA SU</string>
     <string name="blk_delivered_rewards_mined_during_the_renta">Consegnato. Le ricompense minate durante il noleggio sono state pagate dal pool al tuo indirizzo.</string>
@@ -1053,6 +1062,8 @@
     <string name="blk_ink">INCHIOSTRO</string>
     <string name="blk_inside">%1$s dentro</string>
     <string name="blk_invalid_wif">WIF non valida</string>
+    <string name="blk_it_answered_but_not_like_a_stratum">Ha risposto, ma non come uno stratum: %1$s</string>
+    <string name="blk_it_answers_mining_subscribe_point_your_r">✓ Risponde a mining.subscribe: punta qui i tuoi rig.</string>
     <string name="blk_just_now">proprio ora</string>
     <string name="blk_keep_drawing">CONTINUA A DISEGNARE</string>
     <string name="blk_keep_shaking">CONTINUA A SCUOTERE</string>
@@ -1108,6 +1119,7 @@
     <string name="blk_name_e_g_stefa">Nome (es. Stefa)</string>
     <string name="blk_name_this_coin_e_g_coinbase_july">Dai un nome a questa moneta (es. coinbase luglio)</string>
     <string name="blk_name_this_transaction_e_g_pago_stefa">Dai un nome a questa transazione (es. pagamento Stefa)</string>
+    <string name="blk_needs_a_host_or_an_ip_address">Serve un host o un indirizzo IP.</string>
     <string name="blk_network">RETE</string>
     <string name="blk_network_fee">COMMISSIONE DI RETE</string>
     <string name="blk_network_hashrate">hashrate della rete</string>
@@ -1125,6 +1137,7 @@
     <string name="blk_next_harden_entropy">AVANTI — RAFFORZA L\'ENTROPIA</string>
     <string name="blk_no_addresses_yet">Ancora nessun indirizzo</string>
     <string name="blk_no_addresses_yet_2">Ancora nessun indirizzo.</string>
+    <string name="blk_no_answer_in_s_port_closed_or_wrong_ip">Nessuna risposta in %1$s s: porta chiusa o IP sbagliato?</string>
     <string name="blk_no_balance_found_on_either_address_pick_">Nessun saldo su nessuno dei due indirizzi. Scegli il tipo da importare.</string>
     <string name="blk_no_blocks_yet">Ancora nessun blocco.</string>
     <string name="blk_no_coins">Nessuna moneta.</string>
@@ -1250,6 +1263,7 @@
     <string name="blk_ricochets">RICOCHETS</string>
     <string name="blk_rig_alerts_a_year_of_history">Avvisi rig · un anno di storico</string>
     <string name="blk_rig_alerts_are_pro">Gli avvisi del rig sono PRO.</string>
+    <string name="blk_run_this_on_the_machine_with_your_blake2">Esegui questo sulla macchina con il tuo nodo BLAKE2b; stampa dove puntare i tuoi rig.</string>
     <string name="blk_runes_earned_mining">RUNE GUADAGNATE MINANDO</string>
     <string name="blk_runes_you_earned_mining">Rune guadagnate minando</string>
     <string name="blk_s_1_new_message">↓ 1 NUOVO MESSAGGIO</string>
@@ -1264,6 +1278,7 @@
     <string name="blk_sats_incoming_a_payment_receipt_just_arr">⚡ Sats in arrivo: è appena arrivata una ricevuta di pagamento</string>
     <string name="blk_save">SALVA</string>
     <string name="blk_save_failed">Salvataggio fallito</string>
+    <string name="blk_save_gateway">SALVA GATEWAY</string>
     <string name="blk_save_paynym_as_contact">SALVA PAYNYM COME CONTATTO</string>
     <string name="blk_save_paynym_as_contact_2">＋ SALVA PAYNYM COME CONTATTO</string>
     <string name="blk_save_recipient_as_contact">SALVA DESTINATARIO COME CONTATTO</string>
@@ -1322,10 +1337,13 @@
     <string name="blk_tap_to_copy_txid">TOCCA PER COPIARE IL TXID</string>
     <string name="blk_tap_to_unlock">%1$s · tocca per sbloccare</string>
     <string name="blk_tempered">TEMPERED</string>
+    <string name="blk_test">PROVA</string>
+    <string name="blk_testing">PROVA…</string>
     <string name="blk_testing_on_mainnet">%1$s — IN TEST SU MAINNET</string>
     <string name="blk_that_has_a_space_in_it_an_address_never_">Contiene uno spazio: un indirizzo non ne ha mai.</string>
     <string name="blk_that_isn_t_a_valid_address_or_paynym_cod">Non è un indirizzo né un codice PayNym valido.</string>
     <string name="blk_that_isn_t_a_valid_bitcoin_address">Non è un indirizzo Bitcoin valido.</string>
+    <string name="blk_that_isn_t_a_valid_ip_address">Non è un indirizzo IP valido.</string>
     <string name="blk_that_isn_t_an_address_it_looks_like_a_ma">Non è un indirizzo: sembra un nome di macchina. Un indirizzo di pagamento inizia con bc1, 1 o 3.</string>
     <string name="blk_that_message_is_too_long_keep_it_under_2">quel messaggio è troppo lungo: massimo 2.000 caratteri</string>
     <string name="blk_that_s_a_testnet_address_this_chain_need">Quello è un indirizzo testnet. Questa catena richiede un indirizzo mainnet (1…, 3… o bc1…).</string>
@@ -1337,11 +1355,13 @@
     <string name="blk_the_lounge">IL SALOTTO</string>
     <string name="blk_the_other_inks_are_pro">Gli altri inchiostri sono PRO.</string>
     <string name="blk_the_pool_hasn_t_published_this_block_s_c">Il pool non ha ancora pubblicato la ripartizione della coinbase di questo blocco.</string>
+    <string name="blk_the_port_has_to_be_between_1_and_65535">La porta deve essere tra 1 e 65535.</string>
     <string name="blk_the_price_window_closed_but_this_invoice">La finestra di prezzo si è chiusa, ma questa invoice si può pagare ancora per un giorno. Pagala e il noleggio parte da solo.</string>
     <string name="blk_the_rented_hash_mines_to_this_address_on">L\'hash noleggiato mina verso questo indirizzo sul pool qui sopra. Le monete arrivano come qualsiasi altra ricompensa.</string>
     <string name="blk_the_runes_you_earn_are_yours_on_any_tier">Le rune che guadagni sono tue a ogni livello. PRO e WHALE cambiano come vengono disegnate e cosa l\'app controlla per te.</string>
     <string name="blk_the_tempered_forge_is_whale">La forgia temprata è WHALE.</string>
     <string name="blk_the_tempered_forge_the_lounge">La forgia temprata · il salotto</string>
+    <string name="blk_the_wavicles_gateway_config_is_in_the_wa">La config del gateway WAVICLES è nella scheda WAVICLES.</string>
     <string name="blk_the_whale_room_messages_inside">La sala WHALE. %1$s messaggi dentro.</string>
     <string name="blk_their_messages_and_reactions_disappear_fr">I suoi messaggi e reazioni spariscono dalle tue sale e dai DM.</string>
     <string name="blk_their_pm8t_payment_code">il suo codice di pagamento PM8T…</string>
@@ -1383,8 +1403,10 @@
     <string name="blk_whale">WHALE</string>
     <string name="blk_window_empty_the_first_block_pays_the_po">Finestra vuota: il primo blocco paga il pool finché non viene accreditato lavoro.</string>
     <string name="blk_window_full_8_network_difficulty_tides">finestra piena al %1$s%% · 8× la difficoltà di rete (TIDES)</string>
+    <string name="blk_write_it_as_host_port_the_installer_prin">Scrivilo come host:porta; l\'installer lo stampa, porta 23334 di default.</string>
     <string name="blk_yesterday">IERI</string>
     <string name="blk_your_name">IL TUO NOME</string>
+    <string name="blk_your_node_builds_and_publishes_the_block">Il tuo nodo costruisce e pubblica il blocco; PyBLØCK detta solo la coinbase. Punta i tuoi rig alla tua macchina, username = il tuo indirizzo di pagamento. Stesso prodotto, con il tuo nodo davanti.</string>
     <string name="blk_your_nostr_identity_is_device_only_blake">La tua identità Nostr resta solo su questo dispositivo. Gli utenti BLAKE2b e SHA-256 condividono questa stanza.</string>
     <string name="blk_your_paynym_has_no_seed_phrase_this_key_">Il tuo PayNym non ha una seed phrase: questa chiave È il tuo PayNym, ed è stampata sul backup cartaceo. Senza di essa, le monete pagate al tuo PayNym non si recuperano su un altro dispositivo.</string>
     <string name="blk_your_paynym_identity_could_not_be_read_f">Non è stato possibile leggere la tua identità PayNym dall\'archivio sicuro, quindi il codice non si può mostrare. NON condividere un codice nuovo: sblocca il dispositivo e riapri l\'app. Se persiste dopo un ripristino, l\'identità potrebbe non essersi trasferita; verifica prima di ricevere pagamenti PayNym.</string>

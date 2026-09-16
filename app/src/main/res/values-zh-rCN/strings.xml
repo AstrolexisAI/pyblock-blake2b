@@ -3,12 +3,15 @@
     <!-- PyBLØCK ᛒ (blake UI) — generated; keys are the English text -->
     <string name="blk_1_new_message">1 条新消息</string>
     <string name="blk_a_bindrune_is_pro_three_runes_whale_four">连结符文为 PRO：三枚符文。WHALE：四枚。</string>
+    <string name="blk_a_host_is_letters_digits_dots_and_dashes">主机名只能包含字母、数字、点和连字符。</string>
+    <string name="blk_a_host_never_has_a_space_in_it">主机名不会包含空格。</string>
     <string name="blk_a_month">每月</string>
     <string name="blk_a_push_if_this_address_stops_submitting_">此地址停止提交份额时推送通知。</string>
     <string name="blk_a_year">每年</string>
     <string name="blk_a_year_of_history_is_pro">一年历史为 PRO。</string>
     <string name="blk_activity">动态</string>
     <string name="blk_add">添加</string>
+    <string name="blk_add_2">+ 添加</string>
     <string name="blk_add_contact">+ 添加联系人</string>
     <string name="blk_add_contact_2">添加联系人</string>
     <string name="blk_add_key">添加密钥</string>
@@ -24,6 +27,7 @@
     <string name="blk_annual">年付</string>
     <string name="blk_anyone_holding_this_key_can_derive_every">⚠ 持有此密钥的人可以派生出所有付到你 PayNym 的付款。切勿分享，切勿存放在联网设备上。</string>
     <string name="blk_app">应用</string>
+    <string name="blk_architect">架构师</string>
     <string name="blk_arriving">到账中 · %1$s</string>
     <string name="blk_ask_each_time">每次询问 ▸</string>
     <string name="blk_awaiting_payment">等待付款</string>
@@ -46,6 +50,8 @@
     <string name="blk_blocks_paid_to_this_address">支付到此地址的区块</string>
     <string name="blk_blocks_payouts">区块与支付</string>
     <string name="blk_broadcasting">广播中…</string>
+    <string name="blk_built_by">开发者</string>
+    <string name="blk_can_t_connect">无法连接：%1$s</string>
     <string name="blk_can_t_reach_the_server">⚠ 无法连接服务器。</string>
     <string name="blk_can_t_reach_the_server_2">无法连接服务器。</string>
     <string name="blk_cancel">取消</string>
@@ -78,6 +84,7 @@
     <string name="blk_confirmed_2">已确认  %1$s %2$s</string>
     <string name="blk_connect">连接</string>
     <string name="blk_connect_a_miner">连接矿机</string>
+    <string name="blk_connected_but_nothing_came_back_is_the_g">已连接，但没有返回：网关还在同步吗？</string>
     <string name="blk_connected_to_your_pool_s_relay">已连接到矿池中继</string>
     <string name="blk_contacts">☰ 联系人</string>
     <string name="blk_contacts_2">联系人</string>
@@ -102,8 +109,10 @@
     <string name="blk_currency">法币</string>
     <string name="blk_custom">自定义</string>
     <string name="blk_d_ago">%1$s天前</string>
+    <string name="blk_datum">DATUM</string>
     <string name="blk_datum_bring_your_own_node">DATUM · 自带节点</string>
     <string name="blk_datum_bring_your_own_node_fee_via_our_st">DATUM · 自带节点 · 费用 %1$s · 经我们的 stratum 为 %2$s</string>
+    <string name="blk_datum_your_own_gateway">DATUM · 你自己的网关</string>
     <string name="blk_default_worker">（默认 worker）</string>
     <string name="blk_deliver_to">交付至</string>
     <string name="blk_delivered_rewards_mined_during_the_renta">已交付。租赁期间挖到的奖励已由矿池支付到你的地址。</string>
@@ -196,6 +205,8 @@
     <string name="blk_ink">墨色</string>
     <string name="blk_inside">%1$s 条在内</string>
     <string name="blk_invalid_wif">WIF 无效</string>
+    <string name="blk_it_answered_but_not_like_a_stratum">有响应，但不像 stratum：%1$s</string>
+    <string name="blk_it_answers_mining_subscribe_point_your_r">✓ 它响应 mining.subscribe：把矿机指向这里。</string>
     <string name="blk_just_now">刚刚</string>
     <string name="blk_keep_drawing">继续涂画</string>
     <string name="blk_keep_shaking">继续摇动</string>
@@ -251,6 +262,7 @@
     <string name="blk_name_e_g_stefa">名称（例如 Stefa）</string>
     <string name="blk_name_this_coin_e_g_coinbase_july">给这枚币命名（例如 7 月 coinbase）</string>
     <string name="blk_name_this_transaction_e_g_pago_stefa">给这笔交易命名（例如 付给 Stefa）</string>
+    <string name="blk_needs_a_host_or_an_ip_address">需要主机名或 IP 地址。</string>
     <string name="blk_network">网络</string>
     <string name="blk_network_fee">网络手续费</string>
     <string name="blk_network_hashrate">全网算力</string>
@@ -268,6 +280,7 @@
     <string name="blk_next_harden_entropy">下一步 — 强化熵</string>
     <string name="blk_no_addresses_yet">还没有地址</string>
     <string name="blk_no_addresses_yet_2">还没有地址。</string>
+    <string name="blk_no_answer_in_s_port_closed_or_wrong_ip">%1$s 秒内无响应：端口关闭或 IP 错误？</string>
     <string name="blk_no_balance_found_on_either_address_pick_">两个地址都没有余额。请选择要导入的类型。</string>
     <string name="blk_no_blocks_yet">还没有区块。</string>
     <string name="blk_no_coins">没有币。</string>
@@ -393,6 +406,7 @@
     <string name="blk_ricochets">RICOCHETS</string>
     <string name="blk_rig_alerts_a_year_of_history">矿机提醒 · 一年历史</string>
     <string name="blk_rig_alerts_are_pro">矿机提醒为 PRO。</string>
+    <string name="blk_run_this_on_the_machine_with_your_blake2">在运行 BLAKE2b 节点的机器上执行；它会打印矿机应指向的地址。</string>
     <string name="blk_runes_earned_mining">挖矿赚得的符文</string>
     <string name="blk_runes_you_earned_mining">挖矿赚得的符文</string>
     <string name="blk_s_1_new_message">↓ 1 条新消息</string>
@@ -407,6 +421,7 @@
     <string name="blk_sats_incoming_a_payment_receipt_just_arr">⚡ 有 sats 到账：刚收到一份付款回执</string>
     <string name="blk_save">保存</string>
     <string name="blk_save_failed">保存失败</string>
+    <string name="blk_save_gateway">保存网关</string>
     <string name="blk_save_paynym_as_contact">将 PAYNYM 保存为联系人</string>
     <string name="blk_save_paynym_as_contact_2">＋ 将 PAYNYM 保存为联系人</string>
     <string name="blk_save_recipient_as_contact">将收款人保存为联系人</string>
@@ -465,10 +480,13 @@
     <string name="blk_tap_to_copy_txid">点击复制 TXID</string>
     <string name="blk_tap_to_unlock">%1$s · 点击解锁</string>
     <string name="blk_tempered">TEMPERED</string>
+    <string name="blk_test">测试</string>
+    <string name="blk_testing">测试中…</string>
     <string name="blk_testing_on_mainnet">%1$s — 主网测试中</string>
     <string name="blk_that_has_a_space_in_it_an_address_never_">其中包含空格：地址不会有空格。</string>
     <string name="blk_that_isn_t_a_valid_address_or_paynym_cod">这不是有效的地址或 PayNym 代码。</string>
     <string name="blk_that_isn_t_a_valid_bitcoin_address">这不是有效的比特币地址。</string>
+    <string name="blk_that_isn_t_a_valid_ip_address">这不是有效的 IP 地址。</string>
     <string name="blk_that_isn_t_an_address_it_looks_like_a_ma">这不是地址，看起来像机器名。支付地址以 bc1、1 或 3 开头。</string>
     <string name="blk_that_message_is_too_long_keep_it_under_2">消息太长：请控制在 2,000 字符以内</string>
     <string name="blk_that_s_a_testnet_address_this_chain_need">这是测试网地址。此链需要主网地址（1…、3… 或 bc1…）。</string>
@@ -480,11 +498,13 @@
     <string name="blk_the_lounge">贵宾厅</string>
     <string name="blk_the_other_inks_are_pro">其他墨色为 PRO。</string>
     <string name="blk_the_pool_hasn_t_published_this_block_s_c">矿池尚未公布此区块的 coinbase 分配明细。</string>
+    <string name="blk_the_port_has_to_be_between_1_and_65535">端口必须在 1 到 65535 之间。</string>
     <string name="blk_the_price_window_closed_but_this_invoice">报价窗口已关闭，但此发票在接下来一天内仍可支付。付款后租赁会自动开始。</string>
     <string name="blk_the_rented_hash_mines_to_this_address_on">租用的算力在上方矿池挖到此地址。币会像其他奖励一样到账。</string>
     <string name="blk_the_runes_you_earn_are_yours_on_any_tier">你赚得的符文在任何等级都属于你。PRO 和 WHALE 改变它们的绘制方式，以及应用为你监控的内容。</string>
     <string name="blk_the_tempered_forge_is_whale">淬炼锻造为 WHALE。</string>
     <string name="blk_the_tempered_forge_the_lounge">淬火锻造 · 贵宾厅</string>
+    <string name="blk_the_wavicles_gateway_config_is_in_the_wa">WAVICLES 网关配置在 WAVICLES 标签页。</string>
     <string name="blk_the_whale_room_messages_inside">WHALE 专属房间。内有 %1$s 条消息。</string>
     <string name="blk_their_messages_and_reactions_disappear_fr">对方的消息和反应将从你的房间和私信中消失。</string>
     <string name="blk_their_pm8t_payment_code">对方的 PM8T… 付款代码</string>
@@ -526,8 +546,10 @@
     <string name="blk_whale">WHALE</string>
     <string name="blk_window_empty_the_first_block_pays_the_po">窗口为空：在记入工作量前，第一个区块支付给矿池。</string>
     <string name="blk_window_full_8_network_difficulty_tides">窗口已满 %1$s%% · 8× 全网难度（TIDES）</string>
+    <string name="blk_write_it_as_host_port_the_installer_prin">请写成 主机:端口，安装程序会打印出来，默认端口 23334。</string>
     <string name="blk_yesterday">昨天</string>
     <string name="blk_your_name">你的名字</string>
+    <string name="blk_your_node_builds_and_publishes_the_block">你的节点构建并发布区块；PyBLØCK 只决定 coinbase。把矿机指向你自己的机器，用户名 = 你的收款地址。同一产品，由你的节点打头。</string>
     <string name="blk_your_nostr_identity_is_device_only_blake">你的 Nostr 身份仅保存在本设备。BLAKE2b 与 SHA-256 用户共用此聊天室。</string>
     <string name="blk_your_paynym_has_no_seed_phrase_this_key_">你的 PayNym 没有助记词：这把密钥就是你的 PayNym，并印在纸质备份上。没有它，付到你 PayNym 的币无法在其他设备上恢复。</string>
     <string name="blk_your_paynym_identity_could_not_be_read_f">无法从安全存储读取你的 PayNym 身份，因此无法显示代码。切勿分享新代码：请解锁设备并重新打开应用。若恢复后仍如此，身份可能未迁移；在接收 PayNym 付款前请先核实。</string>
