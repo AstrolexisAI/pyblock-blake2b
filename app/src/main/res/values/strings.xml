@@ -1439,6 +1439,7 @@
     <string name="blk_unlocked_replay_exposed_you_accepted_the">unlocked · replay-exposed (you accepted the risk)</string>
     <string name="blk_unlocked_replay_risk">unlocked · replay risk</string>
     <string name="blk_unlocked_replay_risk_accepted">unlocked · replay risk accepted</string>
+    <string name="blk_unnamed_gateway">unnamed gateway</string>
     <string name="blk_up">up %1$s</string>
     <string name="blk_usdt">%1$s · %2$s/USDT</string>
     <string name="blk_usdt_on_other_currencies_crossed_via_mem">%1$s/USDT on %2$s · other currencies crossed via mempool.space</string>

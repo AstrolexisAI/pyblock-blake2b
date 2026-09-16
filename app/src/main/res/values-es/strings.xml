@@ -1435,6 +1435,7 @@
     <string name="blk_unlocked_replay_exposed_you_accepted_the">desbloqueada · expuesta a replay (aceptaste el riesgo)</string>
     <string name="blk_unlocked_replay_risk">desbloqueada · riesgo de replay</string>
     <string name="blk_unlocked_replay_risk_accepted">desbloqueada · riesgo de replay aceptado</string>
+    <string name="blk_unnamed_gateway">gateway sin nombre</string>
     <string name="blk_up">activo %1$s</string>
     <string name="blk_usdt">%1$s · %2$s/USDT</string>
     <string name="blk_usdt_on_other_currencies_crossed_via_mem">%1$s/USDT en %2$s · otras monedas cruzadas vía mempool.space</string>

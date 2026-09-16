@@ -578,6 +578,7 @@
     <string name="blk_unlocked_replay_exposed_you_accepted_the">已解锁 · 有重放风险（你已接受）</string>
     <string name="blk_unlocked_replay_risk">已解锁 · 重放风险</string>
     <string name="blk_unlocked_replay_risk_accepted">已解锁 · 已接受重放风险</string>
+    <string name="blk_unnamed_gateway">未命名网关</string>
     <string name="blk_up">在线 %1$s</string>
     <string name="blk_usdt">%1$s · %2$s/USDT</string>
     <string name="blk_usdt_on_other_currencies_crossed_via_mem">%1$s/USDT 来自 %2$s · 其他货币通过 mempool.space 换算</string>

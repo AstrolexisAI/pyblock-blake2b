@@ -60,7 +60,7 @@ fun GatewaysCard(rows: List<GatewayRow>, accent: Color = Blake.datum, registered
                     if (g.datum) { RuneGlyph(Rune.EHWAZ, ink = Blake.datum, size = 12.dp); Spacer(Modifier.width(6.dp)) }
                     Column(Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(g.name ?: g.identity ?: "—", style = Blake.mono(10f, FontWeight.ExtraBold), color = if (g.datum) Blake.datum else Blake.fg, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                            Text(g.name ?: g.identity?.takeIf { it.isNotEmpty() } ?: stringResource(R.string.blk_unnamed_gateway), style = Blake.mono(10f, FontWeight.ExtraBold), color = if (g.datum) Blake.datum else Blake.fg, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
                             g.generation?.takeIf { it.isNotEmpty() }?.let { Spacer(Modifier.width(6.dp)); Text(it.uppercase(), style = Blake.mono(6f, FontWeight.ExtraBold), color = Blake.faint, letterSpacing = 1.sp) }
                         }
                         Row {
