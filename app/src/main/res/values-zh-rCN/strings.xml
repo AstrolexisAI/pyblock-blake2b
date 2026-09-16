@@ -236,6 +236,7 @@
     <string name="blk_lock">锁定</string>
     <string name="blk_locked">已锁定</string>
     <string name="blk_locked_2">已锁定 · %1$s</string>
+    <string name="blk_log_scale">对数刻度</string>
     <string name="blk_long_press_a_message_in_community_messag">在 COMMUNITY 长按一条消息 → 私信，即可开始私聊。</string>
     <string name="blk_lotto">LOTTO</string>
     <string name="blk_lotto_asic">LOTTO · ASIC</string>
@@ -319,6 +320,7 @@
     <string name="blk_nothing_here_yet_whales_say_something">这里还没有内容。Whale 们，说点什么吧。</string>
     <string name="blk_nothing_is_held_back_what_a_coinbase_can">没有任何扣留：coinbase 放不下的部分不构成欠款，它留在分配中，并在区块 OP_RETURN 承诺的快照里可见。</string>
     <string name="blk_nothing_locked">没有锁定的币。</string>
+    <string name="blk_now">当前 %1$s</string>
     <string name="blk_of_every_block_goes_to_the_work_window_s">每个区块的 %1$s 进入工作窗口：按工作份额（TIDES）分配，在该区块的 coinbase 中支付。自带节点时费用为 %2$s，区块经 PyBLØCK stratum 时为 %3$s。</string>
     <string name="blk_off">关 ▸</string>
     <string name="blk_offline">离线</string>

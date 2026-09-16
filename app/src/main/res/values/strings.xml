@@ -1097,6 +1097,7 @@
     <string name="blk_lock">LOCK</string>
     <string name="blk_locked">LOCKED</string>
     <string name="blk_locked_2">locked · %1$s</string>
+    <string name="blk_log_scale">log scale</string>
     <string name="blk_long_press_a_message_in_community_messag">Long-press a message in COMMUNITY → MESSAGE to start a private thread.</string>
     <string name="blk_lotto">LOTTO</string>
     <string name="blk_lotto_asic">LOTTO · ASIC</string>
@@ -1180,6 +1181,7 @@
     <string name="blk_nothing_here_yet_whales_say_something">Nothing here yet. Whales, say something.</string>
     <string name="blk_nothing_is_held_back_what_a_coinbase_can">Nothing is held back: what a coinbase can\'t place isn\'t owed, it stays in the split and is visible in the snapshot committed to the block\'s OP_RETURN.</string>
     <string name="blk_nothing_locked">Nothing locked.</string>
+    <string name="blk_now">now %1$s</string>
     <string name="blk_of_every_block_goes_to_the_work_window_s">%1$s of every block goes to the work window — split by share of work (TIDES), paid in that block\'s coinbase. The fee is %2$s when you bring your own node, %3$s when the block comes through PyBLØCK\'s stratum.</string>
     <string name="blk_off">off ▸</string>
     <string name="blk_offline">OFFLINE</string>

@@ -389,14 +389,23 @@ fun BlakeRentalsSheet(onClose: () -> Unit) {
 }
 
 @Composable
-internal fun sparkline(v: List<Double>, color: Color, height: androidx.compose.ui.unit.Dp, fill: Boolean = false) {
+/** [logScale]: a rig on a Prime at 5 GH/s after a day of ASICs at 300 TH/s is a flat zero on a
+ *  linear axis — correct data, useless picture. Callers pass true when the series spans ~50×. */
+internal fun sparkline(v: List<Double>, color: Color, height: androidx.compose.ui.unit.Dp, fill: Boolean = false, logScale: Boolean = false) {
     val mx = (v.maxOrNull() ?: 1.0).coerceAtLeast(1e-9)
+    val mn = v.filter { it > 0 }.minOrNull() ?: mx
+    val lo = maxOf(mn, mx / 1e5)
+    fun yOf(x: Double): Float = when {
+        x <= 0 -> 0f
+        logScale -> (kotlin.math.log10(x / lo).coerceAtLeast(0.0) / kotlin.math.log10(mx / lo)).toFloat()
+        else -> (x / mx).toFloat()
+    }
     Canvas(Modifier.fillMaxWidth().height(height)) {
         val path = Path()
         val area = Path()
         v.forEachIndexed { i, x ->
             val px = size.width * i / (v.size - 1).coerceAtLeast(1)
-            val py = size.height - size.height * (x / mx).toFloat()
+            val py = size.height - size.height * yOf(x)
             if (i == 0) { path.moveTo(px, py); area.moveTo(px, size.height); area.lineTo(px, py) } else { path.lineTo(px, py); area.lineTo(px, py) }
         }
         area.lineTo(size.width, size.height); area.close()

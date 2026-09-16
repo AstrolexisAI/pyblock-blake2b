@@ -1093,6 +1093,7 @@
     <string name="blk_lock">BLOQUEAR</string>
     <string name="blk_locked">BLOQUEADO</string>
     <string name="blk_locked_2">bloqueada · %1$s</string>
+    <string name="blk_log_scale">escala log</string>
     <string name="blk_long_press_a_message_in_community_messag">Mantené presionado un mensaje en COMMUNITY → MENSAJE para empezar un hilo privado.</string>
     <string name="blk_lotto">LOTTO</string>
     <string name="blk_lotto_asic">LOTTO · ASIC</string>
@@ -1176,6 +1177,7 @@
     <string name="blk_nothing_here_yet_whales_say_something">Todavía nada por acá. Whales, digan algo.</string>
     <string name="blk_nothing_is_held_back_what_a_coinbase_can">No se retiene nada: lo que una coinbase no puede ubicar no se adeuda, queda en el reparto y es visible en el snapshot comprometido en el OP_RETURN del bloque.</string>
     <string name="blk_nothing_locked">Nada bloqueado.</string>
+    <string name="blk_now">ahora %1$s</string>
     <string name="blk_of_every_block_goes_to_the_work_window_s">El %1$s de cada bloque va a la ventana de trabajo: se reparte por proporción de trabajo (TIDES) y se paga en la coinbase de ese bloque. La comisión es %2$s si traés tu propio nodo, %3$s si el bloque entra por el stratum de PyBLØCK.</string>
     <string name="blk_off">no ▸</string>
     <string name="blk_offline">FUERA DE LÍNEA</string>

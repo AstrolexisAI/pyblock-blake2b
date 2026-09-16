@@ -219,9 +219,14 @@ fun BlakeMinerSheet(onClose: () -> Unit) {
                     val v = history.map { it.hashrateTh ?: 0.0 }
                     val mx = v.maxOrNull() ?: 0.0
                     if (v.size > 1 && mx > 0) {
-                        sparkline(v, Blake.pp, 90.dp, fill = true)
+                        val mn = v.filter { it > 0 }.minOrNull() ?: mx
+                        val logScale = mx / mn > 50
+                        sparkline(v, Blake.pp, 90.dp, fill = true, logScale = logScale)
                         Spacer(Modifier.height(6.dp))
-                        Row { Text(stringResource(R.string.blk_peak, BlakeRentals.th(mx)), style = Blake.mono(7f), color = Blake.faint); Spacer(Modifier.weight(1f)); Text(stringResource(R.string.blk_samples_3_min_each, v.size), style = Blake.mono(7f), color = Blake.faint) }
+                        Row { Text(stringResource(R.string.blk_peak, BlakeRentals.th(mx)) + " · ", style = Blake.mono(7f), color = Blake.faint)
+                              Text(stringResource(R.string.blk_now, BlakeRentals.th(v.last())), style = Blake.mono(7f, FontWeight.ExtraBold), color = Blake.pp)
+                              if (logScale) Text(" · " + stringResource(R.string.blk_log_scale), style = Blake.mono(7f), color = Blake.faint)
+                              Spacer(Modifier.weight(1f)); Text(stringResource(R.string.blk_samples_3_min_each, v.size), style = Blake.mono(7f), color = Blake.faint) }
                     } else Text(stringResource(R.string.blk_no_samples_in_this_range_yet), style = Blake.mono(8f), color = Blake.faint)
                 }
                 Spacer(Modifier.height(18.dp))
