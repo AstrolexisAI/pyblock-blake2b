@@ -173,8 +173,7 @@ fun BlakePoolScreen() {
                         Column(Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 // The two products with a rune of their own carry it beside the name.
-                                if (k == "wavicles") { DagazRune(9.dp, stratumColor(k, tip, stats?.flagship)); Spacer(Modifier.width(5.dp)) }
-                                if (k == "datum") { AnsuzRune(10.dp, stratumColor(k, tip, stats?.flagship)); Spacer(Modifier.width(5.dp)) }
+                                ProductRune.runeFor(k)?.let { RuneGlyph(it, ink = stratumColor(k, tip, stats?.flagship), size = 10.dp); Spacer(Modifier.width(5.dp)) }
                                 Text(label, style = Blake.mono(9f, FontWeight.ExtraBold), color = stratumColor(k, tip, stats?.flagship), letterSpacing = 0.5.sp)
                                 Spacer(Modifier.weight(1f))
                                 Text(hashrate(ths), style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.fg)

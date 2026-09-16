@@ -399,7 +399,7 @@ private fun ProfileCard(client: NostrClient, pubkey: String, onClose: () -> Unit
                 Spacer(Modifier.height(6.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     marks.take(6).forEach { mk ->
-                        runCatching { Rune.valueOf(mk.rune.uppercase()) }.getOrNull()?.let { r ->
+                        Rune.forMark(mk.rune)?.let { r ->
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 RuneGlyph(r, forge = forge, ink = Rune.markInk(r), size = 22.dp)
                                 Text(r.name, style = Blake.mono(6f), color = Blake.faint)
@@ -470,7 +470,7 @@ private fun Bubble(m: NostrEvent, mine: Boolean, name: String?, header: Boolean 
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 200.dp))
                 // Runes earned mining, certified by the server. Not for sale.
                 marks.take(4).forEach { mk ->
-                    runCatching { Rune.valueOf(mk.rune.uppercase()) }.getOrNull()?.let { r ->
+                    Rune.forMark(mk.rune)?.let { r ->
                         Spacer(Modifier.width(2.dp))
                         RuneGlyph(r, forge = forge, ink = Rune.markInk(r), size = 10.dp)
                     }

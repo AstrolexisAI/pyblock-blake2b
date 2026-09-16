@@ -68,7 +68,7 @@ fun BlakeChirpScreen() {
           scope.launch { refreshing = true; load(); refreshing = false }
       }, modifier = Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) { Text(stringResource(R.string.blk_chirp), style = Blake.mono(24f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 3.sp); Spacer(Modifier.weight(1f)); BlakeTierBadge() }
+            Row(verticalAlignment = Alignment.CenterVertically) { RuneGlyph(Rune.ANSUZ, ink = Blake.ok, size = 22.dp); Spacer(Modifier.width(8.dp)); Text(stringResource(R.string.blk_chirp), style = Blake.mono(24f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 3.sp); Spacer(Modifier.weight(1f)); BlakeTierBadge() }
             Spacer(Modifier.height(6.dp))
             // From the gateway, never hardcoded: CHIRP is 1% + 1% on this chain, and this line used to
             // print the SHA-256 pool's 0.9%. No split from the server → say what it is, quote nothing.
@@ -185,7 +185,7 @@ fun BlakeChirpScreen() {
                             val np = online.count { it.onPrime }
                             if (np > 0) {
                                 Text(" · ", style = Blake.mono(7f), color = Blake.faint)
-                                AnsuzRune(9.dp, Blake.datum); Spacer(Modifier.width(3.dp))
+                                RuneGlyph(Rune.EHWAZ, ink = Blake.datum, size = 9.dp); Spacer(Modifier.width(3.dp))
                                 Text(stringResource(R.string.blk_on_chirp_prime_own_gateway, np.toString()), style = Blake.mono(7f, FontWeight.ExtraBold), color = Blake.datum)
                             }
                         }
@@ -195,7 +195,7 @@ fun BlakeChirpScreen() {
                                 Box(Modifier.size(5.dp).background(if (w.connected || w.primeLive) Blake.ok else Blake.faint, CircleShape))
                                 Spacer(Modifier.width(6.dp))
                                 // The mark of running your own gateway: their node speaks the block.
-                                if (w.onPrime) { AnsuzRune(13.dp, Blake.datum); Spacer(Modifier.width(4.dp)) }
+                                if (w.onPrime) { RuneGlyph(Rune.EHWAZ, ink = Blake.datum, size = 13.dp); Spacer(Modifier.width(4.dp)) }
                                 // A Prime row reads in the DATUM colour end to end, like WAVICLES rows in cyan:
                                 // CHIRP (house stratum) and CHIRP-PRIME (own gateway) must never look alike.
                                 Text(w.name, style = Blake.mono(10f, if (w.onPrime) FontWeight.ExtraBold else FontWeight.Normal),

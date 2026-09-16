@@ -292,6 +292,7 @@ fun BlakeRentalsSheet(onClose: () -> Unit) {
                         Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
+                                ProductRuneGlyph(key, ink = if (on) Blake.hero else Blake.ppDim, size = 12.dp); Spacer(Modifier.width(6.dp))
                                 Text(p.label ?: key.uppercase(), style = Blake.mono(11f, FontWeight.ExtraBold), color = if (on) Blake.hero else Blake.fg, letterSpacing = 1.sp)
                                 p.port?.let { Spacer(Modifier.width(6.dp)); Text(":$it", style = Blake.mono(9f), color = Blake.faint) }
                             }

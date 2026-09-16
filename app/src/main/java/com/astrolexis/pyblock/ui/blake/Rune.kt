@@ -53,7 +53,10 @@ enum class Rune(val glyph: String, val segments: List<FloatArray>) {
         val reactions = listOf(TIWAZ, WUNJO, KENAZ, GEBO, FEHU, ALGIZ)
         /** The ink an earned mark is drawn in: the two product runes keep their product's colour
          *  (Dagaz → WAVICLES, Ansuz → DATUM) so the mark says where it was won. */
-        fun markInk(r: Rune): androidx.compose.ui.graphics.Color = when (r) { DAGAZ -> Blake.wave; ANSUZ -> Blake.datum; else -> Blake.pp }
+        fun markInk(r: Rune): androidx.compose.ui.graphics.Color = when (r) { DAGAZ -> Blake.wave; EHWAZ -> Blake.datum; else -> Blake.pp }
+        /** A mark by the name the server sends. `ansuz` was the first name of the own-gateway mark; the
+         *  website settled Ehwaz for DATUM, so it draws as Ehwaz until the server renames it. */
+        fun forMark(name: String): Rune? = if (name == "ansuz") EHWAZ else runCatching { valueOf(name.uppercase()) }.getOrNull()
     }
 }
 

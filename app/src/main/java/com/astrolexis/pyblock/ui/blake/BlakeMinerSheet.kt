@@ -245,7 +245,7 @@ fun BlakeMinerSheet(onClose: () -> Unit) {
         Spacer(Modifier.height(22.dp))
         Column(Modifier.fillMaxWidth().blakeCard()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                AnsuzRune(15.dp, Blake.datum); Spacer(Modifier.width(8.dp))
+                RuneGlyph(Rune.EHWAZ, ink = Blake.datum, size = 15.dp); Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.blk_datum_your_own_gateway), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.datum, letterSpacing = 2.sp)
                 Spacer(Modifier.weight(1f))
                 Text(if (addingGateway) stringResource(R.string.blk_cancel) else stringResource(R.string.blk_add_2), style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 1.sp,
@@ -366,14 +366,14 @@ private fun poolCard(p: BlakeMiner.PoolEntry, match: BlakeMiner.PrimeMatch? = nu
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(6.dp).background(if (p.live == true) Blake.ok else Blake.faint, CircleShape))
             Spacer(Modifier.width(6.dp))
-            if (isPrime) { AnsuzRune(12.dp, Blake.datum); Spacer(Modifier.width(6.dp)) }
+            ProductRuneGlyph(p.pool, ink = poolColor(p.pool), size = 12.dp); Spacer(Modifier.width(6.dp))
             // The rune, the colour and the DATUM tag already say Prime: the name is the product
             // alone ("CHIRP"), so it never wraps as "CHIRP-/PRIME".
             val title = if (isPrime) p.pool.removeSuffix("_prime").uppercase() else (p.label ?: p.pool.uppercase())
             Text(title, style = Blake.mono(11f, FontWeight.ExtraBold), color = poolColor(p.pool), letterSpacing = 2.sp, maxLines = 1, softWrap = false)
             p.port?.takeIf { it > 0 }?.let { Spacer(Modifier.width(6.dp)); Text(":$it", style = Blake.mono(9f), color = Blake.faint) }
             Spacer(Modifier.weight(1f))
-            if (isPrime) Text(stringResource(R.string.blk_datum_your_gateway), style = Blake.mono(8f), color = Blake.datum, maxLines = 1, softWrap = false)
+            if (isPrime) { RuneGlyph(Rune.EHWAZ, ink = Blake.datum, size = 9.dp); Spacer(Modifier.width(4.dp)); Text(stringResource(R.string.blk_datum_your_gateway), style = Blake.mono(8f), color = Blake.datum, maxLines = 1, softWrap = false) }
             else p.sharePct?.takeIf { it > 0 }?.let { Text("%.1f%% of pool".format(java.util.Locale.US, it), style = Blake.mono(8f), color = Blake.ppDim) }
         }
         Spacer(Modifier.height(10.dp))
@@ -447,11 +447,11 @@ private fun primeCard(m: BlakeMiner.PrimeMatch) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(6.dp).background(if (m.live) Blake.ok else Blake.faint, CircleShape))
             Spacer(Modifier.width(6.dp))
-            AnsuzRune(12.dp, Blake.datum); Spacer(Modifier.width(6.dp))
+            ProductRuneGlyph(m.product, ink = poolColor(m.product), size = 12.dp); Spacer(Modifier.width(6.dp))
             Text(m.product.uppercase(), style = Blake.mono(11f, FontWeight.ExtraBold), color = poolColor(m.product), letterSpacing = 2.sp, maxLines = 1, softWrap = false)
             m.port?.let { Spacer(Modifier.width(6.dp)); Text(":$it", style = Blake.mono(9f), color = Blake.faint) }
             Spacer(Modifier.weight(1f))
-            Text(stringResource(R.string.blk_datum_your_gateway), style = Blake.mono(8f), color = Blake.datum, maxLines = 1, softWrap = false)
+            RuneGlyph(Rune.EHWAZ, ink = Blake.datum, size = 9.dp); Spacer(Modifier.width(4.dp)); Text(stringResource(R.string.blk_datum_your_gateway), style = Blake.mono(8f), color = Blake.datum, maxLines = 1, softWrap = false)
         }
         Spacer(Modifier.height(10.dp))
         Row(Modifier.fillMaxWidth()) {
