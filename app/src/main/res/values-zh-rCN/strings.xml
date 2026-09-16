@@ -9,6 +9,7 @@
     <string name="blk_a_push_if_this_address_stops_submitting_">此地址停止提交份额时推送通知。</string>
     <string name="blk_a_year">每年</string>
     <string name="blk_a_year_of_history_is_pro">一年历史为 PRO。</string>
+    <string name="blk_accepted">已接受</string>
     <string name="blk_activity">动态</string>
     <string name="blk_add">添加</string>
     <string name="blk_add_2">+ 添加</string>
@@ -84,6 +85,7 @@
     <string name="blk_confirmed_2">已确认  %1$s %2$s</string>
     <string name="blk_connect">连接</string>
     <string name="blk_connect_a_miner">连接矿机</string>
+    <string name="blk_connected">已连接</string>
     <string name="blk_connected_but_nothing_came_back_is_the_g">已连接，但没有返回：网关还在同步吗？</string>
     <string name="blk_connected_to_your_pool_s_relay">已连接到矿池中继</string>
     <string name="blk_contacts">☰ 联系人</string>
@@ -112,6 +114,7 @@
     <string name="blk_datum">DATUM</string>
     <string name="blk_datum_bring_your_own_node">DATUM · 自带节点</string>
     <string name="blk_datum_bring_your_own_node_fee_via_our_st">DATUM · 自带节点 · 费用 %1$s · 经我们的 stratum 为 %2$s</string>
+    <string name="blk_datum_your_gateway">DATUM · 你的网关</string>
     <string name="blk_datum_your_own_gateway">DATUM · 你自己的网关</string>
     <string name="blk_default_worker">（默认 worker）</string>
     <string name="blk_deliver_to">交付至</string>
@@ -214,6 +217,7 @@
     <string name="blk_label_optional">标签（可选）</string>
     <string name="blk_language">语言</string>
     <string name="blk_largest_slice_each_eligible_miner_shares">最大份额 %1$s%% · 每位符合条件的矿工按贡献比例分享区块奖励。</string>
+    <string name="blk_last_share">上次 share</string>
     <string name="blk_last_share_s_ago">上次 share 于 %1$s 秒前</string>
     <string name="blk_last_snapshot">最近快照 %1$s…</string>
     <string name="blk_legacy_1">传统 · 1…</string>
@@ -361,6 +365,7 @@
     <string name="blk_pool_total_across_all_stratums_network_i">矿池为所有 stratum 的总和 · 网络为 BLAKE2b 上的全部矿工。</string>
     <string name="blk_pre_fork_replay_exposed">分叉前 · 有重放风险</string>
     <string name="blk_price_is_the_market_right_now_it_is_re_q">价格为当前市价，付款时会重新报价。手续费已含在总额内。</string>
+    <string name="blk_prime_pool_your_rig_s_own_hashrate_isn_t">Prime 矿池 %1$s · Prime 尚未公布你矿机的算力，上方的矿池数据也不包含这条路径。</string>
     <string name="blk_privacy">隐私</string>
     <string name="blk_private">私信</string>
     <string name="blk_pro">PRO</string>
@@ -411,6 +416,7 @@
     <string name="blk_runes_you_earned_mining">挖矿赚得的符文</string>
     <string name="blk_s_1_new_message">↓ 1 条新消息</string>
     <string name="blk_s_24h_average">24 小时平均</string>
+    <string name="blk_s_ago">%1$s秒前</string>
     <string name="blk_s_node">%1$s 的节点</string>
     <string name="blk_safety_check_failed_a_non_mature_or_shar">安全检查失败：有未成熟或共享的币进入了交易。已中止。</string>
     <string name="blk_same_address_two_chains_this_address_can">同一地址，两条链。此地址也可能持有比特币（SHA-256）币。该分叉没有重放保护：用共享地址转移资金可能影响或损失另一条链上的余额。</string>
@@ -456,6 +462,7 @@
     <string name="blk_settings">设置</string>
     <string name="blk_shake_the_phone">摇动手机</string>
     <string name="blk_share">share %1$s</string>
+    <string name="blk_share_of_the_window">窗口份额</string>
     <string name="blk_share_once_anyone_can_pay_you_repeatedly">分享一次即可。任何人都能多次付款到新地址，无需重复使用。</string>
     <string name="blk_share_receive">份额 · 收到</string>
     <string name="blk_shares_a_paynym_you_can_pay_them_to_a_fr">已分享 PayNym：你可以付款到一个新地址。</string>
@@ -546,6 +553,7 @@
     <string name="blk_whale">WHALE</string>
     <string name="blk_window_empty_the_first_block_pays_the_po">窗口为空：在记入工作量前，第一个区块支付给矿池。</string>
     <string name="blk_window_full_8_network_difficulty_tides">窗口已满 %1$s%% · 8× 全网难度（TIDES）</string>
+    <string name="blk_would_receive">将收到 %1$s ᛒ</string>
     <string name="blk_write_it_as_host_port_the_installer_prin">请写成 主机:端口，安装程序会打印出来，默认端口 23334。</string>
     <string name="blk_yesterday">昨天</string>
     <string name="blk_your_name">你的名字</string>

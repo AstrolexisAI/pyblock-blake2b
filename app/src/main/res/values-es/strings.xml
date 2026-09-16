@@ -866,6 +866,7 @@
     <string name="blk_a_push_if_this_address_stops_submitting_">Un aviso si esta dirección deja de enviar shares.</string>
     <string name="blk_a_year">al año</string>
     <string name="blk_a_year_of_history_is_pro">Un año de historial es PRO.</string>
+    <string name="blk_accepted">aceptados</string>
     <string name="blk_activity">ACTIVIDAD</string>
     <string name="blk_add">AGREGAR</string>
     <string name="blk_add_2">+ AGREGAR</string>
@@ -941,6 +942,7 @@
     <string name="blk_confirmed_2">CONFIRMADO  %1$s %2$s</string>
     <string name="blk_connect">CONECTAR</string>
     <string name="blk_connect_a_miner">CONECTAR UN MINERO</string>
+    <string name="blk_connected">conectado</string>
     <string name="blk_connected_but_nothing_came_back_is_the_g">Conectó, pero no volvió nada: ¿el gateway sigue sincronizando?</string>
     <string name="blk_connected_to_your_pool_s_relay">Conectado al relay de tu pool</string>
     <string name="blk_contacts">☰ CONTACTOS</string>
@@ -969,6 +971,7 @@
     <string name="blk_datum">DATUM</string>
     <string name="blk_datum_bring_your_own_node">DATUM · traé tu propio nodo</string>
     <string name="blk_datum_bring_your_own_node_fee_via_our_st">DATUM · traé tu propio nodo · %1$s de comisión · %2$s vía nuestro stratum</string>
+    <string name="blk_datum_your_gateway">DATUM · tu gateway</string>
     <string name="blk_datum_your_own_gateway">DATUM · TU PROPIO GATEWAY</string>
     <string name="blk_default_worker">(worker por defecto)</string>
     <string name="blk_deliver_to">ENTREGAR EN</string>
@@ -1071,6 +1074,7 @@
     <string name="blk_label_optional">etiqueta (opcional)</string>
     <string name="blk_language">IDIOMA</string>
     <string name="blk_largest_slice_each_eligible_miner_shares">Mayor porción %1$s%% · cada minero elegible comparte la recompensa del bloque en proporción a su aporte.</string>
+    <string name="blk_last_share">último share</string>
     <string name="blk_last_share_s_ago">último share hace %1$ss</string>
     <string name="blk_last_snapshot">último snapshot %1$s…</string>
     <string name="blk_legacy_1">LEGACY · 1…</string>
@@ -1218,6 +1222,7 @@
     <string name="blk_pool_total_across_all_stratums_network_i">Total del pool en todos los stratums · la red es cada minero de BLAKE2b.</string>
     <string name="blk_pre_fork_replay_exposed">pre-fork · expuesta a replay</string>
     <string name="blk_price_is_the_market_right_now_it_is_re_q">El precio es el del mercado ahora; se recotiza al pagar. La comisión va dentro del total.</string>
+    <string name="blk_prime_pool_your_rig_s_own_hashrate_isn_t">Pool del Prime %1$s · el Prime todavía no publica el hashrate de tu rig, y los números de la casa de arriba no incluyen este camino.</string>
     <string name="blk_privacy">PRIVACIDAD</string>
     <string name="blk_private">PRIVADO</string>
     <string name="blk_pro">PRO</string>
@@ -1268,6 +1273,7 @@
     <string name="blk_runes_you_earned_mining">Runas ganadas minando</string>
     <string name="blk_s_1_new_message">↓ 1 MENSAJE NUEVO</string>
     <string name="blk_s_24h_average">promedio 24h</string>
+    <string name="blk_s_ago">hace %1$ss</string>
     <string name="blk_s_node">nodo de %1$s</string>
     <string name="blk_safety_check_failed_a_non_mature_or_shar">Falló la verificación de seguridad: entró a la tx una moneda no madura o compartida. Abortado.</string>
     <string name="blk_same_address_two_chains_this_address_can">Misma dirección, dos cadenas. Esta dirección también puede tener monedas Bitcoin (SHA-256). El fork NO tiene protección de replay: mover fondos con una dirección compartida puede afectar o perder tu saldo en la otra cadena.</string>
@@ -1313,6 +1319,7 @@
     <string name="blk_settings">AJUSTES</string>
     <string name="blk_shake_the_phone">SACUDÍ EL TELÉFONO</string>
     <string name="blk_share">share %1$s</string>
+    <string name="blk_share_of_the_window">parte de la ventana</string>
     <string name="blk_share_once_anyone_can_pay_you_repeatedly">Compartilo una vez. Cualquiera puede pagarte muchas veces a direcciones nuevas, sin reuso.</string>
     <string name="blk_share_receive">participación · recibe</string>
     <string name="blk_shares_a_paynym_you_can_pay_them_to_a_fr">Comparte un PayNym: podés pagarle a una dirección nueva.</string>
@@ -1403,6 +1410,7 @@
     <string name="blk_whale">WHALE</string>
     <string name="blk_window_empty_the_first_block_pays_the_po">Ventana vacía: el primer bloque le paga al pool hasta que se acredite trabajo.</string>
     <string name="blk_window_full_8_network_difficulty_tides">ventana %1$s%% llena · 8× la dificultad de la red (TIDES)</string>
+    <string name="blk_would_receive">recibiría %1$s ᛒ</string>
     <string name="blk_write_it_as_host_port_the_installer_prin">Escribilo como host:puerto; el instalador lo imprime, puerto 23334 por defecto.</string>
     <string name="blk_yesterday">AYER</string>
     <string name="blk_your_name">TU NOMBRE</string>

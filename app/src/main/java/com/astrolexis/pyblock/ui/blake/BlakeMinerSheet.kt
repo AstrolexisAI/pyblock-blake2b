@@ -69,6 +69,8 @@ fun BlakeMinerSheet(onClose: () -> Unit) {
     var scanning by remember { mutableStateOf(false) }
     var found by remember { mutableStateOf<List<String>>(emptyList()) }
     var copied by remember { mutableStateOf<String?>(null) }
+    // The Primes this address is on (own gateway). Read from the Prime itself — see BlakeMiner.primes.
+    var primes by remember { mutableStateOf<List<BlakeMiner.PrimeMatch>>(emptyList()) }
 
     // Your own gateway (DATUM). The list is the user's; the pool never sees it.
     LaunchedEffect(Unit) { com.astrolexis.pyblock.data.blake.OwnGateways.init(ctx) }
@@ -94,6 +96,7 @@ fun BlakeMinerSheet(onClose: () -> Unit) {
         while (true) {
             BlakeMiner.stats(address)?.let { s -> stats = s; s.connect?.let { connect = it } }
             history = BlakeMiner.history(address, range)
+            primes = BlakeMiner.primes(address)
             loaded = true
             delay(30_000)   // server caches 20 s; samples every 3 min
         }
@@ -163,7 +166,7 @@ fun BlakeMinerSheet(onClose: () -> Unit) {
             address.isEmpty() -> Text(stringResource(R.string.blk_pick_the_payout_address_you_mine_to_it_i), style = Blake.mono(9f), color = Blake.ppDim)
             !loaded -> Text(stringResource(R.string.blk_reading_the_gateways), style = Blake.mono(10f), color = Blake.pp)
             s == null -> Text(stringResource(R.string.blk_can_t_reach_the_server), style = Blake.mono(10f), color = Blake.danger)
-            s.isMining -> {
+            s.isMining || primes.isNotEmpty() -> {
                 Column(Modifier.fillMaxWidth().blakeCard()) {
                     Row(Modifier.fillMaxWidth()) {
                         BlakeStat(BlakeRentals.th(s.totalTh1m), stringResource(R.string.blk_hashrate_now))
@@ -177,6 +180,7 @@ fun BlakeMinerSheet(onClose: () -> Unit) {
                         BlakeStat("${s.blocks.size}", "blocks paid", Blake.fg, alignEnd = true)
                     }
                 }
+                primes.forEach { m -> Spacer(Modifier.height(14.dp)); primeCard(m) }
                 s.pools.forEach { p -> Spacer(Modifier.height(14.dp)); poolCard(p) }
                 Spacer(Modifier.height(14.dp))
                 // ---- Chart ----
@@ -409,6 +413,50 @@ private fun blocksList(list: List<BlakeMiner.MinerBlock>) {
             Text(b.time?.let { relTimeSecs(ctx, it) } ?: "", style = Blake.mono(7f), color = Blake.faint)
         }
     }
+}
+
+/** A Prime the address is on: its own gateway, the block built by its node. The house numbers above
+ *  don't include it (server-side gap, asked for), so this card is the truth for that path. */
+@Composable
+private fun primeCard(m: BlakeMiner.PrimeMatch) {
+    Column(Modifier.fillMaxWidth().blakeCard()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(6.dp).background(if (m.live) Blake.ok else Blake.faint, CircleShape))
+            Spacer(Modifier.width(6.dp))
+            AnsuzRune(12.dp, Blake.datum); Spacer(Modifier.width(6.dp))
+            Text(if (m.product == "chirp") "CHIRP-PRIME" else "CAROUSEL-PRIME", style = Blake.mono(11f, FontWeight.ExtraBold), color = poolColor(m.product), letterSpacing = 2.sp)
+            m.port?.let { Spacer(Modifier.width(6.dp)); Text(":$it", style = Blake.mono(9f), color = Blake.faint) }
+            Spacer(Modifier.weight(1f))
+            Text(stringResource(R.string.blk_datum_your_gateway), style = Blake.mono(8f), color = Blake.datum)
+        }
+        Spacer(Modifier.height(10.dp))
+        Row(Modifier.fillMaxWidth()) {
+            BlakeStat(m.lastShareS?.let { stringResource(R.string.blk_s_ago, it.toString()) } ?: "—", stringResource(R.string.blk_last_share), if (m.live) Blake.ok else Blake.faint)
+            Spacer(Modifier.weight(1f))
+            BlakeStat(m.accepted?.toString() ?: "—", stringResource(R.string.blk_accepted), Blake.fg)
+            Spacer(Modifier.weight(1f))
+            BlakeStat(m.connectedS?.let { dur(it) } ?: "—", stringResource(R.string.blk_connected), Blake.ppDim, alignEnd = true)
+        }
+        m.sharePercent?.let { pct ->
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.blk_share_of_the_window), style = Blake.mono(8f), color = Blake.faint, letterSpacing = 1.sp)
+                Spacer(Modifier.weight(1f))
+                Text(String.format(java.util.Locale.US, "%.1f%%", pct), style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.fg)
+                m.payoutSats?.takeIf { it > 0 }?.let { sats ->
+                    Spacer(Modifier.width(6.dp))
+                    Text("· " + stringResource(R.string.blk_would_receive, Blake.btc(sats)), style = Blake.mono(8f), color = Blake.ppDim)
+                }
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        Text(stringResource(R.string.blk_prime_pool_your_rig_s_own_hashrate_isn_t, m.primeHashrateGhs?.let { BlakeRentals.th(it / 1000) } ?: "—"), style = Blake.mono(7f), color = Blake.faint)
+    }
+}
+private fun dur(s: Int): String = when {
+    s < 3600 -> "${s / 60}m"
+    s < 86400 -> "${s / 3600}h ${(s % 3600) / 60}m"
+    else -> "${s / 86400}d ${(s % 86400) / 3600}h"
 }
 
 private fun poolColor(p: String): Color = when (p) {

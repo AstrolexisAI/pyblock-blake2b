@@ -86,6 +86,39 @@ object BlakeMiner {
     }
     @Serializable
     data class Point(val ts: Long? = null, @SerialName("hashrate_th") val hashrateTh: Double? = null, val workers: Int? = null)
+
+    // ---- Primes (DATUM · your own gateway) ----
+    // The address API only aggregates the house stratums, so a miner on a Prime (their own gateway →
+    // :28916 / :28917) shows as silent there. The Prime publishes who is on it, identities masked
+    // `6…4`; the app knows the full address, so it can find its own row.
+    @Serializable data class PrimeRunner(val identity: String? = null, val accepted: Int? = null, val work: Double? = null,
+        @SerialName("connected_s") val connectedS: Int? = null, @SerialName("last_share_s") val lastShareS: Int? = null)
+    @Serializable data class PrimeWindowMiner(val identity: String? = null, @SerialName("share_percent") val sharePercent: Double? = null,
+        @SerialName("payout_sats") val payoutSats: Long? = null)
+    @Serializable data class PrimeConnect(val host: String? = null, val port: Int? = null)
+    @Serializable data class PrimeWindow(val miners: List<PrimeWindowMiner> = emptyList())
+    @Serializable data class Prime(val ok: Boolean? = null, val product: String? = null, val connect: PrimeConnect? = null,
+        @SerialName("hashrate_ghs") val hashrateGhs: Double? = null, val runners: List<PrimeRunner> = emptyList(), val window: PrimeWindow? = null)
+    @Serializable private data class PrimesResp(val carousel: Prime? = null, val chirp: Prime? = null)
+
+    /** Where this address stands on each Prime it is on. Empty when it is on none. */
+    data class PrimeMatch(val product: String, val port: Int?, val primeHashrateGhs: Double?,
+                          val lastShareS: Int?, val connectedS: Int?, val accepted: Int?,
+                          val sharePercent: Double?, val payoutSats: Long?) {
+        val live get() = (lastShareS ?: Int.MAX_VALUE) <= 300
+    }
+    fun masked(address: String): String = if (address.length > 10) "${address.take(6)}…${address.takeLast(4)}" else address
+    suspend fun primes(address: String): List<PrimeMatch> {
+        val r: PrimesResp = get("/datum_modes_api.php?product=both") ?: return emptyList()
+        val me = masked(address)
+        return listOf("carousel" to r.carousel, "chirp" to r.chirp).mapNotNull { (key, p) ->
+            if (p == null || p.ok == false) return@mapNotNull null
+            val runner = p.runners.firstOrNull { it.identity == me }
+            val win = p.window?.miners?.firstOrNull { it.identity == me }
+            if (runner == null && win == null) return@mapNotNull null
+            PrimeMatch(key, p.connect?.port, p.hashrateGhs, runner?.lastShareS, runner?.connectedS, runner?.accepted, win?.sharePercent, win?.payoutSats)
+        }
+    }
     @Serializable private data class ConnectResp(val connect: Connect? = null)
 
     private suspend inline fun <reified T> get(path: String): T? = withContext(Dispatchers.IO) {

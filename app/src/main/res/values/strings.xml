@@ -870,6 +870,7 @@
     <string name="blk_a_push_if_this_address_stops_submitting_">A push if this address stops submitting shares.</string>
     <string name="blk_a_year">a year</string>
     <string name="blk_a_year_of_history_is_pro">A year of history is PRO.</string>
+    <string name="blk_accepted">accepted</string>
     <string name="blk_activity">ACTIVITY</string>
     <string name="blk_add">ADD</string>
     <string name="blk_add_2">+ ADD</string>
@@ -945,6 +946,7 @@
     <string name="blk_confirmed_2">CONFIRMED  %1$s %2$s</string>
     <string name="blk_connect">CONNECT</string>
     <string name="blk_connect_a_miner">CONNECT A MINER</string>
+    <string name="blk_connected">connected</string>
     <string name="blk_connected_but_nothing_came_back_is_the_g">Connected, but nothing came back — is the gateway still syncing?</string>
     <string name="blk_connected_to_your_pool_s_relay">Connected to your pool\'s relay</string>
     <string name="blk_contacts">☰ CONTACTS</string>
@@ -973,6 +975,7 @@
     <string name="blk_datum">DATUM</string>
     <string name="blk_datum_bring_your_own_node">DATUM · bring your own node</string>
     <string name="blk_datum_bring_your_own_node_fee_via_our_st">DATUM · bring your own node · %1$s fee · %2$s via our stratum</string>
+    <string name="blk_datum_your_gateway">DATUM · your gateway</string>
     <string name="blk_datum_your_own_gateway">DATUM · YOUR OWN GATEWAY</string>
     <string name="blk_default_worker">(default worker)</string>
     <string name="blk_deliver_to">DELIVER TO</string>
@@ -1075,6 +1078,7 @@
     <string name="blk_label_optional">label (optional)</string>
     <string name="blk_language">LANGUAGE</string>
     <string name="blk_largest_slice_each_eligible_miner_shares">Largest slice %1$s%% · each eligible miner shares the block reward in proportion to its contribution.</string>
+    <string name="blk_last_share">last share</string>
     <string name="blk_last_share_s_ago">last share %1$ss ago</string>
     <string name="blk_last_snapshot">last snapshot %1$s…</string>
     <string name="blk_legacy_1">LEGACY · 1…</string>
@@ -1222,6 +1226,7 @@
     <string name="blk_pool_total_across_all_stratums_network_i">Pool total across all stratums · network is every miner on BLAKE2b.</string>
     <string name="blk_pre_fork_replay_exposed">pre-fork · replay-exposed</string>
     <string name="blk_price_is_the_market_right_now_it_is_re_q">Price is the market right now; it is re-quoted when you pay. The fee is inside the total.</string>
+    <string name="blk_prime_pool_your_rig_s_own_hashrate_isn_t">Prime pool %1$s · your rig\'s own hashrate isn\'t published by the Prime yet, and the house numbers above don\'t include this path.</string>
     <string name="blk_privacy">PRIVACY</string>
     <string name="blk_private">PRIVATE</string>
     <string name="blk_pro">PRO</string>
@@ -1272,6 +1277,7 @@
     <string name="blk_runes_you_earned_mining">Runes you earned mining</string>
     <string name="blk_s_1_new_message">↓ 1 NEW MESSAGE</string>
     <string name="blk_s_24h_average">24h average</string>
+    <string name="blk_s_ago">%1$ss ago</string>
     <string name="blk_s_node">%1$s\'s node</string>
     <string name="blk_safety_check_failed_a_non_mature_or_shar">Safety check failed — a non-mature or shared coin entered the tx. Aborted.</string>
     <string name="blk_same_address_two_chains_this_address_can">Same address, two chains. This address can also hold Bitcoin (SHA-256) coins. The fork has NO replay protection — moving funds using a shared address can affect or lose your balance on the other chain.</string>
@@ -1317,6 +1323,7 @@
     <string name="blk_settings">SETTINGS</string>
     <string name="blk_shake_the_phone">SHAKE THE PHONE</string>
     <string name="blk_share">share %1$s</string>
+    <string name="blk_share_of_the_window">share of the window</string>
     <string name="blk_share_once_anyone_can_pay_you_repeatedly">Share once. Anyone can pay you repeatedly to fresh addresses — no reuse.</string>
     <string name="blk_share_receive">share · receive</string>
     <string name="blk_shares_a_paynym_you_can_pay_them_to_a_fr">Shares a PayNym: you can pay them to a fresh address.</string>
@@ -1407,6 +1414,7 @@
     <string name="blk_whale">WHALE</string>
     <string name="blk_window_empty_the_first_block_pays_the_po">Window empty — the first block pays the pool until work is credited.</string>
     <string name="blk_window_full_8_network_difficulty_tides">window %1$s%% full · 8× network difficulty (TIDES)</string>
+    <string name="blk_would_receive">would receive %1$s ᛒ</string>
     <string name="blk_write_it_as_host_port_the_installer_prin">Write it as host:port — the installer prints it, port 23334 by default.</string>
     <string name="blk_yesterday">YESTERDAY</string>
     <string name="blk_your_name">YOUR NAME</string>
