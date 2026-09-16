@@ -54,7 +54,7 @@ fun RicochetHistorySheet(onCopy: (String) -> Unit, onClose: () -> Unit) {
             Row(Modifier.fillMaxWidth().padding(bottom = 8.dp).border(1.dp, Blake.line, RectangleShape).padding(12.dp)
                 .clickableNoRipple { detail = r }, verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("${r.hops} hop${if (r.hops == 1) "" else "s"} · ${r.txids.size} txs", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.fg)
+                    Text(stringResource(R.string.blk_hops_txs, r.hops, r.txids.size), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.fg)
                     Text(mid(r.finalTxid, 10, 8), style = Blake.mono(8f), color = Blake.faint)
                 }
                 Text(if (r.amountSats > 0) "${Blake.btc(r.amountSats)} ${Blake.RUNE}" else "MAX", style = Blake.mono(11f), color = Blake.pp)
@@ -215,7 +215,7 @@ fun PaynymSheet(onCopy: (String) -> Unit, paste: () -> String, onClose: () -> Un
                      else stringResource(R.string.blk_this_replaces_the_paynym_on_this_device_),
                     style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.danger)
                 Spacer(Modifier.height(4.dp))
-                Text("Restores to: ${PaymentCode.encode(pend)}", style = Blake.mono(8f), color = Blake.pp)
+                Text(stringResource(R.string.blk_restores_to, PaymentCode.encode(pend)), style = Blake.mono(8f), color = Blake.pp)
                 Spacer(Modifier.height(8.dp))
                 sheetBtn(stringResource(R.string.blk_confirm_restore), Blake.danger) {
                     if (PaymentCode.importIdentity(ctx, pend)) {
@@ -267,7 +267,7 @@ fun PaynymSheet(onCopy: (String) -> Unit, paste: () -> String, onClose: () -> Un
                 }
                 Text(stringResource(R.string.blk_check), style = Blake.mono(9f), color = Blake.pp, modifier = Modifier.clickableNoRipple {
                     // An explicit check sweeps both derivation schemes from index 0.
-                    scope.launch { PaynymNotifications.scan(ctx, full = true); msg = "Checked ${c.displayName}." }
+                    scope.launch { PaynymNotifications.scan(ctx, full = true); msg = com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_checked, c.displayName) }
                 })
             }
         }

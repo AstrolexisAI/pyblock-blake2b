@@ -178,7 +178,7 @@ fun BlakeRentalsSheet(onClose: () -> Unit) {
                 Spacer(Modifier.weight(1f))
                 if (status == "pending_payment" && (s?.secondsLeft ?: 0) > 0) {
                     val left = s!!.secondsLeft!!
-                    Text("expires in ${left / 60}m ${left % 60}s", style = Blake.mono(8f), color = Blake.warn)
+                    Text(stringResource(R.string.blk_expires_in_m_s, left / 60, left % 60), style = Blake.mono(8f), color = Blake.warn)
                 }
             }
             s?.errorMsg?.takeIf { it.isNotBlank() }?.let { Spacer(Modifier.height(8.dp)); Text(it, style = Blake.mono(9f), color = Blake.danger) }
@@ -335,7 +335,7 @@ fun BlakeRentalsSheet(onClose: () -> Unit) {
                     labelValue(stringResource(R.string.blk_package), "${BlakeRentals.th(q.th)} · ${q.hours ?: hours}h")
                     labelValue("POOL", "${pools[q.pool ?: pool]?.label ?: pool.uppercase()} :${q.port ?: 0}")
                     labelValue(stringResource(R.string.blk_total), BlakeRentals.sats(q.totalSats), Blake.pp)
-                    q.feePct?.let { Text("fee ${it.toInt()}% included · re-quoted when you pay", style = Blake.mono(7f), color = Blake.faint) }
+                    q.feePct?.let { Text(stringResource(R.string.blk_fee_included_re_quoted_when_you_pay, it.toInt()), style = Blake.mono(7f), color = Blake.faint) }
                     Spacer(Modifier.height(10.dp))
                     Text(if (ordering) stringResource(R.string.blk_creating_invoice) else stringResource(R.string.blk_pay_with_lightning), style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.bg, letterSpacing = 1.sp, textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth().background(Blake.pp.copy(alpha = if (ordering) 0.6f else 1f)).padding(vertical = 12.dp).clickableNoRipple {
@@ -417,8 +417,8 @@ internal fun relTimeSecs(ctx: android.content.Context, ts: Long?): String {
     val d = System.currentTimeMillis() / 1000 - ts
     return when {
         d < 60 -> ctx.getString(R.string.blk_just_now)
-        d < 3600 -> "${d / 60}m ago"
-        d < 86400 -> "${d / 3600}h ago"
-        else -> "${d / 86400}d ago"
+        d < 3600 -> com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_m_ago, d / 60)
+        d < 86400 -> com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_h_ago, d / 3600)
+        else -> com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_d_ago, d / 86400)
     }
 }

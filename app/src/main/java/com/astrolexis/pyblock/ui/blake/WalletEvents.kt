@@ -1,5 +1,6 @@
 package com.astrolexis.pyblock.ui.blake
 
+import com.astrolexis.pyblock.R
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -59,10 +60,10 @@ object WalletEvents {
     data class Event(val id: Long, val kind: Kind) {
         val glyph get() = when (kind) { is Kind.Received -> Blake.RUNE; is Kind.Confirmed -> "✓"; is Kind.Matured -> "◈"; is Kind.Block -> "▣" }
         val text get() = when (val k = kind) {
-            is Kind.Received -> "RECEIVED  +${Blake.btc(k.sats)} ${Blake.RUNE}"
-            is Kind.Confirmed -> "CONFIRMED  ${Blake.btc(k.sats)} ${Blake.RUNE}"
-            is Kind.Matured -> "MATURED  ${Blake.btc(k.sats)} ${Blake.RUNE} now spendable"
-            is Kind.Block -> "BLOCK #${k.height}  ${k.stratum.uppercase()}"
+            is Kind.Received -> com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_received_2, Blake.btc(k.sats), Blake.RUNE)
+            is Kind.Confirmed -> com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_confirmed_2, Blake.btc(k.sats), Blake.RUNE)
+            is Kind.Matured -> com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_matured_now_spendable, Blake.btc(k.sats), Blake.RUNE)
+            is Kind.Block -> com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_block_3, k.height, k.stratum.uppercase())
         }
         val color: Color get() = when (kind) { is Kind.Received, is Kind.Matured -> Blake.ok; else -> Blake.pp }
     }

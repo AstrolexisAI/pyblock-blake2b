@@ -103,7 +103,7 @@ fun UtxoDetailSheet(u: BlakeApi.Utxo, tip: Int, onCopy: (String) -> Unit, onClos
     var labelText by remember(u.id) { mutableStateOf(com.astrolexis.pyblock.data.blake.BlakeLabelStore.labelFor(u.id) ?: "") }
     sheetBox(stringResource(R.string.blk_coin), Blake.pp, onClose) {
         Text("${Blake.btc(u.value)} ${Blake.RUNE}", style = Blake.mono(24f, FontWeight.ExtraBold), color = Blake.pp)
-        Text("${"%,d".format(u.value)} sats", style = Blake.mono(10f), color = Blake.faint)
+        Text(stringResource(R.string.blk_sats_2, "%,d".format(u.value)), style = Blake.mono(10f), color = Blake.faint)
         Spacer(Modifier.height(12.dp))
         Text(stringResource(R.string.blk_label), style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
         Spacer(Modifier.height(4.dp))
@@ -121,7 +121,7 @@ fun UtxoDetailSheet(u: BlakeApi.Utxo, tip: Int, onCopy: (String) -> Unit, onClos
         val statusText = when {
             reason == null -> stringResource(R.string.blk_spendable_mature_mined)
             unlocked -> stringResource(R.string.blk_unlocked_replay_exposed_you_accepted_the)
-            else -> "locked · $reason"
+            else -> stringResource(R.string.blk_locked_2, reason)
         }
         kv(stringResource(R.string.blk_status), statusText, if (reason == null) Blake.ok else if (unlocked) Blake.pp else Blake.warn)
         kv(stringResource(R.string.blk_confirmations), "${BlakeFork.confirmations(u, tip)}", Blake.fg)
@@ -292,7 +292,7 @@ fun AddressControlSheet(
             own.forEach { w -> walletRow(w) }
             if (received.isNotEmpty()) {
                 Spacer(Modifier.height(10.dp))
-                Text("RECEIVED VIA PAYNYM (${received.size})", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
+                Text(stringResource(R.string.blk_received_via_paynym, received.size), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
                 Text(stringResource(R.string.blk_payments_from_people_each_at_an_address_),
                     style = Blake.mono(8f), color = Blake.faint)
                 Spacer(Modifier.height(8.dp))
@@ -396,7 +396,7 @@ fun AddressDetailSheet(
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
                 Text("${Blake.btc(total)} ${Blake.RUNE}", style = Blake.mono(18f, FontWeight.ExtraBold), color = Blake.pp)
-                if (spendableSats > 0) Text("${Blake.btc(spendableSats)} ${Blake.RUNE} spendable", style = Blake.mono(9f), color = Blake.ok)
+                if (spendableSats > 0) Text(stringResource(R.string.blk_spendable_3, Blake.btc(spendableSats), Blake.RUNE), style = Blake.mono(9f), color = Blake.ok)
             }
         }
         Spacer(Modifier.height(10.dp))
@@ -450,13 +450,13 @@ fun CoinsSheet(utxos: List<BlakeApi.Utxo>, tip: Int, onSpend: (Set<String>) -> U
                     Spacer(Modifier.width(10.dp))
                     Column(Modifier.weight(1f)) {
                         Text("+${Blake.btc(sats)} ${Blake.RUNE}", style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.pp)
-                        Text("arriving · ${mid(addr)}", style = Blake.mono(8f), color = Blake.faint, maxLines = 1)
+                        Text(stringResource(R.string.blk_arriving, mid(addr)), style = Blake.mono(8f), color = Blake.faint, maxLines = 1)
                     }
                     Text(stringResource(R.string.blk_waiting_for_a_block), style = Blake.mono(8f), color = Blake.ppDim)
                 }
             }
             if (inFlight.isNotEmpty())
-                Text("${inFlight.size} coin${if (inFlight.size == 1) "" else "s"} in flight · ${Blake.btc(inFlight.sumOf { it.value })} ${Blake.RUNE} · they return to SPENDABLE only if the send fails",
+                Text(stringResource(R.string.blk_coins_in_flight_they_return_to_spendable, inFlight.size, Blake.btc(inFlight.sumOf { it.value }), Blake.RUNE),
                     style = Blake.mono(8f), color = Blake.faint, modifier = Modifier.padding(bottom = 10.dp))
         }
         if (utxos.isEmpty()) { Text(stringResource(R.string.blk_no_coins), style = Blake.mono(10f), color = Blake.faint); return@sheetBox }
@@ -500,7 +500,7 @@ fun CoinsSheet(utxos: List<BlakeApi.Utxo>, tip: Int, onSpend: (Set<String>) -> U
                         Text("◈ $it", style = Blake.mono(8f, FontWeight.ExtraBold), color = Blake.pp, maxLines = 1)
                     }
                     Text(if (unlocked) stringResource(R.string.blk_unlocked_replay_risk)
-                         else if (!spendable && BlakeFork.isReplayLocked(u, tip)) "${reason ?: "received"} · tap to unlock"
+                         else if (!spendable && BlakeFork.isReplayLocked(u, tip)) stringResource(R.string.blk_tap_to_unlock, reason ?: "received")
                          else (reason ?: (if (u.coinbase) stringResource(R.string.blk_mined_spendable) else "received")),
                         style = Blake.mono(8f), color = if (unlocked) Blake.pp else Blake.faint)
                     MaturityBar(u, tip)
@@ -527,7 +527,7 @@ fun CoinsSheet(utxos: List<BlakeApi.Utxo>, tip: Int, onSpend: (Set<String>) -> U
         if (selected.isNotEmpty() && BlakeChains.SEND_ENABLED) {
             val selSats = sorted.filter { it.id in selected }.sumOf { it.value }
             Spacer(Modifier.height(6.dp))
-            sheetBtn("SEND ${selected.size} COIN${if (selected.size == 1) "" else "S"} · ${Blake.btc(selSats)} ${Blake.RUNE}",
+            sheetBtn(stringResource(R.string.blk_send_coins, selected.size, Blake.btc(selSats), Blake.RUNE),
                 Blake.pp, filled = true) { onSpend(selected) }
         }
     }
@@ -574,7 +574,7 @@ fun SendSheet(onSend: (String, Long, Boolean, Long, Boolean) -> Unit, paste: () 
 @Composable
 fun CurrencyPickerSheet(currencies: List<String>, onPick: (String) -> Unit) {
     sheetBox(stringResource(R.string.blk_currency), Blake.pp, { onPick(currencies.firstOrNull() ?: "USD") }) {
-        Text("${BlakePrice.TICKER}/USDT on ${BlakePrice.SOURCE} · other currencies crossed via mempool.space",
+        Text(stringResource(R.string.blk_usdt_on_other_currencies_crossed_via_mem, BlakePrice.TICKER, BlakePrice.SOURCE),
             style = Blake.mono(8f), color = Blake.faint, modifier = Modifier.padding(bottom = 6.dp))
         currencies.forEach { c ->
             Text(c, style = Blake.mono(14f), color = Blake.fg,
@@ -630,7 +630,7 @@ fun SettingsSheet(operational: Boolean, rc: String?, height: Int, onClose: () ->
         Row(Modifier.fillMaxWidth().clickableNoRipple { showContacts = true }, verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.blk_contacts_2), style = Blake.mono(10f), color = Blake.faint, letterSpacing = 1.sp)
             Spacer(Modifier.weight(1f))
-            Text("${contacts.size} saved ▸", style = Blake.mono(11f), color = Blake.pp)
+            Text(stringResource(R.string.blk_saved, contacts.size), style = Blake.mono(11f), color = Blake.pp)
         }
         Spacer(Modifier.height(10.dp))
         // Runes earned mining, beside the name in the room. Tiers only, never numbers.

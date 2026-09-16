@@ -135,7 +135,7 @@ object BlakeRentals {
         runCatching { json.decodeFromString<ErrResp>(body) }.getOrNull()?.let { e ->
             (e.errors?.firstOrNull() ?: e.error ?: e.message ?: e.notice)?.takeIf { it.isNotBlank() }?.let { return it }
         }
-        return if (status == 404) com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_rentals_are_paused_right_now) else "Server error ($status)."
+        return if (status == 404) com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_rentals_are_paused_right_now) else com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_server_error, status)
     }
 
     /** Public: live package list + delivery pools. Refresh ≤ 60 s (prices move). */
@@ -212,7 +212,7 @@ object BlakeRentals {
         // a wrong (or hostile) server would otherwise collect a silent overpay.
         val asked = invoiceSats(o.invoice)
         if (asked == null || asked != (o.totalSats ?: -1L)) {
-            throw Failure("The invoice asks for ${asked ?: "an unreadable amount"} sats but the order says ${o.totalSats ?: 0}. Not showing it — nothing was paid.")
+            throw Failure(com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_the_invoice_asks_for_sats_but_the_order_, asked ?: "an unreadable amount", o.totalSats ?: 0))
         }
         return o
     }

@@ -70,7 +70,7 @@ fun BlakeChirpScreen() {
             val sp = pool?.split?.pct
             Text(
                 if (sp?.syndicate != null)
-                    "Syndicate · ${pctText(sp.syndicate)} to members by weight · ${pctText(sp.supplier ?: 0.0)} node-runner · ${pctText(sp.pool ?: 0.0)} PyBLØCK"
+                    stringResource(R.string.blk_syndicate_to_members_by_weight_node_runn, pctText(sp.syndicate), pctText(sp.supplier ?: 0.0), pctText(sp.pool ?: 0.0))
                 else stringResource(R.string.blk_syndicate_weighted_split),
                 style = Blake.mono(10f), color = Blake.ppDim)
 
@@ -114,7 +114,7 @@ fun BlakeChirpScreen() {
                             letterSpacing = 1.5.sp, maxLines = 1, softWrap = false)
                         Spacer(Modifier.weight(1f))
                         Spacer(Modifier.width(8.dp))
-                        Text("${eligible.size} eligible", style = Blake.mono(9f), color = Blake.pp, maxLines = 1, softWrap = false)
+                        Text(stringResource(R.string.blk_eligible, eligible.size), style = Blake.mono(9f), color = Blake.pp, maxLines = 1, softWrap = false)
                     }
                     if (eligible.isNotEmpty() && totalW > 0) {
                         Spacer(Modifier.height(12.dp))
@@ -124,12 +124,12 @@ fun BlakeChirpScreen() {
                             }
                         }
                         Spacer(Modifier.height(10.dp))
-                        Text("Largest slice ${"%.0f".format(weightOf(eligible.first()) / totalW * 100)}% · each eligible miner shares the block reward in proportion to its contribution.",
+                        Text(stringResource(R.string.blk_largest_slice_each_eligible_miner_shares, "%.0f".format(weightOf(eligible.first()) / totalW * 100)),
                             style = Blake.mono(8f), color = Blake.faint)
                     } else {
                         Spacer(Modifier.height(8.dp))
-                        Text(pool?.minDays?.let { "No miners are eligible for the split yet — it needs the $it-day loyalty floor. ${online.size} mining now; the bar fills in as they qualify." }
-                            ?: "No miners are eligible for the split yet. ${online.size} mining now; the bar fills in as they qualify.",
+                        Text(pool?.minDays?.let { stringResource(R.string.blk_no_miners_are_eligible_for_the_split_yet, it, online.size) }
+                            ?: stringResource(R.string.blk_no_miners_are_eligible_for_the_split_yet_2, online.size),
                             style = Blake.mono(8f), color = Blake.faint)
                     }
                 }

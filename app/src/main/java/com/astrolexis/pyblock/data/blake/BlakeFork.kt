@@ -43,7 +43,7 @@ object BlakeFork {
         // (the fork has no replay protection), so locked. NOT a pre-fork coin.
         if (!u.coinbase) return com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_received_replay_exposed)
         val need = COINBASE_MATURITY - confirmations(u, tip)
-        return "immature · ${maxOf(0, need)} blocks to mature"
+        return com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_immature_blocks_to_mature, maxOf(0, need))
     }
 
     /** Locked for REPLAY reasons (pre-fork or received), so the user MAY unlock it (accepting the

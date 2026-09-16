@@ -50,8 +50,8 @@ object BlakeSpend {
         object UnexpectedInput : Err(com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_safety_check_failed_a_non_mature_or_shar))
         object BroadcastFailed : Err(com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_couldn_t_broadcast_to_the_blake2b_networ))
         object AlreadyPending : Err(com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_this_coin_is_already_in_a_pending_transa))
-        data class FeeTooHigh(val fee: Long, val amount: Long) : Err("Fee ($fee sats) would equal or exceed the amount ($amount sats).")
-        data class FeeCapped(val fee: Long, val cap: Long) : Err("Fee ($fee sats) is above the safety cap ($cap sats). Lower the fee rate.")
+        data class FeeTooHigh(val fee: Long, val amount: Long) : Err(com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_fee_sats_would_equal_or_exceed_the_amoun, fee, amount))
+        data class FeeCapped(val fee: Long, val cap: Long) : Err(com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_fee_sats_is_above_the_safety_cap_sats_lo, fee, cap))
     }
 
     /** One spendable fork coin: a mature post-fork coinbase output + the key that owns it. */

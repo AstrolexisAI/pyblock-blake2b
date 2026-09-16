@@ -205,7 +205,7 @@ fun BlakeMinerSheet(onClose: () -> Unit) {
                     if (v.size > 1 && mx > 0) {
                         sparkline(v, Blake.pp, 90.dp, fill = true)
                         Spacer(Modifier.height(6.dp))
-                        Row { Text("peak ${BlakeRentals.th(mx)}", style = Blake.mono(7f), color = Blake.faint); Spacer(Modifier.weight(1f)); Text("${v.size} samples · 3 min each", style = Blake.mono(7f), color = Blake.faint) }
+                        Row { Text(stringResource(R.string.blk_peak, BlakeRentals.th(mx)), style = Blake.mono(7f), color = Blake.faint); Spacer(Modifier.weight(1f)); Text(stringResource(R.string.blk_samples_3_min_each, v.size), style = Blake.mono(7f), color = Blake.faint) }
                     } else Text(stringResource(R.string.blk_no_samples_in_this_range_yet), style = Blake.mono(8f), color = Blake.faint)
                 }
                 Spacer(Modifier.height(18.dp))
@@ -239,7 +239,7 @@ fun BlakeMinerSheet(onClose: () -> Unit) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(p.label ?: (p.pool ?: "").uppercase(), style = Blake.mono(9f, FontWeight.ExtraBold), color = poolColor(p.pool ?: ""), letterSpacing = 1.sp)
                             Spacer(Modifier.width(6.dp)); Text((p.kind ?: "").uppercase(), style = Blake.mono(7f), color = Blake.faint)
-                            p.minDiff?.let { Spacer(Modifier.width(6.dp)); Text("diff ${it.toInt()}", style = Blake.mono(7f), color = Blake.faint) }
+                            p.minDiff?.let { Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.blk_diff, it.toInt()), style = Blake.mono(7f), color = Blake.faint) }
                         }
                         p.split?.let { Text(it, style = Blake.mono(7f), color = Blake.faint) }
                     }
@@ -285,12 +285,12 @@ private fun poolCard(p: BlakeMiner.PoolEntry) {
                     Column(Modifier.weight(1f)) {
                         Text(if (w.name.isNullOrEmpty()) stringResource(R.string.blk_default_worker) else w.name, style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.fg)
                         val rej = (w.sharesDiffRej ?: 0.0).toLong()
-                        Text("${shortAgent(w.agent)} · diff ${(w.vdiff ?: 0.0).toLong()} · acc ${(w.sharesDiffAcc ?: 0.0).toLong()}${if (rej > 0) " · rej $rej" else ""}",
+                        Text(stringResource(R.string.blk_diff_acc, shortAgent(w.agent), (w.vdiff ?: 0.0).toLong(), (w.sharesDiffAcc ?: 0.0).toLong(), if (rej > 0) " · rej $rej" else ""),
                             style = Blake.mono(7f), color = Blake.faint, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                     Column(horizontalAlignment = Alignment.End) {
                         Text(BlakeRentals.th(w.hashrateTh), style = Blake.mono(10f, FontWeight.ExtraBold), color = if ((w.hashrateTh ?: 0.0) > 0) Blake.ok else Blake.faint)
-                        Text(w.lastshare?.let { "share ${relTimeSecs(ctx, it)}" } ?: "no share yet", style = Blake.mono(7f), color = Blake.faint)
+                        Text(w.lastshare?.let { stringResource(R.string.blk_share, relTimeSecs(ctx, it)) } ?: "no share yet", style = Blake.mono(7f), color = Blake.faint)
                     }
                 }
             }

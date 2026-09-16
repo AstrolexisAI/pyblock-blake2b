@@ -171,7 +171,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit, onPaid: (peer: String, txid: S
                     verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(7.dp).background(Blake.warn, CircleShape))
                     Spacer(Modifier.size(8.dp))
-                    Text("${rc ?: "RC"} — TESTING ON MAINNET", style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.warn, letterSpacing = 1.sp)
+                    Text(stringResource(R.string.blk_testing_on_mainnet, rc ?: "RC"), style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.warn, letterSpacing = 1.sp)
                     Spacer(Modifier.weight(1f))
                     Text("#$statusHeight", style = Blake.mono(9f), color = Blake.faint)
                 }
@@ -210,7 +210,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit, onPaid: (peer: String, txid: S
                         if (loading) Text("⟳", style = Blake.mono(9f), color = Blake.pp, modifier = Modifier.graphicsLayer { rotationZ = spin })
                     }
                     Spacer(Modifier.weight(1f))
-                    Text("${"%,d".format(total)} sats · ${wallets.size} addr", style = Blake.mono(8f), color = Blake.faint)
+                    Text(stringResource(R.string.blk_sats_addr, "%,d".format(total), wallets.size), style = Blake.mono(8f), color = Blake.faint)
                 }
                 }
                 // The coin's own market quote (XBT on the exchanges), never the BTC price: rate, 24h
@@ -227,7 +227,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit, onPaid: (peer: String, txid: S
                         Spacer(Modifier.weight(1f))
                         BlakePrice.fiatLabel(total)?.let { Text("$it $ccy", style = Blake.mono(8f), color = Blake.faint) }
                     }
-                    Text("${BlakePrice.SOURCE} · ${BlakePrice.TICKER}/USDT", style = Blake.mono(7f), color = Blake.faint)
+                    Text(stringResource(R.string.blk_usdt, BlakePrice.SOURCE, BlakePrice.TICKER), style = Blake.mono(7f), color = Blake.faint)
                 }
                 // Mempool state, said plainly: the tx has been SEEN by the node but no block holds it
                 // yet, so it has 0 confirmations. One line per direction, amount first.
@@ -333,7 +333,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit, onPaid: (peer: String, txid: S
                                 Row(Modifier.fillMaxWidth().padding(vertical = 10.dp).drawBehind { drawRect(hairline, topLeft = androidx.compose.ui.geometry.Offset(0f, size.height - 1f), size = androidx.compose.ui.geometry.Size(size.width, 1f)) }, verticalAlignment = Alignment.CenterVertically) {
                                     Column(Modifier.weight(1f)) {
                                         Text("+ ${Blake.btc(p.sats)} ${Blake.RUNE}", style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.warn)
-                                        Text("incoming · ${p.address.take(10)}…", style = Blake.mono(8f), color = Blake.faint)
+                                        Text(stringResource(R.string.blk_incoming, p.address.take(10)), style = Blake.mono(8f), color = Blake.faint)
                                     }
                                     Text(stringResource(R.string.blk_pending), style = Blake.mono(9f), color = Blake.warn)
                                 }
@@ -366,10 +366,10 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit, onPaid: (peer: String, txid: S
                                         labels[u.id]?.takeIf { it.isNotBlank() }?.let {
                                             Text("◈ $it", style = Blake.mono(8f, FontWeight.ExtraBold), color = Blake.pp, maxLines = 1)
                                         }
-                                        Text("${if (u.coinbase) "mined · " else ""}block #${u.height}", style = Blake.mono(8f), color = Blake.faint)
+                                        Text(stringResource(R.string.blk_block_2, if (u.coinbase) "mined · " else "", u.height), style = Blake.mono(8f), color = Blake.faint)
                                     }
                                     val conf = BlakeFork.confirmations(u, tip)
-                                    Text("$conf conf", style = Blake.mono(9f), color = if (BlakeFork.isSpendable(u, tip)) Blake.ok else Blake.warn)
+                                    Text(stringResource(R.string.blk_conf, conf), style = Blake.mono(9f), color = if (BlakeFork.isSpendable(u, tip)) Blake.ok else Blake.warn)
                                 }
                             })
                         }
@@ -525,7 +525,7 @@ private fun SentDetailDialog(
         }
         Spacer(Modifier.height(14.dp))
         Text("− ${Blake.btc(r.amountSats)} ${Blake.RUNE}", style = Blake.mono(24f, FontWeight.ExtraBold), color = Blake.warn)
-        Text("${"%,d".format(r.amountSats)} sats", style = Blake.mono(10f), color = Blake.faint)
+        Text(stringResource(R.string.blk_sats_2, "%,d".format(r.amountSats)), style = Blake.mono(10f), color = Blake.faint)
         Spacer(Modifier.height(14.dp))
         Text(stringResource(R.string.blk_label), style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
         Spacer(Modifier.height(4.dp))

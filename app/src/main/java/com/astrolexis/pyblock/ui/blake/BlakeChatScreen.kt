@@ -150,7 +150,7 @@ fun BlakeChatScreen(client: NostrClient, onPay: (String, Long?, String) -> Unit)
                 Spacer(Modifier.width(8.dp))
                 val unreadDMs = state.unreadDmCount()
                 if (unreadDMs > 0)
-                    Text("✉ DMS $unreadDMs", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.bg, maxLines = 1, softWrap = false,
+                    Text(stringResource(R.string.blk_dms_2, unreadDMs), style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.bg, maxLines = 1, softWrap = false,
                         modifier = Modifier.background(Blake.pp, Blake.shape).padding(horizontal = 6.dp, vertical = 2.dp).clickableNoRipple { showDMs = true })
                 else
                     Text(stringResource(R.string.blk_dms), style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.pp, maxLines = 1, softWrap = false, modifier = Modifier.clickableNoRipple { showDMs = true })
@@ -165,7 +165,7 @@ fun BlakeChatScreen(client: NostrClient, onPay: (String, Long?, String) -> Unit)
                         modifier = Modifier.then(if (on) Modifier.background(Blake.pp, Blake.shape) else Modifier.border(1.dp, Blake.line, Blake.shape))
                             .padding(horizontal = 8.dp, vertical = 4.dp).clickableNoRipple { if (lounge != l) { com.astrolexis.pyblock.ui.Haptics.tap(); lounge = l; primed = false } })
                 }
-                if (!lounge && state.whaleMessages.isNotEmpty()) Text("${state.whaleMessages.size} inside", style = Blake.mono(8f), color = Blake.faint)
+                if (!lounge && state.whaleMessages.isNotEmpty()) Text(stringResource(R.string.blk_inside, state.whaleMessages.size), style = Blake.mono(8f), color = Blake.faint)
             }
         }
         Box(Modifier.fillMaxWidth().size(1.dp).background(Blake.line))
@@ -175,7 +175,7 @@ fun BlakeChatScreen(client: NostrClient, onPay: (String, Long?, String) -> Unit)
                 RuneGlyph(Rune.LAGUZ, forge = RuneForge.TEMPERED, ink = Blake.hero, size = 56.dp)
                 Spacer(Modifier.height(14.dp))
                 Text(stringResource(R.string.blk_the_lounge), style = Blake.mono(14f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 3.sp)
-                Text("The WHALE room. ${state.whaleMessages.size} messages inside.", style = Blake.mono(9f), color = Blake.ppDim)
+                Text(stringResource(R.string.blk_the_whale_room_messages_inside, state.whaleMessages.size), style = Blake.mono(9f), color = Blake.ppDim)
             }
         } else
         Box(Modifier.weight(1f).fillMaxWidth()) {

@@ -207,7 +207,7 @@ fun SendWizardSheet(
                 BlakeBalanceStore.refresh(ctx)
             } catch (e: Exception) {
                 android.util.Log.e("BlakeSend", "send failed: ${e::class.java.simpleName}: ${e.message}", e)
-                val raw = e.message ?: "Send failed (${e::class.java.simpleName})"
+                val raw = e.message ?: com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_send_failed, e::class.java.simpleName)
                 error = when {
                     // This exact send already reached the network (a prior attempt landed but looked
                     // like it failed). Not an error — refresh so the coin shows in-flight, tell the
@@ -394,8 +394,8 @@ private fun StepAmount(
         Text(sub, style = Blake.mono(10f), color = if (overspend) Blake.danger else Blake.ppDim,
             textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(4.dp))
-        Text(if (coinKeys.isEmpty()) "Spendable ${Blake.btc(spendable)} ${Blake.RUNE}"
-             else "From ${coinKeys.size} selected coin${if (coinKeys.size == 1) "" else "s"} · ${Blake.btc(selectedSats)} ${Blake.RUNE} available · change returns",
+        Text(if (coinKeys.isEmpty()) stringResource(R.string.blk_spendable_2, Blake.btc(spendable), Blake.RUNE)
+             else stringResource(R.string.blk_from_selected_coins_available_change_ret, coinKeys.size, Blake.btc(selectedSats), Blake.RUNE),
             style = Blake.mono(8f), color = if (coinKeys.isEmpty()) Blake.faint else Blake.pp,
             textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
     }
@@ -405,7 +405,7 @@ private fun StepAmount(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.blk_network_fee), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
             Spacer(Modifier.weight(1f))
-            Text("~${"%,d".format(estFee)} sats", style = Blake.mono(9f), color = Blake.faint)
+            Text(stringResource(R.string.blk_sats, "%,d".format(estFee)), style = Blake.mono(9f), color = Blake.faint)
         }
         Spacer(Modifier.height(10.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -497,8 +497,8 @@ private fun StepReview(
         } else {
             ReviewRow("TO", toAddress, 9f)
         }
-        ReviewRow("AMOUNT", if (sendMax) "MAX · ${Blake.btc(sweepSats)} ${Blake.RUNE}" else "${Blake.btc(amt)} ${Blake.RUNE}")
-        ReviewRow("", "${"%,d".format(if (sendMax) sweepSats else amt)} sats", 9f, faint = true)
+        ReviewRow("AMOUNT", if (sendMax) stringResource(R.string.blk_max_4, Blake.btc(sweepSats), Blake.RUNE) else "${Blake.btc(amt)} ${Blake.RUNE}")
+        ReviewRow("", stringResource(R.string.blk_sats_2, "%,d".format(if (sendMax) sweepSats else amt)), 9f, faint = true)
         BlakePrice.fiatLabel(if (sendMax) sweepSats else amt)?.let { ReviewRow(stringResource(R.string.blk_fiat), "$it $ccy") }
         ReviewRow(stringResource(R.string.blk_mode), if (ricochet) "ricochet · $hops hop${if (hops == 1) "" else "s"}" else "direct")
         ReviewRow(stringResource(R.string.blk_coins), if (coinKeys.isEmpty()) "auto-select" else "${coinKeys.size} selected · ${Blake.btc(selectedSats)} ${Blake.RUNE}")
@@ -540,8 +540,8 @@ private fun SpendableCard(coinKeys: Set<String>, selectedSats: Long, spendable: 
         Spacer(Modifier.height(4.dp))
         Text("${Blake.btc(if (cc) selectedSats else spendable)} ${Blake.RUNE}", style = Blake.mono(18f, FontWeight.ExtraBold), color = Blake.ok)
         Spacer(Modifier.height(4.dp))
-        Text(if (cc) "Only the selected coin${if (coinKeys.size == 1) "" else "s"} is used — the rest of your wallet (${Blake.btc(spendable)} ${Blake.RUNE}) stays untouched. Any change returns to the same address."
-             else "Only mature mined coins can be sent. Locked ${Blake.btc(locked)} ${Blake.RUNE} stays put.",
+        Text(if (cc) stringResource(R.string.blk_only_the_selected_coins_is_used_the_rest, Blake.btc(spendable), Blake.RUNE)
+             else stringResource(R.string.blk_only_mature_mined_coins_can_be_sent_lock, Blake.btc(locked), Blake.RUNE),
             style = Blake.mono(8f), color = if (cc) Blake.pp else Blake.faint)
     }
 }
@@ -593,7 +593,7 @@ private fun SendResultScreen(r: WizardResult, onCopy: (String) -> Unit, onClose:
             }
         }
         Spacer(Modifier.height(12.dp))
-        Text(if (r.ricochet) "${r.txids.size}-tx chain broadcast to BLAKE2b." else "Broadcast to BLAKE2b.",
+        Text(if (r.ricochet) stringResource(R.string.blk_tx_chain_broadcast_to_blake2b, r.txids.size) else "Broadcast to BLAKE2b.",
             style = Blake.mono(10f), color = Blake.ppDim)
         Spacer(Modifier.height(12.dp))
         r.txids.forEachIndexed { i, t ->
@@ -656,7 +656,7 @@ private fun shortAddr(s: String): String = if (s.length <= 22) s else s.take(12)
 private fun amountSubtitle(unit: SendUnit, sendMax: Boolean, sats: Long, overspend: Boolean, ccy: String): String {
     if (overspend) return stringResource(R.string.blk_more_than_you_can_spend)
     if (sats <= 0) return if (unit == SendUnit.BTC) stringResource(R.string.blk_enter_an_amount_in) else stringResource(R.string.blk_enter_an_amount_in_sats)
-    val other = if (unit == SendUnit.BTC) "${"%,d".format(sats)} sats" else "${Blake.btc(sats)} ᛒ"
+    val other = if (unit == SendUnit.BTC) stringResource(R.string.blk_sats_2, "%,d".format(sats)) else "${Blake.btc(sats)} ᛒ"
     val fiat = BlakePrice.fiatLabel(sats)
     return if (fiat != null) "$other · $fiat $ccy" else other
 }

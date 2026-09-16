@@ -93,7 +93,7 @@ fun BlakeVanityScreen(onClose: () -> Unit) {
                     }
                     Spacer(Modifier.height(8.dp))
                     if (pattern.isNotEmpty() && !valid) Text(stringResource(R.string.blk_only_base58_chars_no_0_o_i_l), style = Blake.mono(8f), color = Blake.danger)
-                    else if (valid) Text("≈ ${estimate(pattern)} to find. Two entropy steps first.", style = Blake.mono(8f), color = Blake.faint)
+                    else if (valid) Text(stringResource(R.string.blk_to_find_two_entropy_steps_first, estimate(pattern)), style = Blake.mono(8f), color = Blake.faint)
                     Spacer(Modifier.height(12.dp))
                     vBtn(stringResource(R.string.blk_next_harden_entropy), enabled = valid, filled = true) { entropy.feedPattern(pattern); step = VStep.MOTION }
                 }
@@ -138,7 +138,7 @@ fun BlakeVanityScreen(onClose: () -> Unit) {
                             Spacer(Modifier.weight(1f))
                             BlakeStat("${gen.rate.toInt()}", "keys/sec")
                         }
-                        if (gen.running) { Spacer(Modifier.height(8.dp)); Text("⟳ grinding for 1$pattern…", style = Blake.mono(9f), color = Blake.pp) }
+                        if (gen.running) { Spacer(Modifier.height(8.dp)); Text(stringResource(R.string.blk_grinding_for_1, pattern), style = Blake.mono(9f), color = Blake.pp) }
                     }
                     val m = gen.match
                     if (m != null) {
@@ -176,7 +176,7 @@ fun BlakeVanityScreen(onClose: () -> Unit) {
 @Composable
 private fun stepLabel(n: Int, title: String) {
     Column {
-        Text("STEP $n OF 3", style = Blake.mono(9f), color = Blake.ppDim, letterSpacing = 3.sp)
+        Text(stringResource(R.string.blk_step_of_3, n), style = Blake.mono(9f), color = Blake.ppDim, letterSpacing = 3.sp)
         Text(title, style = Blake.mono(13f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 1.sp)
     }
 }

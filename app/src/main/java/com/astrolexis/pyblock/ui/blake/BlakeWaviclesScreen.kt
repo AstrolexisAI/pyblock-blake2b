@@ -98,7 +98,7 @@ fun BlakeWaviclesScreen() {
             val stratumPct = stats?.pool?.stratumFeeBps?.let { it / 100.0 }
             Text(
                 if (ownPct != null && stratumPct != null)
-                    "DATUM · bring your own node · ${wpct(ownPct)} fee · ${wpct(stratumPct)} via our stratum"
+                    stringResource(R.string.blk_datum_bring_your_own_node_fee_via_our_st, wpct(ownPct), wpct(stratumPct))
                 else stringResource(R.string.blk_datum_bring_your_own_node),
                 style = Blake.mono(10f), color = Blake.ppDim)
             Spacer(Modifier.height(22.dp))
@@ -132,7 +132,7 @@ fun BlakeWaviclesScreen() {
                 kvRow("TO THE WINDOW", "${Blake.btc(maxOf(0L, value - fee))} ${Blake.RUNE}", Blake.wave)
                 // Measured from THIS sample rather than assumed: the blend of the two fee paths moves.
                 kvRow(if (value > 0) "POOL FEE (${String.format(java.util.Locale.US, "%.2f%%", fee * 100.0 / value)})" else "POOL FEE",
-                    "$fee sats", Blake.faint)
+                    stringResource(R.string.blk_sats_2, fee), Blake.faint)
                 Spacer(Modifier.height(8.dp))
                 val fill = (w?.fillPercent ?: 0.0).coerceIn(0.0, 1.0)
                 Row(Modifier.fillMaxWidth().height(10.dp).background(Blake.line)) {
@@ -140,7 +140,7 @@ fun BlakeWaviclesScreen() {
                     Box(Modifier.fillMaxHeight().weight((1f - fill.toFloat()).coerceAtLeast(0.0001f)))
                 }
                 Spacer(Modifier.height(4.dp))
-                Text("window ${"%.0f".format(fill * 100)}% full · 8× network difficulty (TIDES)",
+                Text(stringResource(R.string.blk_window_full_8_network_difficulty_tides, "%.0f".format(fill * 100)),
                     style = Blake.mono(8f), color = Blake.faint)
                 Spacer(Modifier.height(8.dp))
                 // The table is keyed by the stratum username, and some rigs are pointed here with a
@@ -160,7 +160,7 @@ fun BlakeWaviclesScreen() {
                             Spacer(Modifier.width(8.dp))
                             Column(Modifier.weight(1f)) {
                                 Text(m.identity ?: "anon", style = Blake.mono(9f), color = Blake.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                m.lastShareS?.let { Text("last share ${it}s ago", style = Blake.mono(7f), color = Blake.faint) }
+                                m.lastShareS?.let { Text(stringResource(R.string.blk_last_share_s_ago, it), style = Blake.mono(7f), color = Blake.faint) }
                             }
                             Spacer(Modifier.width(8.dp))
                             Column(horizontalAlignment = Alignment.End) {
@@ -173,7 +173,7 @@ fun BlakeWaviclesScreen() {
                     }
                     if (unpayable > 0) {
                         Spacer(Modifier.height(6.dp))
-                        Text("$unpayable miner${if (unpayable == 1) "" else "s"} hidden: their stratum username isn't a payout address, so the pool has nowhere to pay them.",
+                        Text(stringResource(R.string.blk_miners_hidden_their_stratum_username_isn, unpayable),
                             style = Blake.mono(7f), color = Blake.faint)
                     }
                 }
@@ -189,14 +189,14 @@ fun BlakeWaviclesScreen() {
                 Spacer(Modifier.height(6.dp))
                 val carry = stats?.wavicles?.carryTotalSats ?: 0L
                 if (stats?.wavicles?.carryForward == true && carry > 0) {
-                    Text("Legacy carry from the earlier rule: $carry sats",
+                    Text(stringResource(R.string.blk_legacy_carry_from_the_earlier_rule_sats, carry),
                         style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.warn)
                 }
                 Text(stringResource(R.string.blk_nothing_is_held_back_what_a_coinbase_can),
                     style = Blake.mono(8f), color = Blake.faint)
                 stats?.wavicles?.lastSnapshot?.let {
                     Spacer(Modifier.height(4.dp))
-                    Text("last snapshot ${it.take(10)}…", style = Blake.mono(8f), color = Blake.wave,
+                    Text(stringResource(R.string.blk_last_snapshot, it.take(10)), style = Blake.mono(8f), color = Blake.wave,
                         modifier = Modifier.clickableNoRipple { clip.setText(AnnotatedString(it)) })
                 }
             }
@@ -210,7 +210,7 @@ fun BlakeWaviclesScreen() {
                 val strat = stats?.pool?.stratumFeeBps?.let { it / 100.0 }
                 Text(
                     if (own != null && strat != null)
-                        "${wpct(100 - own)} of every block goes to the work window — split by share of work (TIDES), paid in that block's coinbase. The fee is ${wpct(own)} when you bring your own node, ${wpct(strat)} when the block comes through PyBLØCK's stratum."
+                        stringResource(R.string.blk_of_every_block_goes_to_the_work_window_s, wpct(100 - own), wpct(own), wpct(strat))
                     else stringResource(R.string.blk_every_block_goes_to_the_work_window_spli),
                     style = Blake.mono(9f), color = Blake.fg)
                 Spacer(Modifier.height(6.dp))

@@ -114,7 +114,7 @@ fun BlakePoolScreen() {
             Spacer(Modifier.height(8.dp))
             val poolEvent by WalletEvents.current.collectAsState()
             // A found block borrows this line for a few seconds; otherwise it states the timechain.
-            Text(poolEvent?.let { "${it.glyph} ${it.text}" } ?: "BLAKE2b · timechain ${status?.blockHeight?.let { "#$it" } ?: "—"}",
+            Text(poolEvent?.let { "${it.glyph} ${it.text}" } ?: stringResource(R.string.blk_blake2b_timechain, status?.blockHeight?.let { "#$it" } ?: "—"),
                 style = Blake.mono(10f), color = Blake.ppDim, letterSpacing = 1.sp)
 
             Spacer(Modifier.height(22.dp))
@@ -257,7 +257,7 @@ private fun BlockDetailDialog(b: BlakeApi.Block, tip: Int, serverFlagship: Strin
     val isPrimary = b.stratum?.lowercase() == BlakeFork.primaryStratum(tip, serverFlagship)
     val accent = stratumColor(b.stratum, tip, serverFlagship)
 
-    sheetBox("BLOCK #${b.height}", accent, onClose) {
+    sheetBox(stringResource(R.string.blk_block, b.height), accent, onClose) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(b.stratum?.uppercase() ?: "—", style = Blake.mono(10f, FontWeight.ExtraBold), color = accent, letterSpacing = 1.sp)
             if (isPrimary) { Spacer(Modifier.size(6.dp)); Text(stringResource(R.string.blk_flagship), style = Blake.mono(8f), color = Blake.faint) }
@@ -271,7 +271,7 @@ private fun BlockDetailDialog(b: BlakeApi.Block, tip: Int, serverFlagship: Strin
         b.protocolName?.takeIf { it.lowercase() != b.stratum?.lowercase() }?.let { kv(stringResource(R.string.blk_protocol), it, Blake.fg) }
         detail?.architect?.takeIf { it.isNotBlank() }?.let {
             kv(if (b.stratum?.lowercase() == "wavicles") "BUILT BY" else "ARCHITECT",
-               if (b.stratum?.lowercase() == "wavicles") "$it's node" else it, Blake.fg)
+               if (b.stratum?.lowercase() == "wavicles") stringResource(R.string.blk_s_node, it) else it, Blake.fg)
         }
         kv(stringResource(R.string.blk_time), b.timestamp?.let { relTime(ctx, it) } ?: "—", Blake.fg)
         Spacer(Modifier.height(10.dp))
@@ -299,7 +299,7 @@ private fun BlockDetailDialog(b: BlakeApi.Block, tip: Int, serverFlagship: Strin
                 Box(Modifier.fillMaxWidth().height(1.dp).background(Blake.line))
             }
             Spacer(Modifier.height(4.dp))
-            Text("${outs.size} output(s) · shared coinbase", style = Blake.mono(8f), color = Blake.faint)
+            Text(stringResource(R.string.blk_output_s_shared_coinbase, outs.size), style = Blake.mono(8f), color = Blake.faint)
         } else if (loadingSplit) {
             Text(stringResource(R.string.blk_loading_split), style = Blake.mono(9f), color = Blake.faint)
         } else {
@@ -320,9 +320,9 @@ private fun relTime(ctx: android.content.Context, ts: Double): String {
     val s = System.currentTimeMillis() / 1000.0 - ts
     return when {
         s < 60 -> ctx.getString(R.string.blk_just_now)
-        s < 3600 -> "${(s / 60).toInt()}m ago"
-        s < 86400 -> "${(s / 3600).toInt()}h ago"
-        else -> "${(s / 86400).toInt()}d ago"
+        s < 3600 -> com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_m_ago, (s / 60).toInt())
+        s < 86400 -> com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_h_ago, (s / 3600).toInt())
+        else -> com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_d_ago, (s / 86400).toInt())
     }
 }
 
