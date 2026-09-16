@@ -362,12 +362,14 @@ private fun poolCard(p: BlakeMiner.PoolEntry, match: BlakeMiner.PrimeMatch? = nu
             Box(Modifier.size(6.dp).background(if (p.live == true) Blake.ok else Blake.faint, CircleShape))
             Spacer(Modifier.width(6.dp))
             if (isPrime) { AnsuzRune(12.dp, Blake.datum); Spacer(Modifier.width(6.dp)) }
-            // One line, always: the name wrapped as "CHIRP-/PRIME" once. The rune and the colour
-            // already say Prime, so there is no tag on the right.
-            Text(p.label ?: p.pool.uppercase(), style = Blake.mono(11f, FontWeight.ExtraBold), color = poolColor(p.pool), letterSpacing = 2.sp, maxLines = 1, softWrap = false)
+            // The rune, the colour and the DATUM tag already say Prime: the name is the product
+            // alone ("CHIRP"), so it never wraps as "CHIRP-/PRIME".
+            val title = if (isPrime) p.pool.removeSuffix("_prime").uppercase() else (p.label ?: p.pool.uppercase())
+            Text(title, style = Blake.mono(11f, FontWeight.ExtraBold), color = poolColor(p.pool), letterSpacing = 2.sp, maxLines = 1, softWrap = false)
             p.port?.takeIf { it > 0 }?.let { Spacer(Modifier.width(6.dp)); Text(":$it", style = Blake.mono(9f), color = Blake.faint) }
             Spacer(Modifier.weight(1f))
-            if (!isPrime) p.sharePct?.takeIf { it > 0 }?.let { Text("%.1f%% of pool".format(java.util.Locale.US, it), style = Blake.mono(8f), color = Blake.ppDim) }
+            if (isPrime) Text(stringResource(R.string.blk_datum_your_gateway), style = Blake.mono(8f), color = Blake.datum, maxLines = 1, softWrap = false)
+            else p.sharePct?.takeIf { it > 0 }?.let { Text("%.1f%% of pool".format(java.util.Locale.US, it), style = Blake.mono(8f), color = Blake.ppDim) }
         }
         Spacer(Modifier.height(10.dp))
         Row(Modifier.fillMaxWidth()) {
@@ -441,9 +443,10 @@ private fun primeCard(m: BlakeMiner.PrimeMatch) {
             Box(Modifier.size(6.dp).background(if (m.live) Blake.ok else Blake.faint, CircleShape))
             Spacer(Modifier.width(6.dp))
             AnsuzRune(12.dp, Blake.datum); Spacer(Modifier.width(6.dp))
-            Text(if (m.product == "chirp") "CHIRP-PRIME" else "CAROUSEL-PRIME", style = Blake.mono(11f, FontWeight.ExtraBold), color = poolColor(m.product), letterSpacing = 2.sp, maxLines = 1, softWrap = false)
+            Text(m.product.uppercase(), style = Blake.mono(11f, FontWeight.ExtraBold), color = poolColor(m.product), letterSpacing = 2.sp, maxLines = 1, softWrap = false)
             m.port?.let { Spacer(Modifier.width(6.dp)); Text(":$it", style = Blake.mono(9f), color = Blake.faint) }
             Spacer(Modifier.weight(1f))
+            Text(stringResource(R.string.blk_datum_your_gateway), style = Blake.mono(8f), color = Blake.datum, maxLines = 1, softWrap = false)
         }
         Spacer(Modifier.height(10.dp))
         Row(Modifier.fillMaxWidth()) {
