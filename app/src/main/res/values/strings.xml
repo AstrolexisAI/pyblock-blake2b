@@ -913,6 +913,7 @@
     <string name="blk_blocks_payouts">Blocks &amp; payouts</string>
     <string name="blk_broadcasting">BROADCASTING…</string>
     <string name="blk_built_by">BUILT BY</string>
+    <string name="blk_by_weight_tenure_power_on_chirp_prime_ow">by weight · tenure + power · ᚨ = on CHIRP-PRIME (own gateway)</string>
     <string name="blk_can_t_connect">Can\'t connect: %1$s</string>
     <string name="blk_can_t_reach_the_server">⚠ can\'t reach the server.</string>
     <string name="blk_can_t_reach_the_server_2">Can\'t reach the server.</string>
@@ -971,6 +972,7 @@
     <string name="blk_creating_invoice">CREATING INVOICE…</string>
     <string name="blk_currency">CURRENCY</string>
     <string name="blk_custom">CUSTOM</string>
+    <string name="blk_d">%1$sd</string>
     <string name="blk_d_ago">%1$sd ago</string>
     <string name="blk_datum">DATUM</string>
     <string name="blk_datum_bring_your_own_node">DATUM · bring your own node</string>

@@ -52,6 +52,7 @@
     <string name="blk_blocks_payouts">区块与支付</string>
     <string name="blk_broadcasting">广播中…</string>
     <string name="blk_built_by">开发者</string>
+    <string name="blk_by_weight_tenure_power_on_chirp_prime_ow">按权重 · 资历 + 算力 · ᚨ = 在 CHIRP-PRIME（自有网关）</string>
     <string name="blk_can_t_connect">无法连接：%1$s</string>
     <string name="blk_can_t_reach_the_server">⚠ 无法连接服务器。</string>
     <string name="blk_can_t_reach_the_server_2">无法连接服务器。</string>
@@ -110,6 +111,7 @@
     <string name="blk_creating_invoice">正在创建发票…</string>
     <string name="blk_currency">法币</string>
     <string name="blk_custom">自定义</string>
+    <string name="blk_d">%1$s天</string>
     <string name="blk_d_ago">%1$s天前</string>
     <string name="blk_datum">DATUM</string>
     <string name="blk_datum_bring_your_own_node">DATUM · 自带节点</string>

@@ -909,6 +909,7 @@
     <string name="blk_blocks_payouts">Blocchi e pagamenti</string>
     <string name="blk_broadcasting">TRASMISSIONE…</string>
     <string name="blk_built_by">REALIZZATO DA</string>
+    <string name="blk_by_weight_tenure_power_on_chirp_prime_ow">per peso · anzianità + potenza · ᚨ = su CHIRP-PRIME (gateway proprio)</string>
     <string name="blk_can_t_connect">Impossibile connettersi: %1$s</string>
     <string name="blk_can_t_reach_the_server">⚠ server non raggiungibile.</string>
     <string name="blk_can_t_reach_the_server_2">Server non raggiungibile.</string>
@@ -967,6 +968,7 @@
     <string name="blk_creating_invoice">CREO L\'INVOICE…</string>
     <string name="blk_currency">VALUTA</string>
     <string name="blk_custom">PERSONALIZZATO</string>
+    <string name="blk_d">%1$sg</string>
     <string name="blk_d_ago">%1$sg fa</string>
     <string name="blk_datum">DATUM</string>
     <string name="blk_datum_bring_your_own_node">DATUM · porta il tuo nodo</string>

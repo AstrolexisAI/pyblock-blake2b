@@ -193,6 +193,14 @@ object BlakeApi {
     @Serializable
     private data class ChirpWorkersResp(val workers: List<ChirpWorker> = emptyList())
 
+    /** The syndicate registry (`mode=miners`): tenure and power per address — what the draw weighs.
+     *  The workers list only knows who is on the house stratum right now. */
+    @Serializable
+    data class ChirpMiner(val address: String? = null, val days: Double? = null, val power: Double? = null,
+                          val weight: Double? = null, val eligible: Boolean? = null, @SerialName("last_seen") val lastSeen: Long? = null)
+    @Serializable private data class PrimeRunnerRow(val identity: String? = null, @SerialName("last_share_s") val lastShareS: Int? = null)
+    @Serializable private data class PrimeRunnersResp(val runners: List<PrimeRunnerRow> = emptyList())
+
     // ---- Plumbing ----
 
     private suspend inline fun <reified T> get(path: String, crossinline deserializer: (String) -> T?): T? =
@@ -247,6 +255,13 @@ object BlakeApi {
     suspend fun chirpWorkers(): List<ChirpWorker>? =
         get("/chirp_api.php?chain=blake2b&mode=workers") {
             runCatching { json.decodeFromString<ChirpWorkersResp>(it).workers }.getOrNull()
+        }
+    suspend fun chirpMiners(): List<ChirpMiner>? =
+        get("/chirp_api.php?chain=blake2b&mode=miners") { runCatching { json.decodeFromString<List<ChirpMiner>>(it) }.getOrNull() }
+    /** Who is on CHIRP-PRIME (their own gateway): identity masked `6…4` → seconds since last share. */
+    suspend fun chirpPrimeRunners(): Map<String, Int>? =
+        get("/datum_modes_api.php?product=chirp") {
+            runCatching { json.decodeFromString<PrimeRunnersResp>(it).runners.mapNotNull { r -> r.identity?.takeIf { it.isNotEmpty() }?.let { it to (r.lastShareS ?: Int.MAX_VALUE) } }.toMap() }.getOrNull()
         }
 
     /** UTXOs for one address on blake2b. Returns null on failure/warming (retry — never a false 0). */

@@ -1,5 +1,6 @@
 package com.astrolexis.pyblock.ui.blake
 
+import com.astrolexis.pyblock.data.blake.BlakeMiner
 import com.astrolexis.pyblock.R
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
@@ -46,6 +47,8 @@ import kotlinx.coroutines.delay
 fun BlakeChirpScreen() {
     var pool by remember { mutableStateOf<BlakeApi.ChirpPool?>(null) }
     var workers by remember { mutableStateOf<List<BlakeApi.ChirpWorker>>(emptyList()) }
+    var miners by remember { mutableStateOf<List<BlakeApi.ChirpMiner>>(emptyList()) }
+    var prime by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     var showParticipants by remember { mutableStateOf(true) }
     var loaded by remember { mutableStateOf(false) }
     var refreshing by remember { mutableStateOf(false) }
@@ -54,6 +57,8 @@ fun BlakeChirpScreen() {
     val load: suspend () -> Unit = {
         (BlakeApi.chirpPool() ?: BlakeApi.chirpPool())?.let { pool = it }
         (BlakeApi.chirpWorkers() ?: BlakeApi.chirpWorkers())?.let { workers = it }
+        BlakeApi.chirpMiners()?.let { miners = it }
+        BlakeApi.chirpPrimeRunners()?.let { prime = it }
         loaded = true
     }
     LaunchedEffect(Unit) { while (true) { load(); delay(20_000) } }
@@ -93,19 +98,40 @@ fun BlakeChirpScreen() {
             }
 
             // Connected miners, newest-active first (by last share, not by power).
-            val online = workers.filter { it.connected }.sortedByDescending { it.lastShare ?: 0L }
+            // Everyone mining now — on the house stratum or on CHIRP-PRIME — in the draw's order:
+            // weight (tenure + power), then tenure, then power. The list used to be newest-share
+            // first, which said nothing about who stands where in the syndicate.
+            val reg = miners.mapNotNull { m -> m.address?.let { it to m } }.toMap()
+            val online: List<Participant> = run {
+                val seen = HashSet<String>(); val out = ArrayList<Participant>()
+                workers.forEach { w ->
+                    val name = w.name?.takeIf { it.isNotEmpty() } ?: return@forEach
+                    seen.add(name)
+                    val m = reg[name]; val pr = prime[BlakeMiner.masked(name)]
+                    val live = (pr ?: Int.MAX_VALUE) <= 600
+                    if (!w.connected && !live) return@forEach
+                    out.add(Participant(name, w.hashrateThs, m?.days, m?.weight ?: w.share ?: 0.0,
+                        w.eligible ?: m?.eligible ?: ((w.hashrateThs ?: 0.0) * 1_000_000.0 >= (pool?.minPower ?: 0.0)), pr != null, live, w.connected))
+                }
+                // On the Prime but not on the house stratum: the registry knows them (shared database).
+                miners.forEach { m ->
+                    val a = m.address ?: return@forEach
+                    if (a in seen) return@forEach
+                    val pr = prime[BlakeMiner.masked(a)] ?: return@forEach
+                    if (pr <= 600) out.add(Participant(a, null, m.days, m.weight ?: 0.0, m.eligible ?: false, true, true, false))
+                }
+                out.sortedWith(compareByDescending<Participant> { it.weight }.thenByDescending { it.days ?: 0.0 }.thenByDescending { it.hashrateThs ?: 0.0 })
+            }
 
             // BLOCK PARTICIPATION — eligible miners each hold a slice of the next block's
             // weighted reward split (white paper), sized by contribution. Eligibility is
             // server-authoritative when present, else approximated by the min-power floor.
             val minPowerMhs = pool?.minPower ?: 0.0
-            fun eligibleOf(w: BlakeApi.ChirpWorker): Boolean =
-                w.eligible ?: ((w.hashrateThs ?: 0.0) * 1_000_000.0 >= minPowerMhs)
-            fun weightOf(w: BlakeApi.ChirpWorker): Double = w.share ?: (w.hashrateThs ?: 0.0)
+            fun weightOf(w: Participant): Double = w.weight
             // The bar is ELIGIBLE miners only — those actually in the weighted reward split.
             // Miners that are connected but not yet eligible do NOT appear here.
-            val eligible = online.filter { eligibleOf(it) && weightOf(it) > 0 }.sortedByDescending { weightOf(it) }
-            val totalW = eligible.sumOf { weightOf(it) }
+            val eligible = online.filter { it.eligible && it.weight > 0 }
+            val totalW = eligible.sumOf { it.weight }
             if (online.isNotEmpty()) {
                 Spacer(Modifier.height(22.dp))
                 Column(Modifier.fillMaxWidth().blakeCard()) {
@@ -120,7 +146,7 @@ fun BlakeChirpScreen() {
                         Spacer(Modifier.height(12.dp))
                         Row(Modifier.fillMaxWidth().height(16.dp)) {
                             eligible.forEachIndexed { i, w ->
-                                Box(Modifier.weight((weightOf(w) / totalW).toFloat()).fillMaxHeight().background(participationColor(i)))
+                                Box(Modifier.weight((w.weight / totalW).toFloat()).fillMaxHeight().background(participationColor(i)))
                             }
                         }
                         Spacer(Modifier.height(10.dp))
@@ -149,14 +175,19 @@ fun BlakeChirpScreen() {
                     }
                     if (showParticipants) {
                         Spacer(Modifier.height(10.dp))
+                        Text(stringResource(R.string.blk_by_weight_tenure_power_on_chirp_prime_ow), style = Blake.mono(7f), color = Blake.faint)
+                        Spacer(Modifier.height(4.dp))
                         online.forEach { w ->
                             Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Box(Modifier.size(5.dp).background(Blake.ok, CircleShape))
-                                Spacer(Modifier.width(8.dp))
-                                Text(w.name ?: "anon", style = Blake.mono(10f), color = Blake.fg,
+                                Box(Modifier.size(5.dp).background(if (w.connected || w.primeLive) Blake.ok else Blake.faint, CircleShape))
+                                Spacer(Modifier.width(6.dp))
+                                // The mark of running your own gateway: their node speaks the block.
+                                if (w.onPrime) { AnsuzRune(11.dp, Blake.datum); Spacer(Modifier.width(4.dp)) }
+                                Text(w.name, style = Blake.mono(10f), color = if (w.eligible) Blake.fg else Blake.ppDim,
                                     maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                                w.days?.let { Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.blk_d, it.toInt().toString()), style = Blake.mono(8f), color = Blake.faint, maxLines = 1, softWrap = false) }
                                 Spacer(Modifier.width(8.dp))
-                                Text(hr(w.hashrateThs), style = Blake.mono(10f), color = Blake.ppDim, maxLines = 1, softWrap = false)
+                                Text(w.hashrateThs?.let { hr(it) } ?: "·", style = Blake.mono(10f), color = Blake.ppDim, maxLines = 1, softWrap = false)
                             }
                         }
                     }
@@ -215,3 +246,8 @@ private fun powerStr(p: Double?): String {
 private fun pctText(v: Double): String =
     if (v == Math.rint(v)) String.format(java.util.Locale.US, "%.0f%%", v)
     else String.format(java.util.Locale.US, "%.1f%%", v)
+
+/** One row of the syndicate: the house stratum's view (hashrate, connected), the registry's
+ *  (tenure, weight, eligible) and the Prime's (on their own gateway), joined by address. */
+private data class Participant(val name: String, val hashrateThs: Double?, val days: Double?, val weight: Double,
+                               val eligible: Boolean, val onPrime: Boolean, val primeLive: Boolean, val connected: Boolean)
