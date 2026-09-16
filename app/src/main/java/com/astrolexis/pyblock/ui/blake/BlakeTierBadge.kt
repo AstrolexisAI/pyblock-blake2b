@@ -1,5 +1,7 @@
 package com.astrolexis.pyblock.ui.blake
 
+import com.astrolexis.pyblock.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.material3.Text
 import com.astrolexis.pyblock.ui.components.clickableNoRipple
 import androidx.compose.foundation.background
@@ -109,7 +111,7 @@ fun BlakeMembershipSheet(onClose: () -> Unit) {
     Dialog(onDismissRequest = onClose) {
         Column(Modifier.fillMaxWidth().background(Blake.ink, Blake.shape).border(1.dp, Blake.line, Blake.shape).padding(20.dp).verticalScroll(rememberScrollState())) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("MEMBERSHIP", style = Blake.mono(16f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 3.sp)
+                Text(stringResource(R.string.blk_membership), style = Blake.mono(16f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 3.sp)
                 Spacer(Modifier.weight(1f))
                 Text("✕", style = Blake.mono(18f), color = Blake.ppDim, modifier = Modifier.clickableNoRipple(onClose))
             }
@@ -121,8 +123,8 @@ fun BlakeMembershipSheet(onClose: () -> Unit) {
                 Spacer(Modifier.width(12.dp))
                 Column {
                     Text(when (tier) { "whale" -> "WHALE"; "pro" -> "PRO"; else -> "FREE" }, style = Blake.mono(18f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 2.sp)
-                    Text(if (tier == "free") "The runes you earn are yours on any tier. PRO and WHALE change how they are drawn, and what the app watches for you."
-                         else "Held by your account. Paid over Lightning, or granted.", style = Blake.mono(9f), color = Blake.ppDim)
+                    Text(if (tier == "free") stringResource(R.string.blk_the_runes_you_earn_are_yours_on_any_tier)
+                         else stringResource(R.string.blk_held_by_your_account_paid_over_lightning), style = Blake.mono(9f), color = Blake.ppDim)
                 }
             }
             Spacer(Modifier.height(12.dp))
@@ -138,7 +140,7 @@ fun BlakeMembershipSheet(onClose: () -> Unit) {
                 Spacer(Modifier.height(14.dp))
                 if (invoice == null) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf(false to "MONTHLY", true to "ANNUAL").forEach { (a, l) ->
+                        listOf(false to stringResource(R.string.blk_monthly), true to stringResource(R.string.blk_annual)).forEach { (a, l) ->
                             Text(l, style = Blake.mono(9f, FontWeight.ExtraBold), color = if (annual == a) Blake.bg else Blake.ppDim, letterSpacing = 1.sp, textAlign = TextAlign.Center,
                                 modifier = Modifier.weight(1f).then(if (annual == a) Modifier.background(Blake.pp, Blake.shape) else Modifier.border(1.dp, Blake.line, Blake.shape))
                                     .padding(vertical = 7.dp).clickableNoRipple { annual = a })
@@ -155,37 +157,37 @@ fun BlakeMembershipSheet(onClose: () -> Unit) {
                                         scope.launch {
                                             val r = ProRepo.purchase(p.id)
                                             if (r?.ok == true && !r.invoice.isNullOrBlank()) { invoice = r.invoice; purchaseId = r.purchaseId }
-                                            else error = r?.errors?.joinToString() ?: "Couldn't get an invoice. Try again."
+                                            else error = r?.errors?.joinToString() ?: ctx.getString(R.string.blk_couldn_t_get_an_invoice_try_again)
                                             busy = false
                                         }
                                     }, verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
                                     Text(name, style = Blake.mono(13f, FontWeight.ExtraBold), color = if (t == "whale") Blake.hero else Blake.pp, letterSpacing = 2.sp)
-                                    Text("${p.sats} sats · ${p.fiat} ${if (annual) "a year" else "a month"}", style = Blake.mono(9f), color = Blake.ppDim)
+                                    Text("${p.sats} sats · ${p.fiat} ${if (annual) stringResource(R.string.blk_a_year) else stringResource(R.string.blk_a_month)}", style = Blake.mono(9f), color = Blake.ppDim)
                                 }
-                                Text(if (busy) "…" else "PAY ▸", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.pp)
+                                Text(if (busy) "…" else stringResource(R.string.blk_pay), style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.pp)
                             }
                             Spacer(Modifier.height(8.dp))
                         }
                     }
-                    if (plans.isEmpty()) Text("Loading prices…", style = Blake.mono(9f), color = Blake.faint)
+                    if (plans.isEmpty()) Text(stringResource(R.string.blk_loading_prices), style = Blake.mono(9f), color = Blake.faint)
                 } else if (!paid) {
-                    Text("PAY WITH LIGHTNING", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
+                    Text(stringResource(R.string.blk_pay_with_lightning), style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
                     Spacer(Modifier.height(8.dp))
                     Box(Modifier.background(Blake.hero).padding(8.dp).align(Alignment.CenterHorizontally)) { QrCode(text = invoice!!.uppercase(), size = 220.dp) }
                     Spacer(Modifier.height(8.dp))
-                    Text("COPY INVOICE", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 1.sp, textAlign = TextAlign.Center,
+                    Text(stringResource(R.string.blk_copy_invoice), style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 1.sp, textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth().border(1.dp, Blake.pp.copy(alpha = 0.5f), Blake.shape).padding(vertical = 9.dp)
                             .clickableNoRipple { clip.setText(AnnotatedString(invoice!!)); com.astrolexis.pyblock.ui.Haptics.tap() })
                     Spacer(Modifier.height(6.dp))
-                    Text("Waiting for the payment. The tier lands on this account the moment it is paid.", style = Blake.mono(8f), color = Blake.faint)
+                    Text(stringResource(R.string.blk_waiting_for_the_payment_the_tier_lands_o), style = Blake.mono(8f), color = Blake.faint)
                 } else {
-                    Text("Paid. Welcome.", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ok)
+                    Text(stringResource(R.string.blk_paid_welcome), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ok)
                 }
                 error?.let { Spacer(Modifier.height(6.dp)); Text(it, style = Blake.mono(9f), color = Blake.danger) }
             }
             Spacer(Modifier.height(12.dp))
-            Text("REFRESH", style = Blake.mono(8f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 1.sp,
+            Text(stringResource(R.string.blk_refresh), style = Blake.mono(8f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 1.sp,
                 modifier = Modifier.clickableNoRipple { scope.launch { EntitlementsStore.refresh(); tier = EntitlementsStore.tierTag ?: "free" } })
         }
     }

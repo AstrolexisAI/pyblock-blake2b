@@ -1,5 +1,7 @@
 package com.astrolexis.pyblock.ui.blake
 
+import com.astrolexis.pyblock.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -51,17 +53,17 @@ fun BlakeDMInbox(client: NostrClient, onOpen: (String) -> Unit, onClose: () -> U
             Text("✕", style = Blake.mono(20f), color = Blake.ppDim, modifier = Modifier.clickableNoRipple(onClose))
             Spacer(Modifier.width(12.dp))
             Column {
-                Text("PRIVATE", style = Blake.mono(16f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 2.sp)
-                Text("end-to-end encrypted (NIP-44)", style = Blake.mono(8f), color = Blake.faint)
+                Text(stringResource(R.string.blk_private), style = Blake.mono(16f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 2.sp)
+                Text(stringResource(R.string.blk_end_to_end_encrypted_nip_44), style = Blake.mono(8f), color = Blake.faint)
             }
         }
         Box(Modifier.fillMaxWidth().size(1.dp).background(Blake.line))
         if (peers.isEmpty()) {
             Column(Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Spacer(Modifier.size(40.dp))
-                Text("No messages yet.", style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.ppDim)
+                Text(stringResource(R.string.blk_no_messages_yet), style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.ppDim)
                 Spacer(Modifier.size(6.dp))
-                Text("Long-press a message in COMMUNITY → MESSAGE to start a private thread.", style = Blake.mono(9f), color = Blake.faint, textAlign = TextAlign.Center)
+                Text(stringResource(R.string.blk_long_press_a_message_in_community_messag), style = Blake.mono(9f), color = Blake.faint, textAlign = TextAlign.Center)
             }
         } else LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(peers, key = { it }) { peer ->
@@ -126,7 +128,7 @@ fun BlakeDMThread(client: NostrClient, peer: String, onClose: () -> Unit) {
             Spacer(Modifier.width(8.dp))
             Column {
                 Text(client.name(peer), style = Blake.mono(14f, FontWeight.ExtraBold), color = Blake.hero, maxLines = 1)
-                Text("end-to-end encrypted", style = Blake.mono(7f), color = Blake.faint)
+                Text(stringResource(R.string.blk_end_to_end_encrypted), style = Blake.mono(7f), color = Blake.faint)
             }
         }
         Box(Modifier.fillMaxWidth().size(1.dp).background(Blake.line))
@@ -139,7 +141,7 @@ fun BlakeDMThread(client: NostrClient, peer: String, onClose: () -> Unit) {
                     val foreign = ChatMedia.foreignImageUrl(m.text)
                     when {
                         foreign != null -> Column(Modifier.background(Blake.ink, Blake.shape).border(1.dp, Blake.warn.copy(alpha = 0.5f), Blake.shape).padding(10.dp)) {
-                            Text("image from another site", style = Blake.mono(9f), color = Blake.warn)
+                            Text(stringResource(R.string.blk_image_from_another_site), style = Blake.mono(9f), color = Blake.warn)
                             Text(foreign, style = Blake.mono(7f), color = Blake.faint, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                         }
                         img != null -> coil.compose.AsyncImage(model = img, contentDescription = null,
@@ -160,10 +162,10 @@ fun BlakeDMThread(client: NostrClient, peer: String, onClose: () -> Unit) {
             BasicTextField(value = draft, onValueChange = { draft = it },
                 textStyle = Blake.mono(12f).copy(color = Blake.fg), cursorBrush = SolidColor(Blake.pp),
                 modifier = Modifier.weight(1f).border(1.dp, Blake.line, Blake.shape).padding(10.dp),
-                decorationBox = { inner -> if (draft.isEmpty()) Text("encrypted message…", style = Blake.mono(12f), color = Blake.faint); inner() })
+                decorationBox = { inner -> if (draft.isEmpty()) Text(stringResource(R.string.blk_encrypted_message), style = Blake.mono(12f), color = Blake.faint); inner() })
             Spacer(Modifier.width(8.dp))
             val canSend = draft.isNotBlank()
-            Text("SEND", style = Blake.mono(11f, FontWeight.ExtraBold), color = if (canSend) Blake.bg else Blake.faint,
+            Text(stringResource(R.string.blk_send), style = Blake.mono(11f, FontWeight.ExtraBold), color = if (canSend) Blake.bg else Blake.faint,
                 modifier = Modifier.then(if (canSend) Modifier.background(Blake.pp, Blake.shape) else Modifier.border(1.dp, Blake.line, Blake.shape))
                     .padding(horizontal = 14.dp, vertical = 11.dp)
                     .clickableNoRipple { if (canSend) { client.sendDM(peer, draft.trim()); draft = ""; com.astrolexis.pyblock.ui.Haptics.tap() } })

@@ -1,5 +1,7 @@
 package com.astrolexis.pyblock.ui.blake
 
+import com.astrolexis.pyblock.R
+import androidx.compose.ui.res.stringResource
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -151,9 +153,9 @@ fun BlakeChatScreen(client: NostrClient, onPay: (String, Long?, String) -> Unit)
                     Text("✉ DMS $unreadDMs", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.bg, maxLines = 1, softWrap = false,
                         modifier = Modifier.background(Blake.pp, Blake.shape).padding(horizontal = 6.dp, vertical = 2.dp).clickableNoRipple { showDMs = true })
                 else
-                    Text("✉ DMS", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.pp, maxLines = 1, softWrap = false, modifier = Modifier.clickableNoRipple { showDMs = true })
+                    Text(stringResource(R.string.blk_dms), style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.pp, maxLines = 1, softWrap = false, modifier = Modifier.clickableNoRipple { showDMs = true })
                 Spacer(Modifier.width(12.dp))
-                Text("⚙ NAME", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.pp, maxLines = 1, softWrap = false, modifier = Modifier.clickableNoRipple { showName = true })
+                Text(stringResource(R.string.blk_name), style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.pp, maxLines = 1, softWrap = false, modifier = Modifier.clickableNoRipple { showName = true })
             }
             Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -172,7 +174,7 @@ fun BlakeChatScreen(client: NostrClient, onPay: (String, Long?, String) -> Unit)
             Column(Modifier.weight(1f).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                 RuneGlyph(Rune.LAGUZ, forge = RuneForge.TEMPERED, ink = Blake.hero, size = 56.dp)
                 Spacer(Modifier.height(14.dp))
-                Text("THE LOUNGE", style = Blake.mono(14f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 3.sp)
+                Text(stringResource(R.string.blk_the_lounge), style = Blake.mono(14f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 3.sp)
                 Text("The WHALE room. ${state.whaleMessages.size} messages inside.", style = Blake.mono(9f), color = Blake.ppDim)
             }
         } else
@@ -197,7 +199,7 @@ fun BlakeChatScreen(client: NostrClient, onPay: (String, Long?, String) -> Unit)
                 }
             }
             if (!atBottom && unread > 0) {
-                Text(if (unread == 1) "↓ 1 NEW MESSAGE" else "↓ $unread NEW MESSAGES",
+                Text(if (unread == 1) stringResource(R.string.blk_s_1_new_message) else "↓ $unread NEW MESSAGES",
                     style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.bg, letterSpacing = 1.sp,
                     modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp)
                         .background(Blake.pp, Blake.shape).padding(horizontal = 12.dp, vertical = 7.dp)
@@ -215,10 +217,10 @@ fun BlakeChatScreen(client: NostrClient, onPay: (String, Long?, String) -> Unit)
             BasicTextField(value = draft, onValueChange = { draft = it },
                 textStyle = Blake.mono(12f).copy(color = Blake.fg), cursorBrush = SolidColor(Blake.pp),
                 modifier = Modifier.weight(1f).border(1.dp, Blake.line, Blake.shape).padding(10.dp),
-                decorationBox = { inner -> if (draft.isEmpty()) Text("message…", style = Blake.mono(12f), color = Blake.faint); inner() })
+                decorationBox = { inner -> if (draft.isEmpty()) Text(stringResource(R.string.blk_message), style = Blake.mono(12f), color = Blake.faint); inner() })
             Spacer(Modifier.width(8.dp))
             val canSend = draft.isNotBlank()
-            Text("SEND", style = Blake.mono(11f, FontWeight.ExtraBold), color = if (canSend) Blake.bg else Blake.faint,
+            Text(stringResource(R.string.blk_send), style = Blake.mono(11f, FontWeight.ExtraBold), color = if (canSend) Blake.bg else Blake.faint,
                 modifier = Modifier.then(if (canSend) Modifier.background(Blake.pp, Blake.shape) else Modifier.border(1.dp, Blake.line, Blake.shape))
                     .padding(horizontal = 14.dp, vertical = 11.dp)
                     .clickableNoRipple { if (canSend) { client.post(draft.trim(), toWhaleLounge = lounge); draft = ""; com.astrolexis.pyblock.ui.Haptics.tap() } })
@@ -263,7 +265,7 @@ private fun Bubble(m: NostrEvent, mine: Boolean, name: String?, marks: List<com.
             // Hosted somewhere we don't load from. Loading it would hand that host the reader's IP
             // address, so it stays a link the reader can choose to open.
             Column(Modifier.background(Blake.ink, Blake.shape).border(1.dp, Blake.warn.copy(alpha = 0.5f), Blake.shape).padding(10.dp)) {
-                Text("image from another site", style = Blake.mono(9f), color = Blake.warn)
+                Text(stringResource(R.string.blk_image_from_another_site), style = Blake.mono(9f), color = Blake.warn)
                 Text(foreign, style = Blake.mono(7f), color = Blake.faint, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             }
         } else if (imgUrl != null) {
@@ -303,9 +305,9 @@ private fun Bubble(m: NostrEvent, mine: Boolean, name: String?, marks: List<com.
             }
             if (!mine) {
                 Spacer(Modifier.size(14.dp))
-                Text("MESSAGE", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.pp, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).clickableNoRipple { onDm(); menu = false })
-                Text("REPORT MESSAGE", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.warn, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).clickableNoRipple { onReport(); menu = false })
-                Text("BLOCK USER", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.danger, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).clickableNoRipple { onBlock(); menu = false })
+                Text(stringResource(R.string.blk_message_2), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.pp, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).clickableNoRipple { onDm(); menu = false })
+                Text(stringResource(R.string.blk_report_message), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.warn, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).clickableNoRipple { onReport(); menu = false })
+                Text(stringResource(R.string.blk_block_user), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.danger, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).clickableNoRipple { onBlock(); menu = false })
             }
         }
     }
@@ -319,7 +321,7 @@ private fun NameSheet(client: NostrClient, onClose: () -> Unit) {
         Column(Modifier.fillMaxWidth().background(Blake.ink, Blake.shape).border(1.dp, Blake.line, Blake.shape).padding(20.dp)
             .verticalScroll(androidx.compose.foundation.rememberScrollState())) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("YOUR NAME", style = Blake.mono(16f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 2.sp)
+                Text(stringResource(R.string.blk_your_name), style = Blake.mono(16f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 2.sp)
                 Spacer(Modifier.weight(1f))
                 Text("✕", style = Blake.mono(18f), color = Blake.ppDim, modifier = Modifier.clickableNoRipple(onClose))
             }
@@ -327,7 +329,7 @@ private fun NameSheet(client: NostrClient, onClose: () -> Unit) {
             BasicTextField(value = name, onValueChange = { name = it }, singleLine = true,
                 textStyle = Blake.mono(13f).copy(color = Blake.fg), cursorBrush = SolidColor(Blake.pp),
                 modifier = Modifier.fillMaxWidth().border(1.dp, Blake.line, Blake.shape).padding(10.dp),
-                decorationBox = { inner -> if (name.isEmpty()) Text("display name", style = Blake.mono(13f), color = Blake.faint); inner() })
+                decorationBox = { inner -> if (name.isEmpty()) Text(stringResource(R.string.blk_display_name), style = Blake.mono(13f), color = Blake.faint); inner() })
             Spacer(Modifier.size(14.dp))
             val isPro = com.astrolexis.pyblock.data.store.EntitlementsStore.isPro
             val isWhale = com.astrolexis.pyblock.data.store.EntitlementsStore.isWhale
@@ -336,27 +338,27 @@ private fun NameSheet(client: NostrClient, onClose: () -> Unit) {
             var picked by remember { mutableStateOf(parseSigil(Nostr.sigil(ctx))) }
             val inkNow = paletteColor(color) ?: Blake.pp
             // Purple is free. The other inks are PRO — the first thing the forge sells.
-            Text("INK", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
+            Text(stringResource(R.string.blk_ink), style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
             Spacer(Modifier.size(6.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 listOf("pp", "hero", "ok", "warn", "danger").forEach { key ->
                     val locked = key != "pp" && !isPro
                     Box(Modifier.size(28.dp).background(paletteColor(key)!!, CircleShape).alpha(if (locked) 0.35f else 1f)
                         .border(if (color == key) 2.dp else 0.dp, Blake.hero, CircleShape)
-                        .clickableNoRipple { if (locked) toast(ctx, "The other inks are PRO.") else { color = key; client.setColor(key) } })
+                        .clickableNoRipple { if (locked) toast(ctx, ctx.getString(R.string.blk_the_other_inks_are_pro)) else { color = key; client.setColor(key) } })
                 }
             }
-            if (!isPro) Text("Purple is free. PRO opens the other inks.", style = Blake.mono(8f), color = Blake.faint)
+            if (!isPro) Text(stringResource(R.string.blk_purple_is_free_pro_opens_the_other_inks), style = Blake.mono(8f), color = Blake.faint)
             Spacer(Modifier.size(12.dp))
             // The forge: how your runes are drawn on everyone's screen. Tempered is the WHALE stroke.
-            Text("FORGE", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
+            Text(stringResource(R.string.blk_forge), style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
             Spacer(Modifier.size(6.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 listOf(Triple("engraved", "ENGRAVED", RuneForge.ENGRAVED), Triple("cast", "CAST", RuneForge.CAST), Triple("tempered", "TEMPERED", RuneForge.TEMPERED)).forEach { (key, label, f) ->
                     val locked = key == "tempered" && !isWhale
                     val on = forge == key
                     Column(Modifier.weight(1f).border(if (on) 2.dp else 1.dp, if (on) Blake.pp else Blake.line, Blake.shape).padding(vertical = 6.dp)
-                        .clickableNoRipple { if (locked) toast(ctx, "The tempered forge is WHALE.") else { forge = key; client.setForge(key) } },
+                        .clickableNoRipple { if (locked) toast(ctx, ctx.getString(R.string.blk_the_tempered_forge_is_whale)) else { forge = key; client.setForge(key) } },
                         horizontalAlignment = Alignment.CenterHorizontally) {
                         RuneGlyph(Rune.TIWAZ, forge = f, ink = inkNow, size = 30.dp, modifier = Modifier.alpha(if (locked) 0.35f else 1f))
                         Text(if (locked) "WHALE" else label, style = Blake.mono(7f, FontWeight.ExtraBold), color = if (locked) Blake.hero else if (on) Blake.pp else Blake.faint, letterSpacing = 1.sp)
@@ -367,7 +369,7 @@ private fun NameSheet(client: NostrClient, onClose: () -> Unit) {
             // The bindrune: composed from the base runes, nothing earned required. PRO three, WHALE four.
             val limit = if (isWhale) 4 else if (isPro) 3 else 0
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("SIGIL", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
+                Text(stringResource(R.string.blk_sigil), style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
                 Spacer(Modifier.weight(1f))
                 Text(if (limit == 0) "PRO" else "${picked.size} / $limit", style = Blake.mono(8f, FontWeight.ExtraBold), color = if (limit == 0) Blake.pp else Blake.faint, letterSpacing = 1.sp)
             }
@@ -375,7 +377,7 @@ private fun NameSheet(client: NostrClient, onClose: () -> Unit) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 RuneGlyph(if (picked.isEmpty()) listOf(Rune.ISA) else picked, forge = forgeOf(forge), ink = if (picked.isEmpty()) Blake.faint else inkNow, size = 44.dp)
                 Spacer(Modifier.width(12.dp))
-                Text(if (picked.isEmpty()) "Tap runes below to ligate them into your sigil. It goes before your name, in your forge and ink." else picked.joinToString(" · ") { it.label },
+                Text(if (picked.isEmpty()) stringResource(R.string.blk_tap_runes_below_to_ligate_them_into_your) else picked.joinToString(" · ") { it.label },
                     style = Blake.mono(8f), color = Blake.faint, modifier = Modifier.weight(1f))
             }
             Spacer(Modifier.size(6.dp))
@@ -386,7 +388,7 @@ private fun NameSheet(client: NostrClient, onClose: () -> Unit) {
                         val on = r in picked
                         Box(Modifier.weight(1f).border(if (on) 2.dp else 1.dp, if (on) inkNow else Blake.line, Blake.shape).padding(vertical = 5.dp)
                             .clickableNoRipple {
-                                if (limit == 0) { toast(ctx, "A bindrune is PRO: three runes. WHALE: four."); return@clickableNoRipple }
+                                if (limit == 0) { toast(ctx, ctx.getString(R.string.blk_a_bindrune_is_pro_three_runes_whale_four)); return@clickableNoRipple }
                                 picked = if (on) picked - r else if (picked.size < limit) picked + r else { com.astrolexis.pyblock.ui.Haptics.error(); picked }
                                 client.setSigil(picked.map { it.name.lowercase() })
                             }, contentAlignment = Alignment.Center) {
@@ -396,14 +398,14 @@ private fun NameSheet(client: NostrClient, onClose: () -> Unit) {
                     repeat(7 - rowRunes.size) { Spacer(Modifier.weight(1f)) }
                 }
             }
-            if (picked.isNotEmpty()) Text("CLEAR SIGIL", style = Blake.mono(8f, FontWeight.ExtraBold), color = Blake.faint, letterSpacing = 1.sp,
+            if (picked.isNotEmpty()) Text(stringResource(R.string.blk_clear_sigil), style = Blake.mono(8f, FontWeight.ExtraBold), color = Blake.faint, letterSpacing = 1.sp,
                 modifier = Modifier.clickableNoRipple { picked = emptyList(); client.setSigil(emptyList()) })
             Spacer(Modifier.size(16.dp))
-            Text("SAVE", style = Blake.mono(13f, FontWeight.ExtraBold), color = Blake.bg, textAlign = TextAlign.Center,
+            Text(stringResource(R.string.blk_save), style = Blake.mono(13f, FontWeight.ExtraBold), color = Blake.bg, textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth().background(Blake.pp, Blake.shape).padding(vertical = 12.dp)
                     .clickableNoRipple { if (name.isNotBlank()) { Nostr.setDisplayName(ctx, name.trim()); client.republishProfile(); com.astrolexis.pyblock.ui.Haptics.tap() }; onClose() })
             Spacer(Modifier.size(10.dp))
-            Text("Your Nostr identity is device-only. BLAKE2b and SHA-256 users share this room.", style = Blake.mono(8f), color = Blake.faint)
+            Text(stringResource(R.string.blk_your_nostr_identity_is_device_only_blake), style = Blake.mono(8f), color = Blake.faint)
         }
     }
 }

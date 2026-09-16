@@ -1,5 +1,7 @@
 package com.astrolexis.pyblock.ui.blake
 
+import com.astrolexis.pyblock.R
+import androidx.compose.ui.res.stringResource
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.Canvas
@@ -147,7 +149,7 @@ fun BlakeRentalsSheet(onClose: () -> Unit) {
     }
 
     fullSheet("RENTALS", onClose) {
-        Text("Rent BLAKE2b hash to your address. Live market price, paid over Lightning; delivered on the pool you pick.",
+        Text(stringResource(R.string.blk_rent_blake2b_hash_to_your_address_live_m),
             style = Blake.mono(9f), color = Blake.ppDim)
         Spacer(Modifier.height(18.dp))
 
@@ -157,7 +159,7 @@ fun BlakeRentalsSheet(onClose: () -> Unit) {
             val status = s?.status ?: order?.status ?: "pending_payment"
             val invoice = s?.invoice ?: order?.invoice ?: myOrders.firstOrNull { it.id == trackId }?.lnInvoice
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("‹ BACK", style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 1.sp,
+                Text(stringResource(R.string.blk_back), style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 1.sp,
                     modifier = Modifier.clickableNoRipple { Haptics.tap(); tracking = null; order = null; live = null; quote = null; nonce = UUID.randomUUID().toString().replace("-", "") })
                 Spacer(Modifier.weight(1f))
                 Text(trackId.take(8), style = Blake.mono(8f), color = Blake.faint)
@@ -183,7 +185,7 @@ fun BlakeRentalsSheet(onClose: () -> Unit) {
             // An expired invoice stays payable for 23 hours and the order reopens on its own when
             // paid — so when the server says so, keep the QR and say that, instead of hiding it.
             if (status == "expired" && s?.stillPayable == true) {
-                Text("The price window closed, but this invoice can still be paid for the next day. Pay it and the rental starts on its own.",
+                Text(stringResource(R.string.blk_the_price_window_closed_but_this_invoice),
                     style = Blake.mono(8f), color = Blake.warn)
                 Spacer(Modifier.height(6.dp))
             }
@@ -202,26 +204,26 @@ fun BlakeRentalsSheet(onClose: () -> Unit) {
                             scope.launch { delay(1500); copied = false }
                         })
                     Spacer(Modifier.width(10.dp))
-                    Text("PAY WITH WALLET", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.bg, letterSpacing = 1.sp, textAlign = TextAlign.Center,
+                    Text(stringResource(R.string.blk_pay_with_wallet), style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.bg, letterSpacing = 1.sp, textAlign = TextAlign.Center,
                         modifier = Modifier.weight(1f).background(Blake.pp).padding(vertical = 10.dp).clickableNoRipple {
                             Haptics.tap()
                             // Chooser surfaces every installed Lightning wallet, not only the default handler.
                             val i = Intent(Intent.ACTION_VIEW, Uri.parse("lightning:" + invoice.lowercase()))
                             runCatching { ctx.startActivity(Intent.createChooser(i, "Pay with")) }
-                                .onFailure { clip.setText(AnnotatedString(invoice)); android.widget.Toast.makeText(ctx, "No Lightning wallet found — invoice copied.", android.widget.Toast.LENGTH_SHORT).show() }
+                                .onFailure { clip.setText(AnnotatedString(invoice)); android.widget.Toast.makeText(ctx, ctx.getString(R.string.blk_no_lightning_wallet_found_invoice_copied), android.widget.Toast.LENGTH_SHORT).show() }
                         })
                 }
                 Spacer(Modifier.height(6.dp))
-                Text("Pay from any Lightning wallet. The hash starts within minutes of payment; this screen follows it.", style = Blake.mono(7f), color = Blake.faint)
+                Text(stringResource(R.string.blk_pay_from_any_lightning_wallet_the_hash_s), style = Blake.mono(7f), color = Blake.faint)
             }
             Spacer(Modifier.height(14.dp))
             if (s != null) {
-                labelValue("PACKAGE", "${BlakeRentals.th((s.hashratePhs ?: 0.0) * 1000)} · ${(s.durationH ?: 0.0).toInt()}h")
-                labelValue("POOL PORT", s.port?.let { ":$it" } ?: "—")
+                labelValue(stringResource(R.string.blk_package), "${BlakeRentals.th((s.hashratePhs ?: 0.0) * 1000)} · ${(s.durationH ?: 0.0).toInt()}h")
+                labelValue(stringResource(R.string.blk_pool_port), s.port?.let { ":$it" } ?: "—")
                 labelValue("TO", s.btcAddress ?: "—")
                 labelValue("TOTAL", BlakeRentals.sats(s.totalSats), Blake.pp)
                 if (status == "active" || status == "completed") {
-                    labelValue("LIVE HASH", BlakeRentals.th((s.liveHashratePhs ?: 0.0) * 1000), Blake.ok)
+                    labelValue(stringResource(R.string.blk_live_hash), BlakeRentals.th((s.liveHashratePhs ?: 0.0) * 1000), Blake.ok)
                     s.percentDone?.let { p ->
                         Spacer(Modifier.height(6.dp))
                         Box(Modifier.fillMaxWidth().height(5.dp).background(Blake.line)) {
@@ -233,9 +235,9 @@ fun BlakeRentalsSheet(onClose: () -> Unit) {
                 }
                 if (status == "completed") {
                     Spacer(Modifier.height(8.dp))
-                    Text("Delivered. Rewards mined during the rental were paid to your address by the pool.", style = Blake.mono(8f), color = Blake.ppDim)
+                    Text(stringResource(R.string.blk_delivered_rewards_mined_during_the_renta), style = Blake.mono(8f), color = Blake.ppDim)
                 }
-            } else Text("⟳ checking…", style = Blake.mono(9f), color = Blake.pp)
+            } else Text(stringResource(R.string.blk_checking), style = Blake.mono(9f), color = Blake.pp)
         } else {
             // ---- Packages ----
             val durations = rigs?.durations?.takeIf { it.isNotEmpty() } ?: listOf(3, 6, 12, 24)
@@ -249,9 +251,9 @@ fun BlakeRentalsSheet(onClose: () -> Unit) {
             }
             Spacer(Modifier.height(10.dp))
             when {
-                !loadedRigs -> Text("⟳ loading packages…", style = Blake.mono(10f), color = Blake.pp)
-                rigs == null -> Text("⚠ can't reach the server.", style = Blake.mono(10f), color = Blake.danger)
-                rigs!!.rigs.isEmpty() -> Text(rigs!!.notice ?: "Rentals are paused right now.", style = Blake.mono(10f), color = Blake.warn)
+                !loadedRigs -> Text(stringResource(R.string.blk_loading_packages), style = Blake.mono(10f), color = Blake.pp)
+                rigs == null -> Text(stringResource(R.string.blk_can_t_reach_the_server), style = Blake.mono(10f), color = Blake.danger)
+                rigs!!.rigs.isEmpty() -> Text(rigs!!.notice ?: stringResource(R.string.blk_rentals_are_paused_right_now), style = Blake.mono(10f), color = Blake.warn)
                 else -> {
                     rigs!!.rigs.filter { (it.hours ?: 0) == hours && it.available != false }.sortedBy { it.th ?: 0.0 }.forEach { r ->
                         val on = rig?.id == r.id
@@ -267,14 +269,14 @@ fun BlakeRentalsSheet(onClose: () -> Unit) {
                         }
                     }
                     Spacer(Modifier.height(6.dp))
-                    Text("Price is the market right now; it is re-quoted when you pay. The fee is inside the total.", style = Blake.mono(7f), color = Blake.faint)
+                    Text(stringResource(R.string.blk_price_is_the_market_right_now_it_is_re_q), style = Blake.mono(7f), color = Blake.faint)
                 }
             }
 
             if (rig != null) {
                 // ---- Pool ----
                 Spacer(Modifier.height(18.dp))
-                sectionTitle("DELIVER TO")
+                sectionTitle(stringResource(R.string.blk_deliver_to))
                 val pools = rigs?.pools ?: emptyMap()
                 // `lotto` is deliberately absent. The catalog lists it as "CAROUSEL (ASIC port)", a
                 // second high-diff port onto the same rotation, and both ports do accept work — but
@@ -302,9 +304,9 @@ fun BlakeRentalsSheet(onClose: () -> Unit) {
                 // ---- Address ----
                 Spacer(Modifier.height(18.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    sectionTitle("PAYOUT ADDRESS")
+                    sectionTitle(stringResource(R.string.blk_payout_address))
                     Spacer(Modifier.weight(1f))
-                    if (wallets.isNotEmpty()) Text("MY WALLET ›", style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 1.sp,
+                    if (wallets.isNotEmpty()) Text(stringResource(R.string.blk_my_wallet), style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 1.sp,
                         modifier = Modifier.clickableNoRipple { showWalletPick = !showWalletPick })
                 }
                 if (showWalletPick) wallets.take(40).forEach { w ->
@@ -322,7 +324,7 @@ fun BlakeRentalsSheet(onClose: () -> Unit) {
                 } ?: if (com.astrolexis.pyblock.data.blake.AddressCheck.isValid(address)) {
                     Text("✓ " + com.astrolexis.pyblock.data.blake.AddressCheck.grouped(address), style = Blake.mono(7f), color = Blake.ok)
                 } else Unit
-                Text("The rented hash mines to this address on the pool above. Coins land like any other reward.", style = Blake.mono(7f), color = Blake.faint)
+                Text(stringResource(R.string.blk_the_rented_hash_mines_to_this_address_on), style = Blake.mono(7f), color = Blake.faint)
 
                 // ---- Quote / pay ----
                 Spacer(Modifier.height(14.dp))
@@ -330,7 +332,7 @@ fun BlakeRentalsSheet(onClose: () -> Unit) {
                 val q = quote
                 val canQuote = com.astrolexis.pyblock.data.blake.AddressCheck.isValid(address)
                 if (q != null) {
-                    labelValue("PACKAGE", "${BlakeRentals.th(q.th)} · ${q.hours ?: hours}h")
+                    labelValue(stringResource(R.string.blk_package), "${BlakeRentals.th(q.th)} · ${q.hours ?: hours}h")
                     labelValue("POOL", "${pools[q.pool ?: pool]?.label ?: pool.uppercase()} :${q.port ?: 0}")
                     labelValue("TOTAL", BlakeRentals.sats(q.totalSats), Blake.pp)
                     q.feePct?.let { Text("fee ${it.toInt()}% included · re-quoted when you pay", style = Blake.mono(7f), color = Blake.faint) }
@@ -342,7 +344,7 @@ fun BlakeRentalsSheet(onClose: () -> Unit) {
                                 ordering = true; error = null; Haptics.thock()
                                 try {
                                     order = BlakeRentals.order(rig!!.id, address.trim(), pool, nonce); live = null; Sfx.select()
-                                } catch (e: Exception) { error = e.message ?: "Order failed."; Haptics.error(); Sfx.error() }
+                                } catch (e: Exception) { error = e.message ?: ctx.getString(R.string.blk_order_failed); Haptics.error(); Sfx.error() }
                                 ordering = false
                             }
                         })
@@ -355,7 +357,7 @@ fun BlakeRentalsSheet(onClose: () -> Unit) {
                                 try {
                                     quote = BlakeRentals.quote(rig!!.id, address.trim(), pool)
                                     prefs.edit().putString("address", address.trim()).apply()
-                                } catch (e: Exception) { error = e.message ?: "Quote failed."; Haptics.error() }
+                                } catch (e: Exception) { error = e.message ?: ctx.getString(R.string.blk_quote_failed); Haptics.error() }
                                 quoting = false
                             }
                         })
@@ -365,7 +367,7 @@ fun BlakeRentalsSheet(onClose: () -> Unit) {
             // ---- My orders ----
             if (myOrders.isNotEmpty()) {
                 Spacer(Modifier.height(26.dp))
-                sectionTitle("MY ORDERS")
+                sectionTitle(stringResource(R.string.blk_my_orders))
                 myOrders.take(20).forEach { o ->
                     Row(Modifier.fillMaxWidth().hairline().clickableNoRipple { Haptics.tap(); live = null; tracking = o.id }.padding(vertical = 9.dp),
                         verticalAlignment = Alignment.CenterVertically) {
@@ -374,7 +376,7 @@ fun BlakeRentalsSheet(onClose: () -> Unit) {
                         Column(Modifier.weight(1f)) {
                             Text("${BlakeRentals.th(o.th ?: (o.hashratePhs ?: 0.0) * 1000)} · ${(o.durationH ?: 0.0).toInt()}h · ${(o.pool ?: "").uppercase()}",
                                 style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.fg)
-                            Text("${BlakeRentals.statusLabel(o.status)} · ${relTimeSecs(o.createdAt)}", style = Blake.mono(8f), color = Blake.faint)
+                            Text("${BlakeRentals.statusLabel(o.status)} · ${relTimeSecs(ctx, o.createdAt)}", style = Blake.mono(8f), color = Blake.faint)
                         }
                         Text(BlakeRentals.sats(o.totalSats), style = Blake.mono(9f), color = Blake.ppDim)
                         Spacer(Modifier.width(8.dp))
@@ -410,11 +412,11 @@ internal fun statusColor(s: String?): Color = when (s) {
     else -> Blake.danger
 }
 
-internal fun relTimeSecs(ts: Long?): String {
+internal fun relTimeSecs(ctx: android.content.Context, ts: Long?): String {
     if (ts == null) return "—"
     val d = System.currentTimeMillis() / 1000 - ts
     return when {
-        d < 60 -> "just now"
+        d < 60 -> ctx.getString(R.string.blk_just_now)
         d < 3600 -> "${d / 60}m ago"
         d < 86400 -> "${d / 3600}h ago"
         else -> "${d / 86400}d ago"

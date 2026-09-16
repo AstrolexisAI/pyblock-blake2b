@@ -1,5 +1,7 @@
 package com.astrolexis.pyblock.ui.blake
 
+import com.astrolexis.pyblock.R
+import androidx.compose.ui.res.stringResource
 import android.content.Context
 import android.hardware.SensorManager
 import android.widget.Toast
@@ -71,7 +73,7 @@ fun BlakeVanityScreen(onClose: () -> Unit) {
     Box(Modifier.fillMaxSize().background(Blake.bg)) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("VANITY", style = Blake.mono(20f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 3.sp)
+                Text(stringResource(R.string.blk_vanity), style = Blake.mono(20f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 3.sp)
                 Spacer(Modifier.weight(1f))
                 Text("✕", style = Blake.mono(22f), color = Blake.ppDim, modifier = Modifier.clickableNoRipple { gen.stop(); entropy.stopMotion(); onClose() })
             }
@@ -79,7 +81,7 @@ fun BlakeVanityScreen(onClose: () -> Unit) {
 
             when (step) {
                 VStep.PATTERN -> Column(Modifier.fillMaxWidth().blakeCard()) {
-                    stepLabel(1, "PATTERN")
+                    stepLabel(1, stringResource(R.string.blk_pattern))
                     Spacer(Modifier.height(12.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("1", style = Blake.mono(15f, FontWeight.ExtraBold), color = Blake.faint)
@@ -90,7 +92,7 @@ fun BlakeVanityScreen(onClose: () -> Unit) {
                             decorationBox = { inner -> if (pattern.isEmpty()) Text("PyB", style = Blake.mono(15f, FontWeight.ExtraBold), color = Blake.faint); inner() })
                     }
                     Spacer(Modifier.height(8.dp))
-                    if (pattern.isNotEmpty() && !valid) Text("Only Base58 chars (no 0, O, I, l).", style = Blake.mono(8f), color = Blake.danger)
+                    if (pattern.isNotEmpty() && !valid) Text(stringResource(R.string.blk_only_base58_chars_no_0_o_i_l), style = Blake.mono(8f), color = Blake.danger)
                     else if (valid) Text("≈ ${estimate(pattern)} to find. Two entropy steps first.", style = Blake.mono(8f), color = Blake.faint)
                     Spacer(Modifier.height(12.dp))
                     vBtn("NEXT — HARDEN ENTROPY", enabled = valid, filled = true) { entropy.feedPattern(pattern); step = VStep.MOTION }
@@ -98,30 +100,30 @@ fun BlakeVanityScreen(onClose: () -> Unit) {
 
                 VStep.MOTION -> Column(Modifier.fillMaxWidth().blakeCard()) {
                     LaunchedEffect(Unit) { entropy.startMotion() }
-                    stepLabel(2, "SHAKE THE PHONE")
+                    stepLabel(2, stringResource(R.string.blk_shake_the_phone))
                     Spacer(Modifier.height(14.dp))
                     Text("📳", style = Blake.mono(36f), color = Blake.pp, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
                     Spacer(Modifier.height(10.dp))
-                    Text("Give it a real shake — the device's motion feeds fresh entropy into the pool.", style = Blake.mono(9f), color = Blake.faint)
+                    Text(stringResource(R.string.blk_give_it_a_real_shake_the_device_s_motion), style = Blake.mono(9f), color = Blake.faint)
                     Spacer(Modifier.height(10.dp))
                     bar(entropy.motionProgress, entropy.motionReady)
                     Spacer(Modifier.height(6.dp))
-                    Text(if (entropy.motionReady) "Enough motion gathered ✓" else "${(entropy.motionProgress * 100).toInt()}%",
+                    Text(if (entropy.motionReady) stringResource(R.string.blk_enough_motion_gathered) else "${(entropy.motionProgress * 100).toInt()}%",
                         style = Blake.mono(10f), color = if (entropy.motionReady) Blake.ok else Blake.ppDim)
                     Spacer(Modifier.height(12.dp))
                     vBtn(if (entropy.motionReady) "NEXT — DRAW" else "KEEP SHAKING", enabled = entropy.motionReady, filled = true) { entropy.stopMotion(); step = VStep.TOUCH }
                 }
 
                 VStep.TOUCH -> Column(Modifier.fillMaxWidth().blakeCard()) {
-                    stepLabel(3, "DRAW A SCRIBBLE")
+                    stepLabel(3, stringResource(R.string.blk_draw_a_scribble))
                     Spacer(Modifier.height(14.dp))
-                    Text("Doodle randomly — every point's coordinates + timing harden the key.", style = Blake.mono(9f), color = Blake.faint)
+                    Text(stringResource(R.string.blk_doodle_randomly_every_point_s_coordinate), style = Blake.mono(9f), color = Blake.faint)
                     Spacer(Modifier.height(10.dp))
                     ScribblePad(Modifier.fillMaxWidth().height(200.dp)) { x, y -> entropy.feedTouch(x, y) }
                     Spacer(Modifier.height(10.dp))
                     bar(entropy.touchProgress, entropy.touchReady)
                     Spacer(Modifier.height(6.dp))
-                    Text(if (entropy.touchReady) "Enough scribble gathered ✓" else "${(entropy.touchProgress * 100).toInt()}%",
+                    Text(if (entropy.touchReady) stringResource(R.string.blk_enough_scribble_gathered) else "${(entropy.touchProgress * 100).toInt()}%",
                         style = Blake.mono(10f), color = if (entropy.touchReady) Blake.ok else Blake.ppDim)
                     Spacer(Modifier.height(12.dp))
                     vBtn(if (entropy.touchReady) "GRIND" else "KEEP DRAWING", enabled = entropy.touchReady, filled = true) {
@@ -142,12 +144,12 @@ fun BlakeVanityScreen(onClose: () -> Unit) {
                     if (m != null) {
                         Spacer(Modifier.height(16.dp))
                         Column(Modifier.fillMaxWidth().blakeCard()) {
-                            Text("FOUND ✓", style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.ok, letterSpacing = 2.sp)
+                            Text(stringResource(R.string.blk_found_2), style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.ok, letterSpacing = 2.sp)
                             Spacer(Modifier.height(8.dp))
                             Text(m.address, style = Blake.mono(11f), color = Blake.pp)
                             Spacer(Modifier.height(10.dp))
                             if (saved) {
-                                Text("Saved to your wallets.", style = Blake.mono(10f), color = Blake.ok)
+                                Text(stringResource(R.string.blk_saved_to_your_wallets), style = Blake.mono(10f), color = Blake.ok)
                                 Spacer(Modifier.height(8.dp))
                                 vBtn("DONE", enabled = true, filled = true) { onClose() }
                             } else {
@@ -156,7 +158,7 @@ fun BlakeVanityScreen(onClose: () -> Unit) {
                                     val ok = WalletStore.add(ctx, VanityWallet(UUID.randomUUID().toString(), "1$pattern", m.address,
                                         compressed = true, birthday = BlakeFork.FORK_HEIGHT, pubkeyHex = pub), m.wif)
                                     if (ok) { saved = true; gen.reset(); com.astrolexis.pyblock.ui.Haptics.tap() }
-                                    else Toast.makeText(ctx, "Save failed", Toast.LENGTH_SHORT).show()
+                                    else Toast.makeText(ctx, ctx.getString(R.string.blk_save_failed), Toast.LENGTH_SHORT).show()
                                 }
                             }
                         }
@@ -205,7 +207,7 @@ private fun ScribblePad(modifier: Modifier, onPoint: (Float, Float) -> Unit) {
                 trail.value = (trail.value + change.position).takeLast(80)
             }
         }, contentAlignment = Alignment.Center) {
-        if (trail.value.isEmpty()) Text("draw here", style = Blake.mono(11f), color = Blake.ppDim)
+        if (trail.value.isEmpty()) Text(stringResource(R.string.blk_draw_here), style = Blake.mono(11f), color = Blake.ppDim)
         Canvas(Modifier.fillMaxSize()) {
             val pts = trail.value
             for (i in 1 until pts.size) drawLine(Blake.pp.copy(alpha = 0.85f), pts[i - 1], pts[i], strokeWidth = 2f)

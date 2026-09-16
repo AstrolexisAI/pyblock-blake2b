@@ -1,5 +1,7 @@
 package com.astrolexis.pyblock.ui.blake
 
+import com.astrolexis.pyblock.R
+import androidx.compose.ui.res.stringResource
 import java.util.Locale
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
@@ -236,14 +238,14 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit, onPaid: (peer: String, txid: S
                     if (pendInTotal > 0) Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.size(5.dp).background(Blake.warn, CircleShape)); Spacer(Modifier.width(6.dp))
                         Text("+${Blake.btc(pendInTotal)} ${Blake.RUNE}", style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.warn); Spacer(Modifier.width(6.dp))
-                        Text("incoming · in mempool · 0 conf", style = Blake.mono(8f), color = Blake.warn)
+                        Text(stringResource(R.string.blk_incoming_in_mempool_0_conf), style = Blake.mono(8f), color = Blake.warn)
                     }
                     if (pendOutTotal > 0) Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.size(5.dp).background(Blake.warn, CircleShape)); Spacer(Modifier.width(6.dp))
                         Text("−${Blake.btc(pendOutTotal)} ${Blake.RUNE}", style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.warn); Spacer(Modifier.width(6.dp))
-                        Text("sending · in mempool · 0 conf", style = Blake.mono(8f), color = Blake.warn)
+                        Text(stringResource(R.string.blk_sending_in_mempool_0_conf), style = Blake.mono(8f), color = Blake.warn)
                     }
-                    Text("seen by the node, not yet in a block", style = Blake.mono(7f), color = Blake.faint)
+                    Text(stringResource(R.string.blk_seen_by_the_node_not_yet_in_a_block), style = Blake.mono(7f), color = Blake.faint)
                 }
             }
 
@@ -251,14 +253,14 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit, onPaid: (peer: String, txid: S
             if (wallets.isNotEmpty()) {
                 Spacer(Modifier.height(22.dp))
                 if (BlakeChains.SEND_ENABLED || BlakeChains.RICOCHET_ENABLED) {
-                    Text("↗ SEND", style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.bg, letterSpacing = 1.sp, textAlign = TextAlign.Center,
+                    Text(stringResource(R.string.blk_send_2), style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.bg, letterSpacing = 1.sp, textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth().background(Blake.pp).padding(vertical = 12.dp)
-                            .clickableNoRipple { if (spendable <= 0) toast(ctx, "No spendable coins yet.") else sheet = Sheet.Send() })
+                            .clickableNoRipple { if (spendable <= 0) toast(ctx, ctx.getString(R.string.blk_no_spendable_coins_yet)) else sheet = Sheet.Send() })
                     Spacer(Modifier.height(14.dp))
                 }
-                commandRow("⌗", "ADDRESSES", "${wallets.size}") { sheet = Sheet.Addresses }
+                commandRow("⌗", stringResource(R.string.blk_addresses), "${wallets.size}") { sheet = Sheet.Addresses }
                 if (BlakeBalanceStore.allUtxos().isNotEmpty()) commandRow("◈", "COINS", "${BlakeBalanceStore.allUtxos().size}") { sheet = Sheet.Coins }
-                commandRow("᛭", "PAYNYM", "share · receive") { sheet = Sheet.Paynym }
+                commandRow("᛭", "PAYNYM", stringResource(R.string.blk_share_receive)) { sheet = Sheet.Paynym }
                 if (BlakeChains.RICOCHET_ENABLED || ricochetRecords.isNotEmpty())   // past hop keys must stay reachable
                     commandRow("⟿", "RICOCHETS", "${ricochetRecords.size}") { sheet = Sheet.Ricochets }
             }
@@ -268,12 +270,12 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit, onPaid: (peer: String, txid: S
                 Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(Blake.RUNE, style = Blake.mono(40f, FontWeight.ExtraBold), color = Blake.pp.copy(alpha = 0.5f))
                     Spacer(Modifier.height(10.dp))
-                    Text("No addresses yet", style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 1.sp)
+                    Text(stringResource(R.string.blk_no_addresses_yet), style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 1.sp)
                     Spacer(Modifier.height(14.dp))
-                    Text("CREATE AN ADDRESS", style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.bg, letterSpacing = 1.sp, textAlign = TextAlign.Center,
+                    Text(stringResource(R.string.blk_create_an_address), style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.bg, letterSpacing = 1.sp, textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth().background(Blake.pp).padding(vertical = 12.dp).clickableNoRipple { sheet = Sheet.Addresses })
                     Spacer(Modifier.height(8.dp))
-                    Text("or import a key · scan a paper backup", style = Blake.mono(8f), color = Blake.faint, textAlign = TextAlign.Center)
+                    Text(stringResource(R.string.blk_or_import_a_key_scan_a_paper_backup), style = Blake.mono(8f), color = Blake.faint, textAlign = TextAlign.Center)
                 }
             } else {
                 // DETAILS toggle
@@ -281,7 +283,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit, onPaid: (peer: String, txid: S
                 Box(Modifier.fillMaxWidth().height(1.dp).background(Blake.line))
                 Row(Modifier.fillMaxWidth().padding(vertical = 10.dp)
                     .clickableNoRipple { showDetails = !showDetails }, verticalAlignment = Alignment.CenterVertically) {
-                    Text("DETAILS", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
+                    Text(stringResource(R.string.blk_details), style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
                     Spacer(Modifier.size(6.dp))
                     Text(if (showDetails) "▲" else "▼", style = Blake.mono(9f), color = Blake.ppDim)
                 }
@@ -294,7 +296,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit, onPaid: (peer: String, txid: S
                             breakdownRow("SPENDABLE", spendable, spendableUtxos.size, Blake.ok, spendExpanded) { spendExpanded = !spendExpanded }
                             if (spendExpanded) {
                                 if (spendableUtxos.isEmpty())
-                                    Text("No mature mined coins yet.", style = Blake.mono(8f), color = Blake.faint, modifier = Modifier.padding(start = 12.dp, top = 4.dp))
+                                    Text(stringResource(R.string.blk_no_mature_mined_coins_yet), style = Blake.mono(8f), color = Blake.faint, modifier = Modifier.padding(start = 12.dp, top = 4.dp))
                                 else spendableUtxos.forEach { u ->
                                     coinBreakdownRow(u, tip, locked = false, onUnlock = {}, onRelock = { UnlockStore.relock(u.id) }, onInfo = { sheet = Sheet.Utxo(u) })
                                 }
@@ -305,7 +307,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit, onPaid: (peer: String, txid: S
                             breakdownRow("LOCKED", locked, lockedUtxos.size, Blake.warn, lockedExpanded) { lockedExpanded = !lockedExpanded }
                             if (lockedExpanded) {
                                 if (lockedUtxos.isEmpty())
-                                    Text("Nothing locked.", style = Blake.mono(8f), color = Blake.faint, modifier = Modifier.padding(start = 12.dp, top = 4.dp))
+                                    Text(stringResource(R.string.blk_nothing_locked), style = Blake.mono(8f), color = Blake.faint, modifier = Modifier.padding(start = 12.dp, top = 4.dp))
                                 else lockedUtxos.forEach { u ->
                                     coinBreakdownRow(u, tip, locked = true, onUnlock = { pendingUnlock = u }, onRelock = { UnlockStore.relock(u.id) }, onInfo = { sheet = Sheet.Utxo(u) })
                                 }
@@ -313,7 +315,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit, onPaid: (peer: String, txid: S
                         }
                         Spacer(Modifier.height(20.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("ACTIVITY", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
+                            Text(stringResource(R.string.blk_activity), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
                             if (live) {
                                 Spacer(Modifier.width(8.dp))
                                 Box(Modifier.size(6.dp).graphicsLayer { alpha = beat }.background(Blake.ok, CircleShape))
@@ -333,7 +335,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit, onPaid: (peer: String, txid: S
                                         Text("+ ${Blake.btc(p.sats)} ${Blake.RUNE}", style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.warn)
                                         Text("incoming · ${p.address.take(10)}…", style = Blake.mono(8f), color = Blake.faint)
                                     }
-                                    Text("pending", style = Blake.mono(9f), color = Blake.warn)
+                                    Text(stringResource(R.string.blk_pending), style = Blake.mono(9f), color = Blake.warn)
                                 }
                             })
                         }
@@ -371,7 +373,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit, onPaid: (peer: String, txid: S
                                 }
                             })
                         }
-                        if (acts.isEmpty()) Text("No movements yet.", style = Blake.mono(10f), color = Blake.faint)
+                        if (acts.isEmpty()) Text(stringResource(R.string.blk_no_movements_yet), style = Blake.mono(10f), color = Blake.faint)
                         else Column(Modifier.graphicsLayer {
                             translationY = slide.value * 16.dp.toPx()
                             alpha = 1f - slide.value * 0.55f
@@ -385,11 +387,11 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit, onPaid: (peer: String, txid: S
     }
 
     when (val s = sheet) {
-        is Sheet.Utxo -> UtxoDetailSheet(s.utxo, tip, onCopy = { clip.setText(AnnotatedString(it)); toast(ctx, "Copied") }) { sheet = null }
+        is Sheet.Utxo -> UtxoDetailSheet(s.utxo, tip, onCopy = { clip.setText(AnnotatedString(it)); toast(ctx, ctx.getString(R.string.blk_copied)) }) { sheet = null }
         Sheet.Addresses -> AddressControlSheet(
             wallets = wallets,
             onGenerate = { onLaunchVanity(); sheet = null },
-            onCopy = { clip.setText(AnnotatedString(it)); toast(ctx, "Address copied") },
+            onCopy = { clip.setText(AnnotatedString(it)); toast(ctx, ctx.getString(R.string.blk_address_copied)) },
             balanceFor = { BlakeBalanceStore.balanceForAddress(it) },
             onSend = { keys -> sheet = Sheet.Send(keys) },
             onClose = { sheet = null },
@@ -400,8 +402,8 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit, onPaid: (peer: String, txid: S
                                          onClose = { sheet = null })
         Sheet.Currency -> CurrencyPickerSheet(BlakePrice.available()) { BlakePrice.setCurrency(it); sheet = null }
         Sheet.Settings -> SettingsSheet(operational, rc, statusHeight) { sheet = null }
-        Sheet.Ricochets -> RicochetHistorySheet(onCopy = { clip.setText(AnnotatedString(it)); toast(ctx, "Copied") }) { sheet = null }
-        Sheet.Paynym -> PaynymSheet(onCopy = { clip.setText(AnnotatedString(it)); toast(ctx, "Copied") }, paste = { clip.getText()?.text ?: "" }) { sheet = null }
+        Sheet.Ricochets -> RicochetHistorySheet(onCopy = { clip.setText(AnnotatedString(it)); toast(ctx, ctx.getString(R.string.blk_copied)) }) { sheet = null }
+        Sheet.Paynym -> PaynymSheet(onCopy = { clip.setText(AnnotatedString(it)); toast(ctx, ctx.getString(R.string.blk_copied)) }, paste = { clip.getText()?.text ?: "" }) { sheet = null }
         null -> {}
     }
 
@@ -409,7 +411,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit, onPaid: (peer: String, txid: S
         SentDetailDialog(
             r = r,
             pending = com.astrolexis.pyblock.data.blake.BlakeSentStore.isPending(r, BlakeBalanceStore.allUtxos().map { it.id }.toSet()),
-            onCopy = { clip.setText(AnnotatedString(it)); toast(ctx, "Copied") },
+            onCopy = { clip.setText(AnnotatedString(it)); toast(ctx, ctx.getString(R.string.blk_copied)) },
             onClose = { sentDetail = null },
         )
     }
@@ -418,14 +420,14 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit, onPaid: (peer: String, txid: S
     pendingUnlock?.let { u ->
         androidx.compose.ui.window.Dialog(onDismissRequest = { pendingUnlock = null }) {
             Column(Modifier.background(Blake.ink).border(1.dp, Blake.line, RectangleShape).padding(20.dp)) {
-                Text("UNLOCK THIS COIN?", style = Blake.mono(14f, FontWeight.ExtraBold), color = Blake.danger, letterSpacing = 2.sp)
+                Text(stringResource(R.string.blk_unlock_this_coin), style = Blake.mono(14f, FontWeight.ExtraBold), color = Blake.danger, letterSpacing = 2.sp)
                 Spacer(Modifier.height(8.dp))
-                Text("Replay-exposed coins can also move on the Bitcoin (SHA-256) chain — spending here may affect/lose that balance. Only unlock if you understand this.",
+                Text(stringResource(R.string.blk_replay_exposed_coins_can_also_move_on_th),
                     style = Blake.mono(10f), color = Blake.faint)
                 Spacer(Modifier.height(14.dp))
-                sheetBtn("UNLOCK — I ACCEPT THE RISK", Blake.danger, filled = true) { UnlockStore.unlock(u.id); pendingUnlock = null }
+                sheetBtn(stringResource(R.string.blk_unlock_i_accept_the_risk), Blake.danger, filled = true) { UnlockStore.unlock(u.id); pendingUnlock = null }
                 Spacer(Modifier.height(8.dp))
-                sheetBtn("CANCEL", Blake.ppDim) { pendingUnlock = null }
+                sheetBtn(stringResource(R.string.blk_cancel), Blake.ppDim) { pendingUnlock = null }
             }
         }
     }
@@ -479,7 +481,7 @@ private fun coinBreakdownRow(u: BlakeApi.Utxo, tip: Int, locked: Boolean,
             MaturityBar(u, tip)
         }
         if (replayLocked) {
-            if (unlocked) miniBtn("LOCK", Blake.warn, onRelock)
+            if (unlocked) miniBtn(stringResource(R.string.blk_lock), Blake.warn, onRelock)
             else miniBtn("UNLOCK", Blake.danger, onUnlock)
             Spacer(Modifier.size(8.dp))
         }
@@ -525,7 +527,7 @@ private fun SentDetailDialog(
         Text("− ${Blake.btc(r.amountSats)} ${Blake.RUNE}", style = Blake.mono(24f, FontWeight.ExtraBold), color = Blake.warn)
         Text("${"%,d".format(r.amountSats)} sats", style = Blake.mono(10f), color = Blake.faint)
         Spacer(Modifier.height(14.dp))
-        Text("LABEL", style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
+        Text(stringResource(R.string.blk_label), style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
         Spacer(Modifier.height(4.dp))
         androidx.compose.foundation.text.BasicTextField(labelText, {
             labelText = it; com.astrolexis.pyblock.data.blake.BlakeLabelStore.set(r.id, it)
@@ -533,7 +535,7 @@ private fun SentDetailDialog(
             cursorBrush = androidx.compose.ui.graphics.SolidColor(Blake.pp),
             decorationBox = { inner ->
                 Box(Modifier.fillMaxWidth().border(1.dp, Blake.line, RectangleShape).padding(10.dp)) {
-                    if (labelText.isEmpty()) Text("Name this transaction (e.g. pago Stefa)", style = Blake.mono(12f), color = Blake.faint)
+                    if (labelText.isEmpty()) Text(stringResource(R.string.blk_name_this_transaction_e_g_pago_stefa), style = Blake.mono(12f), color = Blake.faint)
                     inner()
                 }
             })
@@ -544,17 +546,17 @@ private fun SentDetailDialog(
         Text("TXID", style = Blake.mono(9f), color = Blake.faint, letterSpacing = 1.sp)
         Text(r.id, style = Blake.mono(10f), color = Blake.pp)
         Spacer(Modifier.height(8.dp))
-        sheetBtn(if (copied) "✓ COPIED" else "TAP TO COPY TXID", if (copied) Blake.ok else Blake.pp) { onCopy(r.id); copied = true }
+        sheetBtn(if (copied) "✓ COPIED" else stringResource(R.string.blk_tap_to_copy_txid), if (copied) Blake.ok else Blake.pp) { onCopy(r.id); copied = true }
         if (r.ricochet) {
             Spacer(Modifier.height(10.dp))
-            Text("Open RICOCHETS in the wallet to see the full hop chain + provable keys.",
+            Text(stringResource(R.string.blk_open_ricochets_in_the_wallet_to_see_the_),
                 style = Blake.mono(8f), color = Blake.faint)
         }
         Spacer(Modifier.height(10.dp))
-        Text("BLAKE2b balances update once the transaction is mined — the sent coins are still counted as spendable until then.",
+        Text(stringResource(R.string.blk_blake2b_balances_update_once_the_transac),
             style = Blake.mono(7f), color = Blake.faint)
         Spacer(Modifier.height(12.dp))
-        sheetBtn("CLOSE", Blake.ppDim) { onClose() }
+        sheetBtn(stringResource(R.string.blk_close), Blake.ppDim) { onClose() }
     }
 }
 

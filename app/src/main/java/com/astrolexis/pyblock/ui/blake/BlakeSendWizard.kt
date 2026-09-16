@@ -1,5 +1,7 @@
 package com.astrolexis.pyblock.ui.blake
 
+import com.astrolexis.pyblock.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -181,7 +183,7 @@ fun SendWizardSheet(
                         notifiedNow = true
                     }
                     val next = com.astrolexis.pyblock.data.crypto.PaymentCode.nextWalletSendAddress(ctx, peerCode)
-                        ?: throw Exception("Couldn't derive a PayNym address from that code.")
+                        ?: throw Exception(ctx.getString(R.string.blk_couldn_t_derive_a_paynym_address_from_th))
                     dest = next.first; paynymIdx = next.second
                 }
                 val contactValue = peerCode ?: dest
@@ -215,9 +217,9 @@ fun SendWizardSheet(
                     // payment itself couldn't be built. It's not a failure — the peer is now announced;
                     // the user just needs another coin (wait for the change to confirm, or receive more).
                     notifiedNow && (e is BlakeSpend.Err.InsufficientSpendable || e is BlakeSpend.Err.NoSpendable) ->
-                        "✓ PayNym announced on-chain. That used your last spendable coin — once the change confirms (or you receive more), send the payment again and the recipient will detect it."
+                        ctx.getString(R.string.blk_paynym_announced_on_chain_that_used_your)
                     raw.contains("min relay", ignoreCase = true) ->
-                        "Fee too low for the BLAKE2b network — pick a higher fee (2 sat/vB or more) and try again."
+                        ctx.getString(R.string.blk_fee_too_low_for_the_blake2b_network_pick)
                     else -> raw
                 }
             } finally { busy = false }
@@ -233,7 +235,7 @@ fun SendWizardSheet(
             if (r != null) {
                 SendResultScreen(r, onCopy = { clip.setText(AnnotatedString(it)) }, onClose = onClose)
             } else if (scanning) {
-                QrScanner(title = "SCAN A BITCOIN ADDRESS",
+                QrScanner(title = stringResource(R.string.blk_scan_a_bitcoin_address),
                     onResult = { code -> toAddress = sanitizeAddress(code); scanning = false },
                     onClose = { scanning = false })
             } else {
@@ -248,7 +250,7 @@ fun SendWizardSheet(
                         Text("✕", style = Blake.mono(22f), color = Blake.ppDim, modifier = Modifier.clickableNoRipple(onClose))
                     }
                     // Progress
-                    val titles = listOf("TO", "AMOUNT", "PRIVACY", "REVIEW")
+                    val titles = listOf("TO", stringResource(R.string.blk_amount), stringResource(R.string.blk_privacy), stringResource(R.string.blk_review))
                     Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         titles.forEachIndexed { i, t ->
                             Column(Modifier.weight(1f)) {
@@ -278,17 +280,17 @@ fun SendWizardSheet(
                     Row(Modifier.fillMaxWidth().background(Blake.bg).padding(horizontal = 20.dp, vertical = 12.dp),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         if (step > 1) {
-                            Text("‹ BACK", style = Blake.mono(13f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 1.sp, textAlign = TextAlign.Center,
+                            Text(stringResource(R.string.blk_back), style = Blake.mono(13f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 1.sp, textAlign = TextAlign.Center,
                                 modifier = Modifier.weight(1f).border(1.dp, Blake.line, RectangleShape).padding(vertical = 14.dp)
                                     .clickableNoRipple { if (!busy) { error = null; step-- } })
                         }
                         if (step < 4) {
-                            Text("NEXT ›", style = Blake.mono(14f, FontWeight.ExtraBold), color = if (stepValid) Blake.bg else Blake.faint,
+                            Text(stringResource(R.string.blk_next), style = Blake.mono(14f, FontWeight.ExtraBold), color = if (stepValid) Blake.bg else Blake.faint,
                                 letterSpacing = 1.sp, textAlign = TextAlign.Center,
                                 modifier = Modifier.weight(1f).then(if (stepValid) Modifier.background(Blake.pp) else Modifier.border(1.dp, Blake.line, RectangleShape))
                                     .padding(vertical = 14.dp).clickableNoRipple { if (stepValid) { error = null; step++ } })
                         } else {
-                            Text(if (busy) "BROADCASTING…" else if (ricochet) "CONFIRM RICOCHET" else "CONFIRM SEND",
+                            Text(if (busy) stringResource(R.string.blk_broadcasting) else if (ricochet) "CONFIRM RICOCHET" else "CONFIRM SEND",
                                 style = Blake.mono(14f, FontWeight.ExtraBold), color = Blake.bg, letterSpacing = 1.sp, textAlign = TextAlign.Center,
                                 modifier = Modifier.weight(1f).background(Blake.pp).padding(vertical = 14.dp)
                                     .graphicsLayer { scaleX = if (busy) 0.98f else 1f; scaleY = if (busy) 0.98f else 1f; alpha = if (busy) 0.85f else 1f }
@@ -315,13 +317,13 @@ private fun StepTo(
     Spacer(Modifier.height(16.dp))
     Column(Modifier.fillMaxWidth().blakeCard()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("SEND TO", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
+            Text(stringResource(R.string.blk_send_to), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
             Spacer(Modifier.weight(1f))
-            Text("☰ CONTACTS", style = Blake.mono(11f), color = Blake.pp, modifier = Modifier.clickableNoRipple(onContacts))
+            Text(stringResource(R.string.blk_contacts), style = Blake.mono(11f), color = Blake.pp, modifier = Modifier.clickableNoRipple(onContacts))
             Spacer(Modifier.width(12.dp))
-            Text("⛶ SCAN", style = Blake.mono(11f), color = Blake.pp, modifier = Modifier.clickableNoRipple(onScan))
+            Text(stringResource(R.string.blk_scan), style = Blake.mono(11f), color = Blake.pp, modifier = Modifier.clickableNoRipple(onScan))
             Spacer(Modifier.width(12.dp))
-            Text("PASTE", style = Blake.mono(11f), color = Blake.pp, modifier = Modifier.clickableNoRipple(onPaste))
+            Text(stringResource(R.string.blk_paste), style = Blake.mono(11f), color = Blake.pp, modifier = Modifier.clickableNoRipple(onPaste))
         }
         Spacer(Modifier.height(10.dp))
         val ok = isPlausibleAddress(addr)
@@ -359,7 +361,7 @@ private fun StepAmount(
 ) {
     Column(Modifier.fillMaxWidth().blakeCard()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("AMOUNT", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
+            Text(stringResource(R.string.blk_amount), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
             Spacer(Modifier.weight(1f))
             // unit toggle
             Row(Modifier.border(1.dp, Blake.line, RectangleShape)) {
@@ -373,7 +375,7 @@ private fun StepAmount(
         }
         Spacer(Modifier.height(12.dp))
         if (sendMax) {
-            Text("MAX", style = Blake.mono(40f, FontWeight.ExtraBold), color = Blake.pp,
+            Text(stringResource(R.string.blk_max), style = Blake.mono(40f, FontWeight.ExtraBold), color = Blake.pp,
                 textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(vertical = 18.dp))
         } else {
             Row(Modifier.fillMaxWidth().border(1.dp, if (overspend) Blake.danger else Blake.line, RectangleShape).padding(vertical = 10.dp),
@@ -401,7 +403,7 @@ private fun StepAmount(
     // Fee card
     Column(Modifier.fillMaxWidth().blakeCard()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("NETWORK FEE", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
+            Text(stringResource(R.string.blk_network_fee), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
             Spacer(Modifier.weight(1f))
             Text("~${"%,d".format(estFee)} sats", style = Blake.mono(9f), color = Blake.faint)
         }
@@ -417,7 +419,7 @@ private fun StepAmount(
         }
         Spacer(Modifier.height(8.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("CUSTOM", style = Blake.mono(9f), color = Blake.faint, letterSpacing = 1.sp)
+            Text(stringResource(R.string.blk_custom), style = Blake.mono(9f), color = Blake.faint, letterSpacing = 1.sp)
             Spacer(Modifier.width(8.dp))
             Box(Modifier.weight(1f).border(1.dp, if (customFeeText.isEmpty()) Blake.line else Blake.pp, RectangleShape).padding(8.dp)) {
                 BasicTextField(customFeeText, { onCustomFee(it.filter { c -> c.isDigit() }) }, textStyle = Blake.mono(11f).copy(color = Blake.fg),
@@ -428,8 +430,8 @@ private fun StepAmount(
             Text("sat/vB", style = Blake.mono(8f), color = Blake.faint)
         }
         Spacer(Modifier.height(8.dp))
-        Text(if (sendMax) (if (coinKeys.isEmpty()) "Sweeps all spendable mined coins." else "Sweeps the selected coin${if (coinKeys.size == 1) "" else "s"} (no change).")
-             else "Change returns to the same address the coin came from.",
+        Text(if (sendMax) (if (coinKeys.isEmpty()) stringResource(R.string.blk_sweeps_all_spendable_mined_coins) else "Sweeps the selected coin${if (coinKeys.size == 1) "" else "s"} (no change).")
+             else stringResource(R.string.blk_change_returns_to_the_same_address_the_c),
             style = Blake.mono(7f), color = Blake.faint)
     }
 }
@@ -443,16 +445,16 @@ private fun UnitTab(t: String, on: Boolean, onClick: () -> Unit) {
 // ---- Step 3 · PRIVACY ----
 @Composable
 private fun StepPrivacy(ricochet: Boolean, onRicochet: (Boolean) -> Unit, hops: Int, onHops: (Int) -> Unit) {
-    Text("HOW TO SEND", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
+    Text(stringResource(R.string.blk_how_to_send), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
     Spacer(Modifier.height(14.dp))
-    PrivacyOption("DIRECT", !ricochet, "One transaction straight to the recipient. Cheapest and fastest.") { onRicochet(false) }
+    PrivacyOption(stringResource(R.string.blk_direct), !ricochet, stringResource(R.string.blk_one_transaction_straight_to_the_recipien)) { onRicochet(false) }
     if (BlakeChains.RICOCHET_ENABLED) {
         Spacer(Modifier.height(14.dp))
-        PrivacyOption("RICOCHET", ricochet, "Sweeps through throwaway hops first — coordinator-free on-chain distance. Costs more fee. You keep every hop key (provenance).") { onRicochet(true) }
+        PrivacyOption("RICOCHET", ricochet, stringResource(R.string.blk_sweeps_through_throwaway_hops_first_coor)) { onRicochet(true) }
         if (ricochet) {
             Spacer(Modifier.height(14.dp))
             Row(Modifier.fillMaxWidth().blakeCard(), verticalAlignment = Alignment.CenterVertically) {
-                Text("HOPS", style = Blake.mono(9f), color = Blake.faint, letterSpacing = 1.sp)
+                Text(stringResource(R.string.blk_hops), style = Blake.mono(9f), color = Blake.faint, letterSpacing = 1.sp)
                 Spacer(Modifier.weight(1f))
                 (1..4).forEach { h ->
                     Text("$h", style = Blake.mono(12f, FontWeight.ExtraBold), color = if (hops == h) Blake.bg else Blake.ppDim, textAlign = TextAlign.Center,
@@ -486,7 +488,7 @@ private fun StepReview(
     coinKeys: Set<String>, selectedSats: Long, effectiveFee: Int, estFee: Long, ccy: String,
 ) {
     Column(Modifier.fillMaxWidth().blakeCard()) {
-        Text("REVIEW — CONFIRM TO BROADCAST", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.warn, letterSpacing = 1.sp)
+        Text(stringResource(R.string.blk_review_confirm_to_broadcast), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.warn, letterSpacing = 1.sp)
         Spacer(Modifier.height(12.dp))
         val contactName = com.astrolexis.pyblock.data.wallet.BlakeContactsStore.labelFor(toAddress)
         if (contactName != null) {
@@ -498,14 +500,14 @@ private fun StepReview(
         ReviewRow("AMOUNT", if (sendMax) "MAX · ${Blake.btc(sweepSats)} ${Blake.RUNE}" else "${Blake.btc(amt)} ${Blake.RUNE}")
         ReviewRow("", "${"%,d".format(if (sendMax) sweepSats else amt)} sats", 9f, faint = true)
         BlakePrice.fiatLabel(if (sendMax) sweepSats else amt)?.let { ReviewRow("≈ FIAT", "$it $ccy") }
-        ReviewRow("MODE", if (ricochet) "ricochet · $hops hop${if (hops == 1) "" else "s"}" else "direct")
-        ReviewRow("COINS", if (coinKeys.isEmpty()) "auto-select" else "${coinKeys.size} selected · ${Blake.btc(selectedSats)} ${Blake.RUNE}")
-        ReviewRow("FEE RATE", "$effectiveFee sat/vB")
-        ReviewRow("EST. FEE", "~${"%,d".format(estFee)} sats")
+        ReviewRow(stringResource(R.string.blk_mode), if (ricochet) "ricochet · $hops hop${if (hops == 1) "" else "s"}" else "direct")
+        ReviewRow(stringResource(R.string.blk_coins), if (coinKeys.isEmpty()) "auto-select" else "${coinKeys.size} selected · ${Blake.btc(selectedSats)} ${Blake.RUNE}")
+        ReviewRow(stringResource(R.string.blk_fee_rate), "$effectiveFee sat/vB")
+        ReviewRow(stringResource(R.string.blk_est_fee), "~${"%,d".format(estFee)} sats")
         Spacer(Modifier.height(10.dp))
         ReplayWarning()
         Spacer(Modifier.height(8.dp))
-        Text("Final fee is computed when the transaction is built. Broadcasts to BLAKE2b (Node B) — this can't be undone.",
+        Text(stringResource(R.string.blk_final_fee_is_computed_when_the_transacti),
             style = Blake.mono(7f), color = Blake.faint)
     }
 }
@@ -524,7 +526,7 @@ private fun ReplayWarning() {
     Row(Modifier.fillMaxWidth().border(1.dp, Blake.warn.copy(alpha = 0.5f), RectangleShape).padding(10.dp)) {
         Text("⚠", style = Blake.mono(14f, FontWeight.ExtraBold), color = Blake.warn)
         Spacer(Modifier.width(8.dp))
-        Text("Same address, two chains. This address can also hold Bitcoin (SHA-256) coins. The fork has NO replay protection — moving funds using a shared address can affect or lose your balance on the other chain.",
+        Text(stringResource(R.string.blk_same_address_two_chains_this_address_can),
             style = Blake.mono(8f), color = Blake.warn)
     }
 }
@@ -533,7 +535,7 @@ private fun ReplayWarning() {
 private fun SpendableCard(coinKeys: Set<String>, selectedSats: Long, spendable: Long, locked: Long) {
     val cc = coinKeys.isNotEmpty()
     Column(Modifier.fillMaxWidth().blakeCard()) {
-        Text(if (cc) "SELECTED · ${coinKeys.size} COIN${if (coinKeys.size == 1) "" else "S"}" else "SPENDABLE",
+        Text(if (cc) "SELECTED · ${coinKeys.size} COIN${if (coinKeys.size == 1) "" else "S"}" else stringResource(R.string.blk_spendable),
             style = Blake.mono(9f), color = Blake.faint, letterSpacing = 1.sp)
         Spacer(Modifier.height(4.dp))
         Text("${Blake.btc(if (cc) selectedSats else spendable)} ${Blake.RUNE}", style = Blake.mono(18f, FontWeight.ExtraBold), color = Blake.ok)
@@ -598,7 +600,7 @@ private fun SendResultScreen(r: WizardResult, onCopy: (String) -> Unit, onClose:
             Column(Modifier.fillMaxWidth().padding(bottom = 8.dp).blakeCard(10.dp)
                 .clickableNoRipple { onCopy(t); copiedTxid = t }) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(if (r.ricochet) (if (i == 0) "source" else if (i == r.txids.size - 1) "→ recipient" else "hop $i") else "txid",
+                    Text(if (r.ricochet) (if (i == 0) "source" else if (i == r.txids.size - 1) stringResource(R.string.blk_recipient) else "hop $i") else "txid",
                         style = Blake.mono(8f), color = Blake.faint)
                     Spacer(Modifier.weight(1f))
                     Text(if (copiedTxid == t) "✓ copied" else "copy", style = Blake.mono(8f), color = if (copiedTxid == t) Blake.ok else Blake.pp)
@@ -611,7 +613,7 @@ private fun SendResultScreen(r: WizardResult, onCopy: (String) -> Unit, onClose:
         if (contactName == null && r.contactValue.isNotEmpty()) {
             Spacer(Modifier.height(4.dp))
             when {
-                saved -> Text("✓ saved to contacts", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.ok)
+                saved -> Text(stringResource(R.string.blk_saved_to_contacts), style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.ok)
                 saving -> Column(Modifier.fillMaxWidth().blakeCard()) {
                     Text(if (isPaymentCode) "SAVE PAYNYM AS CONTACT" else "SAVE RECIPIENT AS CONTACT",
                         style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 1.sp)
@@ -620,17 +622,17 @@ private fun SendResultScreen(r: WizardResult, onCopy: (String) -> Unit, onClose:
                         textStyle = Blake.mono(13f).copy(color = Blake.fg), cursorBrush = SolidColor(Blake.pp),
                         decorationBox = { inner ->
                             Box(Modifier.fillMaxWidth().border(1.dp, Blake.line, RectangleShape).padding(10.dp)) {
-                                if (contactNameInput.isEmpty()) Text("Name (e.g. Stefa)", style = Blake.mono(13f), color = Blake.faint)
+                                if (contactNameInput.isEmpty()) Text(stringResource(R.string.blk_name_e_g_stefa), style = Blake.mono(13f), color = Blake.faint)
                                 inner()
                             }
                         })
                     Spacer(Modifier.height(10.dp))
                     Row {
-                        Text("SAVE", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.bg, letterSpacing = 1.sp, textAlign = TextAlign.Center,
+                        Text(stringResource(R.string.blk_save), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.bg, letterSpacing = 1.sp, textAlign = TextAlign.Center,
                             modifier = Modifier.weight(1f).background(Blake.pp).padding(vertical = 10.dp)
                                 .clickableNoRipple { com.astrolexis.pyblock.data.wallet.BlakeContactsStore.add(contactNameInput, r.contactValue); saved = true })
                         Spacer(Modifier.width(10.dp))
-                        Text("CANCEL", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 1.sp, textAlign = TextAlign.Center,
+                        Text(stringResource(R.string.blk_cancel), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 1.sp, textAlign = TextAlign.Center,
                             modifier = Modifier.weight(1f).border(1.dp, Blake.line, RectangleShape).padding(vertical = 10.dp).clickableNoRipple { saving = false })
                     }
                 }
@@ -641,7 +643,7 @@ private fun SendResultScreen(r: WizardResult, onCopy: (String) -> Unit, onClose:
         }
 
         Spacer(Modifier.height(10.dp))
-        Text("CLOSE", style = Blake.mono(13f, FontWeight.ExtraBold), color = Blake.bg, letterSpacing = 1.sp, textAlign = TextAlign.Center,
+        Text(stringResource(R.string.blk_close), style = Blake.mono(13f, FontWeight.ExtraBold), color = Blake.bg, letterSpacing = 1.sp, textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth().background(Blake.pp).padding(vertical = 12.dp).clickableNoRipple(onClose))
     }
     }
@@ -650,9 +652,10 @@ private fun SendResultScreen(r: WizardResult, onCopy: (String) -> Unit, onClose:
 private fun shortAddr(s: String): String = if (s.length <= 22) s else s.take(12) + "…" + s.takeLast(6)
 
 // ---- Helpers ----
+@Composable
 private fun amountSubtitle(unit: SendUnit, sendMax: Boolean, sats: Long, overspend: Boolean, ccy: String): String {
-    if (overspend) return "More than you can spend"
-    if (sats <= 0) return if (unit == SendUnit.BTC) "enter an amount in ᛒ" else "enter an amount in sats"
+    if (overspend) return stringResource(R.string.blk_more_than_you_can_spend)
+    if (sats <= 0) return if (unit == SendUnit.BTC) stringResource(R.string.blk_enter_an_amount_in) else stringResource(R.string.blk_enter_an_amount_in_sats)
     val other = if (unit == SendUnit.BTC) "${"%,d".format(sats)} sats" else "${Blake.btc(sats)} ᛒ"
     val fiat = BlakePrice.fiatLabel(sats)
     return if (fiat != null) "$other · $fiat $ccy" else other

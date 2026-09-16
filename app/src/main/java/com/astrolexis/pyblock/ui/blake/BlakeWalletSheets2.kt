@@ -1,5 +1,7 @@
 package com.astrolexis.pyblock.ui.blake
 
+import com.astrolexis.pyblock.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -47,7 +49,7 @@ fun RicochetHistorySheet(onCopy: (String) -> Unit, onClose: () -> Unit) {
 
     sheetBox("RICOCHETS", Blake.pp, onClose) {
         val mine = records.filter { it.network == "mainnet" }
-        if (mine.isEmpty()) Text("No ricochets yet.", style = Blake.mono(10f), color = Blake.faint)
+        if (mine.isEmpty()) Text(stringResource(R.string.blk_no_ricochets_yet), style = Blake.mono(10f), color = Blake.faint)
         else mine.forEach { r ->
             Row(Modifier.fillMaxWidth().padding(bottom = 8.dp).border(1.dp, Blake.line, RectangleShape).padding(12.dp)
                 .clickableNoRipple { detail = r }, verticalAlignment = Alignment.CenterVertically) {
@@ -65,23 +67,23 @@ fun RicochetHistorySheet(onCopy: (String) -> Unit, onClose: () -> Unit) {
 private fun RicochetChainSheet(r: RicochetRecord, onCopy: (String) -> Unit, onClose: () -> Unit) {
     var revealed by remember { mutableStateOf(false) }
     sheetBox("CHAIN", Blake.pp, onClose) {
-        Text("TRANSACTIONS", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
+        Text(stringResource(R.string.blk_transactions), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
         Spacer(Modifier.height(8.dp))
         r.txids.forEachIndexed { i, t ->
             Column(Modifier.fillMaxWidth().padding(bottom = 6.dp).border(1.dp, Blake.line, RectangleShape).padding(10.dp)
                 .clickableNoRipple { onCopy(t) }) {
-                Text(if (i == 0) "source" else if (i == r.txids.size - 1) "→ recipient" else "hop $i", style = Blake.mono(8f), color = Blake.faint)
+                Text(if (i == 0) "source" else if (i == r.txids.size - 1) stringResource(R.string.blk_recipient) else "hop $i", style = Blake.mono(8f), color = Blake.faint)
                 Text(mid(t, 12, 10), style = Blake.mono(10f), color = Blake.pp)
             }
         }
         Spacer(Modifier.height(14.dp))
-        Text("HOP ADDRESSES (provable)", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.warn, letterSpacing = 2.sp)
-        Text("The last hop is the address a recipient/exchange saw as the sender. Keys prove the hops are yours.",
+        Text(stringResource(R.string.blk_hop_addresses_provable), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.warn, letterSpacing = 2.sp)
+        Text(stringResource(R.string.blk_the_last_hop_is_the_address_a_recipient_),
             style = Blake.mono(8f), color = Blake.faint)
         Spacer(Modifier.height(8.dp))
         r.hopAddresses.forEachIndexed { i, a ->
             Column(Modifier.fillMaxWidth().padding(bottom = 6.dp).border(1.dp, Blake.line, RectangleShape).padding(10.dp)) {
-                Text(if (i == r.hopAddresses.size - 1) "sender (last hop)" else "hop $i",
+                Text(if (i == r.hopAddresses.size - 1) stringResource(R.string.blk_sender_last_hop) else "hop $i",
                     style = Blake.mono(8f), color = if (i == r.hopAddresses.size - 1) Blake.warn else Blake.faint)
                 Text(mid(a, 12, 8), style = Blake.mono(10f), color = Blake.fg, modifier = Modifier.clickableNoRipple { onCopy(a) })
                 if (revealed && i < r.hopWifs.size)
@@ -116,7 +118,7 @@ fun PaynymSheet(onCopy: (String) -> Unit, paste: () -> String, onClose: () -> Un
     var scanningKey by remember { mutableStateOf(false) }
 
     if (scanningKey) {
-        com.astrolexis.pyblock.ui.components.QrScanner(title = "SCAN A PYNYM1… IDENTITY KEY",
+        com.astrolexis.pyblock.ui.components.QrScanner(title = stringResource(R.string.blk_scan_a_pynym1_identity_key),
             onResult = { code -> restoreInput = code.trim(); restoring = true; pending = null; restoreErr = null; scanningKey = false },
             onClose = { scanningKey = false })
         return
@@ -124,7 +126,7 @@ fun PaynymSheet(onCopy: (String) -> Unit, paste: () -> String, onClose: () -> Un
 
     sheetBox("PAYNYM", Blake.pp, onClose) {
         // My code
-        Text("MY PAYNYM", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
+        Text(stringResource(R.string.blk_my_paynym), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
         Spacer(Modifier.height(10.dp))
         if (myCode.isNotEmpty()) {
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -133,25 +135,25 @@ fun PaynymSheet(onCopy: (String) -> Unit, paste: () -> String, onClose: () -> Un
             Spacer(Modifier.height(10.dp))
             Text(myCode, style = Blake.mono(9f), color = Blake.pp, modifier = Modifier.fillMaxWidth().clickableNoRipple { onCopy(myCode) })
             Spacer(Modifier.height(8.dp))
-            sheetBtn("COPY CODE", Blake.pp, filled = true) { onCopy(myCode) }
+            sheetBtn(stringResource(R.string.blk_copy_code), Blake.pp, filled = true) { onCopy(myCode) }
         } else {
             // Empty means the identity store could not be read. Say so loudly: a blank card invites
             // the user to assume a glitch, when the risk is receiving to addresses they can't derive.
-            Text("⚠ PAYNYM UNAVAILABLE", style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.danger, letterSpacing = 1.sp)
+            Text(stringResource(R.string.blk_paynym_unavailable), style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.danger, letterSpacing = 1.sp)
             Spacer(Modifier.height(6.dp))
-            Text("Your PayNym identity could not be read from secure storage, so your code can't be shown. Do NOT share a new code — unlock the device and reopen the app. If this persists after a restore, your identity may not have transferred; check before receiving PayNym payments.",
+            Text(stringResource(R.string.blk_your_paynym_identity_could_not_be_read_f),
                 style = Blake.mono(9f), color = Blake.warn)
         }
         Spacer(Modifier.height(6.dp))
-        if (myCode.isNotEmpty()) Text("Share once. Anyone can pay you repeatedly to fresh addresses — no reuse.", style = Blake.mono(8f), color = Blake.faint)
+        if (myCode.isNotEmpty()) Text(stringResource(R.string.blk_share_once_anyone_can_pay_you_repeatedly), style = Blake.mono(8f), color = Blake.faint)
 
         // IDENTITY BACKUP — the PayNym has no seed phrase, so these 64 bytes are the only way back.
         // Reveal is opt-in (as sensitive as a WIF) and restore is a two-step confirm that shows the
         // resulting payment code before anything is written.
         Spacer(Modifier.height(18.dp))
-        Text("IDENTITY BACKUP", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
+        Text(stringResource(R.string.blk_identity_backup), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
         Spacer(Modifier.height(6.dp))
-        Text("Your PayNym has no seed phrase — this key IS your PayNym, and it's printed on the paper backup. Without it, coins paid to your PayNym cannot be recovered on another device.",
+        Text(stringResource(R.string.blk_your_paynym_has_no_seed_phrase_this_key_),
             style = Blake.mono(9f), color = Blake.faint)
         Spacer(Modifier.height(10.dp))
         val idk = identityKey
@@ -165,24 +167,24 @@ fun PaynymSheet(onCopy: (String) -> Unit, paste: () -> String, onClose: () -> Un
                     com.astrolexis.pyblock.ui.components.copySensitiveToClipboard(ctx, idk, "PayNym identity key")
                 })
             Spacer(Modifier.height(6.dp))
-            Text("⚠ Anyone holding this key can derive every payment ever sent to your PayNym. Never share it and never store it on a connected device.",
+            Text(stringResource(R.string.blk_anyone_holding_this_key_can_derive_every),
                 style = Blake.mono(8f), color = Blake.warn)
             Spacer(Modifier.height(8.dp))
-            sheetBtn("HIDE KEY", Blake.ppDim) { revealed = false }
+            sheetBtn(stringResource(R.string.blk_hide_key), Blake.ppDim) { revealed = false }
         } else if (idk != null) {
-            sheetBtn("REVEAL IDENTITY KEY", Blake.warn) { revealed = true }
+            sheetBtn(stringResource(R.string.blk_reveal_identity_key), Blake.warn) { revealed = true }
         } else {
-            Text("The identity key can't be read right now. Unlock the device and reopen the app — do NOT restore over it while it can't be read.",
+            Text(stringResource(R.string.blk_the_identity_key_can_t_be_read_right_now),
                 style = Blake.mono(9f), color = Blake.danger)
         }
         Spacer(Modifier.height(10.dp))
         if (restoreDone) {
-            Text("✓ PayNym restored. Open each contact and tap CHECK to re-import what they sent you.",
+            Text(stringResource(R.string.blk_paynym_restored_open_each_contact_and_ta),
                 style = Blake.mono(9f), color = Blake.ok)
             Spacer(Modifier.height(8.dp))
         }
         if (!restoring) {
-            sheetBtn("RESTORE FROM BACKUP", Blake.ppDim) {
+            sheetBtn(stringResource(R.string.blk_restore_from_backup), Blake.ppDim) {
                 restoring = true; restoreErr = null; restoreDone = false; pending = null
             }
         } else {
@@ -191,36 +193,36 @@ fun PaynymSheet(onCopy: (String) -> Unit, paste: () -> String, onClose: () -> Un
             }
             Spacer(Modifier.height(6.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("⛶ SCAN", style = Blake.mono(10f), color = Blake.pp,
+                Text(stringResource(R.string.blk_scan), style = Blake.mono(10f), color = Blake.pp,
                     modifier = Modifier.clickableNoRipple { scanningKey = true })
                 Spacer(Modifier.width(14.dp))
-                Text("PASTE", style = Blake.mono(10f), color = Blake.pp,
+                Text(stringResource(R.string.blk_paste), style = Blake.mono(10f), color = Blake.pp,
                     modifier = Modifier.clickableNoRipple { restoreInput = paste(); pending = null; restoreErr = null })
                 Spacer(Modifier.weight(1f))
-                Text("CANCEL", style = Blake.mono(10f), color = Blake.ppDim,
+                Text(stringResource(R.string.blk_cancel), style = Blake.mono(10f), color = Blake.ppDim,
                     modifier = Modifier.clickableNoRipple { restoring = false; restoreInput = ""; pending = null; restoreErr = null })
             }
             Spacer(Modifier.height(8.dp))
             val pend = pending
             if (pend == null) {
-                sheetBtn("CHECK KEY", Blake.pp) {
+                sheetBtn(stringResource(R.string.blk_check_key), Blake.pp) {
                     val id = PaymentCode.parseIdentityKey(restoreInput)
-                    if (id == null) restoreErr = "Not a valid identity key (PYNYM1…). Check for a mistyped character — the checksum rejected it."
+                    if (id == null) restoreErr = ctx.getString(R.string.blk_not_a_valid_identity_key_pynym1_check_fo)
                     else { pending = id; restoreErr = null }
                 }
             } else {
-                Text(if (idk == null) "This will WRITE a PayNym identity to this device."
-                     else "This REPLACES the PayNym on this device. The current one is gone unless you have its key.",
+                Text(if (idk == null) stringResource(R.string.blk_this_will_write_a_paynym_identity_to_thi)
+                     else stringResource(R.string.blk_this_replaces_the_paynym_on_this_device_),
                     style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.danger)
                 Spacer(Modifier.height(4.dp))
                 Text("Restores to: ${PaymentCode.encode(pend)}", style = Blake.mono(8f), color = Blake.pp)
                 Spacer(Modifier.height(8.dp))
-                sheetBtn("CONFIRM RESTORE", Blake.danger) {
+                sheetBtn(stringResource(R.string.blk_confirm_restore), Blake.danger) {
                     if (PaymentCode.importIdentity(ctx, pend)) {
                         myCode = PaymentCode.myCode(ctx)
                         identityKey = runCatching { PaymentCode.myIdentityKey(ctx) }.getOrNull()
                         pending = null; restoring = false; restoreInput = ""; revealed = false; restoreDone = true
-                    } else restoreErr = "Could not write to secure storage. Nothing was changed."
+                    } else restoreErr = ctx.getString(R.string.blk_could_not_write_to_secure_storage_nothin)
                 }
             }
             restoreErr?.let { Spacer(Modifier.height(6.dp)); Text(it, style = Blake.mono(9f), color = Blake.danger) }
@@ -228,7 +230,7 @@ fun PaynymSheet(onCopy: (String) -> Unit, paste: () -> String, onClose: () -> Un
 
         Spacer(Modifier.height(16.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("ADD CONTACT", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
+            Text(stringResource(R.string.blk_add_contact_2), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
             Spacer(Modifier.weight(1f))
             Text(if (adding) "✕" else "+ CODE", style = Blake.mono(10f), color = Blake.pp, modifier = Modifier.clickableNoRipple { adding = !adding; msg = null })
         }
@@ -236,24 +238,24 @@ fun PaynymSheet(onCopy: (String) -> Unit, paste: () -> String, onClose: () -> Un
             Spacer(Modifier.height(8.dp))
             sheetField(newCode, "their PM8T… payment code", KeyboardType.Text) { newCode = it }
             Spacer(Modifier.height(4.dp))
-            Text("PASTE", style = Blake.mono(10f), color = Blake.pp, modifier = Modifier.clickableNoRipple { newCode = paste() })
+            Text(stringResource(R.string.blk_paste), style = Blake.mono(10f), color = Blake.pp, modifier = Modifier.clickableNoRipple { newCode = paste() })
             Spacer(Modifier.height(6.dp))
             sheetField(newLabel, "label (optional)", KeyboardType.Text) { newLabel = it }
             Spacer(Modifier.height(8.dp))
-            sheetBtn("ADD", Blake.ok) {
+            sheetBtn(stringResource(R.string.blk_add), Blake.ok) {
                 val c = PaynymBook.upsert(ctx, newLabel.ifBlank { "contact" }, newCode.trim())
                 if (c != null) { contacts = PaynymBook.all(ctx); newCode = ""; newLabel = ""; adding = false; msg = null }
-                else msg = "Not a valid PayNym (PM8T…) code."
+                else msg = ctx.getString(R.string.blk_not_a_valid_paynym_pm8t_code)
             }
             msg?.let { Text(it, style = Blake.mono(9f), color = Blake.danger) }
         }
 
         Spacer(Modifier.height(16.dp))
-        Text("PEOPLE", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
-        Text("Everyone you can pay, and who can pay you. People you talk to in the chat appear here on their own.",
+        Text(stringResource(R.string.blk_people), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
+        Text(stringResource(R.string.blk_everyone_you_can_pay_and_who_can_pay_you),
             style = Blake.mono(8f), color = Blake.faint)
         Spacer(Modifier.height(8.dp))
-        if (contacts.isEmpty()) Text("Nobody yet. Message someone in COMMUNITY, or add a code from outside.", style = Blake.mono(9f), color = Blake.faint)
+        if (contacts.isEmpty()) Text(stringResource(R.string.blk_nobody_yet_message_someone_in_community_), style = Blake.mono(9f), color = Blake.faint)
         else contacts.forEach { c ->
             Row(Modifier.fillMaxWidth().padding(bottom = 8.dp).border(1.dp, Blake.line, RectangleShape).padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically) {
@@ -263,7 +265,7 @@ fun PaynymSheet(onCopy: (String) -> Unit, paste: () -> String, onClose: () -> Un
                     Text(c.displayName, style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.fg)
                     Text(mid(c.code), style = Blake.mono(8f), color = Blake.faint)
                 }
-                Text("CHECK", style = Blake.mono(9f), color = Blake.pp, modifier = Modifier.clickableNoRipple {
+                Text(stringResource(R.string.blk_check), style = Blake.mono(9f), color = Blake.pp, modifier = Modifier.clickableNoRipple {
                     // An explicit check sweeps both derivation schemes from index 0.
                     scope.launch { PaynymNotifications.scan(ctx, full = true); msg = "Checked ${c.displayName}." }
                 })

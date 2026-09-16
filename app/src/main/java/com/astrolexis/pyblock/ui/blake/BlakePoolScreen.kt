@@ -1,5 +1,7 @@
 package com.astrolexis.pyblock.ui.blake
 
+import com.astrolexis.pyblock.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -116,8 +118,8 @@ fun BlakePoolScreen() {
                 style = Blake.mono(10f), color = Blake.ppDim, letterSpacing = 1.sp)
 
             Spacer(Modifier.height(22.dp))
-            if (!loaded) Text("⟳ loading network…", style = Blake.mono(10f), color = Blake.pp)
-            else if (stats == null) Text("⚠ can't reach the server.", style = Blake.mono(10f), color = Blake.danger)
+            if (!loaded) Text(stringResource(R.string.blk_loading_network), style = Blake.mono(10f), color = Blake.pp)
+            else if (stats == null) Text(stringResource(R.string.blk_can_t_reach_the_server), style = Blake.mono(10f), color = Blake.danger)
 
             Spacer(Modifier.height(14.dp))
             // KPI card — with the block-found sweep: a thin light bar crossing it once, left to right.
@@ -135,15 +137,15 @@ fun BlakePoolScreen() {
                 }
             }) {
                 Row(Modifier.fillMaxWidth()) {
-                    BlakeStat(hashrate(stats?.poolHashrateThs), "pool hashrate")
+                    BlakeStat(hashrate(stats?.poolHashrateThs), stringResource(R.string.blk_pool_hashrate))
                     Spacer(Modifier.weight(1f))
                     BlakeStat("${stats?.miners ?: 0}", "miners", Blake.fg, alignEnd = true)
                 }
                 Spacer(Modifier.height(18.dp))
                 Row(Modifier.fillMaxWidth()) {
-                    BlakeStat(hashrate(stats?.chainHashrateThs), "network hashrate", Blake.ppDim)
+                    BlakeStat(hashrate(stats?.chainHashrateThs), stringResource(R.string.blk_network_hashrate), Blake.ppDim)
                     Spacer(Modifier.weight(1f))
-                    BlakeStat(stats?.blockHeight?.toString() ?: "—", "block height", Blake.fg, alignEnd = true)
+                    BlakeStat(stats?.blockHeight?.toString() ?: "—", stringResource(R.string.blk_block_height), Blake.fg, alignEnd = true)
                 }
             }
 
@@ -152,7 +154,7 @@ fun BlakePoolScreen() {
             if (!byStratum.isNullOrEmpty()) {
                 Spacer(Modifier.height(22.dp))
                 Column(Modifier.fillMaxWidth().blakeCard()) {
-                    Text("HASHRATE BY STRATUM", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
+                    Text(stringResource(R.string.blk_hashrate_by_stratum), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
                     Spacer(Modifier.height(10.dp))
                     val labels = mapOf("lotto" to "LOTTO", "lotto_asic" to "LOTTO · ASIC",
                         "chirp" to "CHIRP", "carousel" to "CAROUSEL", "wavicles" to "WAVICLES")
@@ -182,7 +184,7 @@ fun BlakePoolScreen() {
                         }
                     }
                     Spacer(Modifier.height(6.dp))
-                    Text("Pool total across all stratums · network is every miner on BLAKE2b.",
+                    Text(stringResource(R.string.blk_pool_total_across_all_stratums_network_i),
                         style = Blake.mono(7f), color = Blake.faint)
                 }
             }
@@ -190,14 +192,14 @@ fun BlakePoolScreen() {
             // Places to go from the pool: rent hash to your address, or see your own miners. Same
             // rows as the wallet's command list — glyph, name, hint, chevron, hairline.
             Spacer(Modifier.height(22.dp))
-            poolCommandRow("ᚱ", "RENTALS", "rent hash to your address") { showRentals = true }
-            poolCommandRow("ᛗ", "MINER", "your workers · connect") { showMiner = true }
+            poolCommandRow("ᚱ", "RENTALS", stringResource(R.string.blk_rent_hash_to_your_address)) { showRentals = true }
+            poolCommandRow("ᛗ", "MINER", stringResource(R.string.blk_your_workers_connect)) { showMiner = true }
 
             Spacer(Modifier.height(22.dp))
-            Text("MINED BLOCKS", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
+            Text(stringResource(R.string.blk_mined_blocks), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
             Spacer(Modifier.height(12.dp))
             if (blocks.isEmpty()) {
-                Text("No blocks yet.", style = Blake.mono(10f), color = Blake.faint)
+                Text(stringResource(R.string.blk_no_blocks_yet), style = Blake.mono(10f), color = Blake.faint)
             } else {
                 blocks.take(20).forEach { b ->
                     Row(Modifier.fillMaxWidth().padding(bottom = 8.dp).blakeCard(12.dp)
@@ -258,28 +260,28 @@ private fun BlockDetailDialog(b: BlakeApi.Block, tip: Int, serverFlagship: Strin
     sheetBox("BLOCK #${b.height}", accent, onClose) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(b.stratum?.uppercase() ?: "—", style = Blake.mono(10f, FontWeight.ExtraBold), color = accent, letterSpacing = 1.sp)
-            if (isPrimary) { Spacer(Modifier.size(6.dp)); Text("· flagship", style = Blake.mono(8f), color = Blake.faint) }
+            if (isPrimary) { Spacer(Modifier.size(6.dp)); Text(stringResource(R.string.blk_flagship), style = Blake.mono(8f), color = Blake.faint) }
         }
         Spacer(Modifier.height(12.dp))
-        kv("REWARD", "${b.reward?.let { "%.8f".format(it) } ?: "—"} ${Blake.RUNE}", Blake.pp)
-        kv("FINDER", b.finderMasked ?: "—", Blake.fg)
-        kv("CONFIRMATIONS", if (confs > 0) "$confs" else "—", Blake.fg)
-        kv("DIFFICULTY", b.difficulty?.let { fmtDiff(it) } ?: "—", Blake.fg)
+        kv(stringResource(R.string.blk_reward), "${b.reward?.let { "%.8f".format(it) } ?: "—"} ${Blake.RUNE}", Blake.pp)
+        kv(stringResource(R.string.blk_finder), b.finderMasked ?: "—", Blake.fg)
+        kv(stringResource(R.string.blk_confirmations), if (confs > 0) "$confs" else "—", Blake.fg)
+        kv(stringResource(R.string.blk_difficulty), b.difficulty?.let { fmtDiff(it) } ?: "—", Blake.fg)
         // Since the swap the feed's protocol is the stratum name itself; showing it twice says nothing.
-        b.protocolName?.takeIf { it.lowercase() != b.stratum?.lowercase() }?.let { kv("PROTOCOL", it, Blake.fg) }
+        b.protocolName?.takeIf { it.lowercase() != b.stratum?.lowercase() }?.let { kv(stringResource(R.string.blk_protocol), it, Blake.fg) }
         detail?.architect?.takeIf { it.isNotBlank() }?.let {
             kv(if (b.stratum?.lowercase() == "wavicles") "BUILT BY" else "ARCHITECT",
                if (b.stratum?.lowercase() == "wavicles") "$it's node" else it, Blake.fg)
         }
-        kv("TIME", b.timestamp?.let { relTime(it) } ?: "—", Blake.fg)
+        kv(stringResource(R.string.blk_time), b.timestamp?.let { relTime(ctx, it) } ?: "—", Blake.fg)
         Spacer(Modifier.height(10.dp))
-        Text("HASH", style = Blake.mono(8f), color = Blake.faint, letterSpacing = 1.sp)
+        Text(stringResource(R.string.blk_hash), style = Blake.mono(8f), color = Blake.faint, letterSpacing = 1.sp)
         Text(b.hash, style = Blake.mono(9f), color = Blake.pp, modifier = Modifier.clickableNoRipple {
             clip.setText(androidx.compose.ui.text.AnnotatedString(b.hash))
-            android.widget.Toast.makeText(ctx, "Hash copied", android.widget.Toast.LENGTH_SHORT).show()
+            android.widget.Toast.makeText(ctx, ctx.getString(R.string.blk_hash_copied), android.widget.Toast.LENGTH_SHORT).show()
         })
         Spacer(Modifier.height(14.dp))
-        Text("COINBASE SPLIT", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
+        Text(stringResource(R.string.blk_coinbase_split), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
         Spacer(Modifier.height(8.dp))
         val outs = detail?.coinbase?.filter { (it.sats ?: 0L) > 0L }
         if (!outs.isNullOrEmpty()) {
@@ -299,12 +301,12 @@ private fun BlockDetailDialog(b: BlakeApi.Block, tip: Int, serverFlagship: Strin
             Spacer(Modifier.height(4.dp))
             Text("${outs.size} output(s) · shared coinbase", style = Blake.mono(8f), color = Blake.faint)
         } else if (loadingSplit) {
-            Text("Loading split…", style = Blake.mono(9f), color = Blake.faint)
+            Text(stringResource(R.string.blk_loading_split), style = Blake.mono(9f), color = Blake.faint)
         } else {
-            Text("The pool hasn't published this block's coinbase breakdown yet.", style = Blake.mono(9f), color = Blake.faint)
+            Text(stringResource(R.string.blk_the_pool_hasn_t_published_this_block_s_c), style = Blake.mono(9f), color = Blake.faint)
         }
         Spacer(Modifier.height(14.dp))
-        sheetBtn("CLOSE", Blake.ppDim) { onClose() }
+        sheetBtn(stringResource(R.string.blk_close), Blake.ppDim) { onClose() }
     }
 }
 
@@ -314,10 +316,10 @@ private fun fmtDiff(d: Double): String = when {
     d >= 1e6 -> "%.2fM".format(d / 1e6)
     else -> "%.0f".format(d)
 }
-private fun relTime(ts: Double): String {
+private fun relTime(ctx: android.content.Context, ts: Double): String {
     val s = System.currentTimeMillis() / 1000.0 - ts
     return when {
-        s < 60 -> "just now"
+        s < 60 -> ctx.getString(R.string.blk_just_now)
         s < 3600 -> "${(s / 60).toInt()}m ago"
         s < 86400 -> "${(s / 3600).toInt()}h ago"
         else -> "${(s / 86400).toInt()}d ago"

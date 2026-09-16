@@ -1,5 +1,7 @@
 package com.astrolexis.pyblock.ui.blake
 
+import com.astrolexis.pyblock.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -69,16 +71,16 @@ fun BlakeChirpScreen() {
             Text(
                 if (sp?.syndicate != null)
                     "Syndicate · ${pctText(sp.syndicate)} to members by weight · ${pctText(sp.supplier ?: 0.0)} node-runner · ${pctText(sp.pool ?: 0.0)} PyBLØCK"
-                else "Syndicate · weighted split",
+                else stringResource(R.string.blk_syndicate_weighted_split),
                 style = Blake.mono(10f), color = Blake.ppDim)
 
             Spacer(Modifier.height(22.dp))
-            if (!loaded) { Text("⟳ loading…", style = Blake.mono(10f), color = Blake.pp); Spacer(Modifier.height(14.dp)) }
-            else if (pool == null) { Text("⚠ can't reach the server.", style = Blake.mono(10f), color = Blake.danger); Spacer(Modifier.height(14.dp)) }
+            if (!loaded) { Text(stringResource(R.string.blk_loading), style = Blake.mono(10f), color = Blake.pp); Spacer(Modifier.height(14.dp)) }
+            else if (pool == null) { Text(stringResource(R.string.blk_can_t_reach_the_server), style = Blake.mono(10f), color = Blake.danger); Spacer(Modifier.height(14.dp)) }
 
             Column(Modifier.fillMaxWidth().blakeCard()) {
                 Row(Modifier.fillMaxWidth()) {
-                    BlakeStat(hr(pool?.hashrate), "syndicate hashrate")
+                    BlakeStat(hr(pool?.hashrate), stringResource(R.string.blk_syndicate_hashrate))
                     Spacer(Modifier.weight(1f))
                     BlakeStat("${pool?.workers ?: 0}", "workers", Blake.fg, alignEnd = true)
                 }
@@ -108,7 +110,7 @@ fun BlakeChirpScreen() {
                 Spacer(Modifier.height(22.dp))
                 Column(Modifier.fillMaxWidth().blakeCard()) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("BLOCK PARTICIPATION", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.ppDim,
+                        Text(stringResource(R.string.blk_block_participation), style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.ppDim,
                             letterSpacing = 1.5.sp, maxLines = 1, softWrap = false)
                         Spacer(Modifier.weight(1f))
                         Spacer(Modifier.width(8.dp))
@@ -139,7 +141,7 @@ fun BlakeChirpScreen() {
                 Column(Modifier.fillMaxWidth().blakeCard()) {
                     Row(Modifier.fillMaxWidth().clickableNoRipple { showParticipants = !showParticipants },
                         verticalAlignment = Alignment.CenterVertically) {
-                        Text("PARTICIPANTS", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
+                        Text(stringResource(R.string.blk_participants), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
                         Spacer(Modifier.width(8.dp))
                         Text("${online.size}", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.pp)
                         Spacer(Modifier.weight(1f))
@@ -163,21 +165,21 @@ fun BlakeChirpScreen() {
 
             Spacer(Modifier.height(22.dp))
             Column(Modifier.fillMaxWidth().blakeCard()) {
-                Text("ELIGIBILITY", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
+                Text(stringResource(R.string.blk_eligibility), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
                 Spacer(Modifier.height(10.dp))
                 rule("min loyalty", pool?.minDays?.let { "$it days" } ?: "—")
                 rule("min power", powerStr(pool?.minPower))
                 Spacer(Modifier.height(6.dp))
-                Text("Below the floor you still mine but don't share the reward split.",
+                Text(stringResource(R.string.blk_below_the_floor_you_still_mine_but_don_t),
                     style = Blake.mono(8f), color = Blake.faint)
             }
 
             Spacer(Modifier.height(22.dp))
             Column(Modifier.fillMaxWidth().blakeCard()) {
-                Text("CONNECT", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
+                Text(stringResource(R.string.blk_connect), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
                 Spacer(Modifier.height(10.dp))
                 Text("pool.pyblock.xyz:5574", style = Blake.mono(13f), color = Blake.pp)
-                Text("user = your BLAKE2b address · pass = x", style = Blake.mono(9f), color = Blake.faint)
+                Text(stringResource(R.string.blk_user_your_blake2b_address_pass_x), style = Blake.mono(9f), color = Blake.faint)
             }
             Spacer(Modifier.height(24.dp))
         }

@@ -1,5 +1,7 @@
 package com.astrolexis.pyblock.ui.blake
 
+import com.astrolexis.pyblock.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -50,20 +52,20 @@ fun ContactsSheet(onPick: ((String) -> Unit)?, onClose: () -> Unit) {
 
     sheetBox("CONTACTS", Blake.pp, onClose) {
         if (onPick != null) {
-            Text("Tap a contact to use it as the recipient.", style = Blake.mono(9f), color = Blake.faint)
+            Text(stringResource(R.string.blk_tap_a_contact_to_use_it_as_the_recipient), style = Blake.mono(9f), color = Blake.faint)
             Spacer(Modifier.height(12.dp))
         }
 
         if (adding) {
             Column(Modifier.fillMaxWidth().border(1.dp, Blake.line, RectangleShape).padding(14.dp)) {
-                Text("NEW CONTACT", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
+                Text(stringResource(R.string.blk_new_contact), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
                 Spacer(Modifier.height(10.dp))
                 labeledField("Name (e.g. Stefa)", newLabel, KeyboardType.Text) { newLabel = it }
                 Spacer(Modifier.height(10.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("ADDRESS / PAYNYM", style = Blake.mono(9f), color = Blake.faint, letterSpacing = 1.sp)
+                    Text(stringResource(R.string.blk_address_paynym), style = Blake.mono(9f), color = Blake.faint, letterSpacing = 1.sp)
                     Spacer(Modifier.weight(1f))
-                    Text("PASTE", style = Blake.mono(10f), color = Blake.pp,
+                    Text(stringResource(R.string.blk_paste), style = Blake.mono(10f), color = Blake.pp,
                         modifier = Modifier.clickableNoRipple { newValue = sanitizeContact(clip.getText()?.text ?: "") })
                 }
                 Spacer(Modifier.height(4.dp))
@@ -73,28 +75,28 @@ fun ContactsSheet(onPick: ((String) -> Unit)?, onClose: () -> Unit) {
                         .border(1.dp, if (canSave || newValue.isEmpty()) Blake.line else Blake.danger, RectangleShape).padding(10.dp))
                 if (newValue.isNotEmpty() && !canSave) {
                     Spacer(Modifier.height(4.dp))
-                    Text("That isn't a valid address or PayNym code.", style = Blake.mono(8f), color = Blake.danger)
+                    Text(stringResource(R.string.blk_that_isn_t_a_valid_address_or_paynym_cod), style = Blake.mono(8f), color = Blake.danger)
                 }
                 Spacer(Modifier.height(12.dp))
                 Row {
                     Column(Modifier.weight(1f)) {
-                        sheetBtn("SAVE", Blake.pp, filled = canSave) {
+                        sheetBtn(stringResource(R.string.blk_save), Blake.pp, filled = canSave) {
                             if (canSave) { BlakeContactsStore.add(newLabel, newValue); adding = false; newLabel = ""; newValue = "" }
                         }
                     }
                     Spacer(Modifier.width(10.dp))
                     Column(Modifier.weight(1f)) {
-                        sheetBtn("CANCEL", Blake.ppDim) { adding = false; newLabel = ""; newValue = "" }
+                        sheetBtn(stringResource(R.string.blk_cancel), Blake.ppDim) { adding = false; newLabel = ""; newValue = "" }
                     }
                 }
             }
         } else {
-            sheetBtn("+ ADD CONTACT", Blake.pp) { adding = true }
+            sheetBtn(stringResource(R.string.blk_add_contact), Blake.pp) { adding = true }
         }
 
         Spacer(Modifier.height(12.dp))
         if (contacts.isEmpty() && !adding) {
-            Text("No contacts yet. Save an address or a PayNym (PM…) to reuse it.",
+            Text(stringResource(R.string.blk_no_contacts_yet_save_an_address_or_a_pay),
                 style = Blake.mono(9f), color = Blake.faint)
         }
         contacts.forEach { c ->

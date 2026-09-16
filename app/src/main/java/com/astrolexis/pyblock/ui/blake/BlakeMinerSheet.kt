@@ -1,5 +1,7 @@
 package com.astrolexis.pyblock.ui.blake
 
+import com.astrolexis.pyblock.R
+import androidx.compose.ui.res.stringResource
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
@@ -95,7 +97,7 @@ fun BlakeMinerSheet(onClose: () -> Unit) {
     fullSheet("MINER", onClose) {
         // ---- Address ----
         Row(verticalAlignment = Alignment.CenterVertically) {
-            sectionTitle("ADDRESS")
+            sectionTitle(stringResource(R.string.blk_address))
             Spacer(Modifier.weight(1f))
             if (wallets.isNotEmpty()) Text(if (scanning) "SCANNING…" else "FIND MINE", style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 1.sp,
                 modifier = Modifier.clickableNoRipple { if (!scanning) { Haptics.tap(); scope.launch { scanWallet() } } })
@@ -107,13 +109,13 @@ fun BlakeMinerSheet(onClose: () -> Unit) {
             Spacer(Modifier.height(6.dp))
             Text(com.astrolexis.pyblock.data.blake.AddressCheck.grouped(address), style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.fg)
             if (!com.astrolexis.pyblock.data.blake.AddressCheck.isValid(address)) {
-                Text("This is not a valid payout address — the pool has nowhere to pay it.",
+                Text(stringResource(R.string.blk_this_is_not_a_valid_payout_address_the_p),
                     style = Blake.mono(7f), color = Blake.danger)
             }
         }
         if (editing || address.isEmpty()) {
             if (found.isNotEmpty()) {
-                Spacer(Modifier.height(6.dp)); Text("mining from your wallet:", style = Blake.mono(8f), color = Blake.faint)
+                Spacer(Modifier.height(6.dp)); Text(stringResource(R.string.blk_mining_from_your_wallet), style = Blake.mono(8f), color = Blake.faint)
                 found.forEach { a ->
                     Text(a, style = Blake.mono(9f), color = if (a == address) Blake.ok else Blake.pp, maxLines = 1, overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp).clickableNoRipple { Haptics.tap(); select(a) })
@@ -121,7 +123,7 @@ fun BlakeMinerSheet(onClose: () -> Unit) {
             }
             if (wallets.isNotEmpty()) {
                 Spacer(Modifier.height(6.dp))
-                Text("PICK FROM WALLET ›", style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 1.sp, modifier = Modifier.clickableNoRipple { showPick = !showPick })
+                Text(stringResource(R.string.blk_pick_from_wallet), style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 1.sp, modifier = Modifier.clickableNoRipple { showPick = !showPick })
                 if (showPick) wallets.take(40).forEach { w ->
                     Text(w.address, style = Blake.mono(9f), color = Blake.pp, maxLines = 1, overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp).clickableNoRipple { Haptics.tap(); select(w.address) })
@@ -132,10 +134,10 @@ fun BlakeMinerSheet(onClose: () -> Unit) {
                 BasicTextField(value = manual, onValueChange = { manual = it }, singleLine = true,
                     textStyle = Blake.mono(10f).copy(color = Blake.fg), cursorBrush = SolidColor(Blake.pp),
                     modifier = Modifier.weight(1f).border(1.dp, Blake.line, RectangleShape).padding(9.dp),
-                    decorationBox = { inner -> if (manual.isEmpty()) Text("other address", style = Blake.mono(10f), color = Blake.faint); inner() })
+                    decorationBox = { inner -> if (manual.isEmpty()) Text(stringResource(R.string.blk_other_address), style = Blake.mono(10f), color = Blake.faint); inner() })
                 Spacer(Modifier.width(8.dp))
                 val ok = com.astrolexis.pyblock.data.blake.AddressCheck.isValid(manual)
-                Text("USE", style = Blake.mono(9f, FontWeight.ExtraBold), color = if (ok) Blake.pp else Blake.faint, letterSpacing = 1.sp,
+                Text(stringResource(R.string.blk_use), style = Blake.mono(9f, FontWeight.ExtraBold), color = if (ok) Blake.pp else Blake.faint, letterSpacing = 1.sp,
                     modifier = Modifier.clickableNoRipple { if (ok) { Haptics.tap(); select(com.astrolexis.pyblock.data.blake.AddressCheck.normalize(manual)); manual = "" } })
             }
             // On this pool the payout address IS the stratum username, so an unchecked address here
@@ -148,19 +150,19 @@ fun BlakeMinerSheet(onClose: () -> Unit) {
 
         val s = stats
         when {
-            address.isEmpty() -> Text("Pick the payout address you mine to — it is the stratum username.", style = Blake.mono(9f), color = Blake.ppDim)
-            !loaded -> Text("⟳ reading the gateways…", style = Blake.mono(10f), color = Blake.pp)
-            s == null -> Text("⚠ can't reach the server.", style = Blake.mono(10f), color = Blake.danger)
+            address.isEmpty() -> Text(stringResource(R.string.blk_pick_the_payout_address_you_mine_to_it_i), style = Blake.mono(9f), color = Blake.ppDim)
+            !loaded -> Text(stringResource(R.string.blk_reading_the_gateways), style = Blake.mono(10f), color = Blake.pp)
+            s == null -> Text(stringResource(R.string.blk_can_t_reach_the_server), style = Blake.mono(10f), color = Blake.danger)
             s.isMining -> {
                 Column(Modifier.fillMaxWidth().blakeCard()) {
                     Row(Modifier.fillMaxWidth()) {
-                        BlakeStat(BlakeRentals.th(s.totalTh1m), "hashrate now")
+                        BlakeStat(BlakeRentals.th(s.totalTh1m), stringResource(R.string.blk_hashrate_now))
                         Spacer(Modifier.weight(1f))
                         BlakeStat("${s.workersOnline}", "workers online", Blake.fg, alignEnd = true)
                     }
                     Spacer(Modifier.height(18.dp))
                     Row(Modifier.fillMaxWidth()) {
-                        BlakeStat(BlakeRentals.th(s.totalTh1d), "24h average", Blake.ppDim)
+                        BlakeStat(BlakeRentals.th(s.totalTh1d), stringResource(R.string.blk_s_24h_average), Blake.ppDim)
                         Spacer(Modifier.weight(1f))
                         BlakeStat("${s.blocks.size}", "blocks paid", Blake.fg, alignEnd = true)
                     }
@@ -175,26 +177,26 @@ fun BlakeMinerSheet(onClose: () -> Unit) {
                     val pro = com.astrolexis.pyblock.data.store.EntitlementsStore.isPro
                     var rigAlerts by remember { mutableStateOf(com.astrolexis.pyblock.data.nostr.Nostr.rigAlerts(ctx)) }
                     Row(Modifier.fillMaxWidth().padding(vertical = 6.dp).clickableNoRipple {
-                            if (!pro) { toast(ctx, "Rig alerts are PRO."); return@clickableNoRipple }
+                            if (!pro) { toast(ctx, ctx.getString(R.string.blk_rig_alerts_are_pro)); return@clickableNoRipple }
                             rigAlerts = !rigAlerts
                             com.astrolexis.pyblock.data.nostr.Nostr.setRigAlerts(ctx, rigAlerts)
                             com.astrolexis.pyblock.data.net.PushRepo.syncAddressesAsync(ctx)
                         }, verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            Text("ALERT ME WHEN A RIG GOES QUIET", style = Blake.mono(9f, FontWeight.ExtraBold), color = if (pro) Blake.fg else Blake.ppDim, letterSpacing = 1.sp)
+                            Text(stringResource(R.string.blk_alert_me_when_a_rig_goes_quiet), style = Blake.mono(9f, FontWeight.ExtraBold), color = if (pro) Blake.fg else Blake.ppDim, letterSpacing = 1.sp)
                             Text(if (pro) "A push if this address stops submitting shares." else "PRO. A push before a day of hash is lost.", style = Blake.mono(7f), color = Blake.faint)
                         }
-                        Text(if (!pro) "PRO" else if (rigAlerts) "on ▸" else "off ▸", style = Blake.mono(9f, FontWeight.ExtraBold), color = if (rigAlerts && pro) Blake.ok else Blake.pp)
+                        Text(if (!pro) "PRO" else if (rigAlerts) stringResource(R.string.blk_on) else stringResource(R.string.blk_off), style = Blake.mono(9f, FontWeight.ExtraBold), color = if (rigAlerts && pro) Blake.ok else Blake.pp)
                     }
                 }
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        sectionTitle("HASHRATE")
+                        sectionTitle(stringResource(R.string.blk_hashrate))
                         Spacer(Modifier.weight(1f))
                         val isPro = com.astrolexis.pyblock.data.store.EntitlementsStore.isPro
                         listOf("1d", "7d", "30d", "1y").forEach { r ->
                             val locked = r == "1y" && !isPro     // a year of history is PRO
                             Text(r, style = Blake.mono(9f, FontWeight.ExtraBold), color = if (range == r) Blake.pp else if (locked) Blake.ppDim else Blake.faint, letterSpacing = 1.sp,
-                                modifier = Modifier.padding(horizontal = 6.dp).clickableNoRipple { if (locked) toast(ctx, "A year of history is PRO.") else { Haptics.tap(); range = r } })
+                                modifier = Modifier.padding(horizontal = 6.dp).clickableNoRipple { if (locked) toast(ctx, ctx.getString(R.string.blk_a_year_of_history_is_pro)) else { Haptics.tap(); range = r } })
                         }
                     }
                     Spacer(Modifier.height(10.dp))
@@ -204,29 +206,29 @@ fun BlakeMinerSheet(onClose: () -> Unit) {
                         sparkline(v, Blake.pp, 90.dp, fill = true)
                         Spacer(Modifier.height(6.dp))
                         Row { Text("peak ${BlakeRentals.th(mx)}", style = Blake.mono(7f), color = Blake.faint); Spacer(Modifier.weight(1f)); Text("${v.size} samples · 3 min each", style = Blake.mono(7f), color = Blake.faint) }
-                    } else Text("no samples in this range yet", style = Blake.mono(8f), color = Blake.faint)
+                    } else Text(stringResource(R.string.blk_no_samples_in_this_range_yet), style = Blake.mono(8f), color = Blake.faint)
                 }
                 Spacer(Modifier.height(18.dp))
                 blocksList(s.blocks)
             }
             else -> {
-                Text("No shares from this address yet. Point a miner here and it shows up within a few minutes.", style = Blake.mono(9f), color = Blake.ppDim)
+                Text(stringResource(R.string.blk_no_shares_from_this_address_yet_point_a_), style = Blake.mono(9f), color = Blake.ppDim)
                 if (s.blocks.isNotEmpty()) { Spacer(Modifier.height(18.dp)); blocksList(s.blocks) }
             }
         }
 
         // ---- Connect ----
         Spacer(Modifier.height(22.dp))
-        sectionTitle("CONNECT A MINER")
+        sectionTitle(stringResource(R.string.blk_connect_a_miner))
         Spacer(Modifier.height(6.dp))
         val c = connect
         if (c != null) {
             val host = c.host ?: "b.pyblock.xyz"
             val copyRow: (String, String) -> Unit = { _, v -> Haptics.tap(); clip.setText(AnnotatedString(v)) }
-            Box(Modifier.clickableNoRipple { copyRow("HOST", host) }) { labelValue("HOST", host) }
+            Box(Modifier.clickableNoRipple { copyRow("HOST", host) }) { labelValue(stringResource(R.string.blk_host), host) }
             val user = if (address.isEmpty()) (c.username ?: "<payout address>[.worker]") else "$address.rig1"
-            Box(Modifier.clickableNoRipple { copyRow("USERNAME", user) }) { labelValue("USERNAME", user) }
-            labelValue("PASSWORD", c.password ?: "x")
+            Box(Modifier.clickableNoRipple { copyRow("USERNAME", user) }) { labelValue(stringResource(R.string.blk_username), user) }
+            labelValue(stringResource(R.string.blk_password), c.password ?: "x")
             c.pools.forEach { p ->
                 val target = "$host:${p.port ?: 0}"
                 Row(Modifier.fillMaxWidth().hairline().clickableNoRipple {
@@ -261,6 +263,7 @@ fun BlakeMinerSheet(onClose: () -> Unit) {
 
 @Composable
 private fun poolCard(p: BlakeMiner.PoolEntry) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
     Column(Modifier.fillMaxWidth().blakeCard()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(6.dp).background(if (p.live == true) Blake.ok else Blake.faint, CircleShape))
@@ -280,14 +283,14 @@ private fun poolCard(p: BlakeMiner.PoolEntry) {
             p.workers.forEach { w ->
                 Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
-                        Text(if (w.name.isNullOrEmpty()) "(default worker)" else w.name, style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.fg)
+                        Text(if (w.name.isNullOrEmpty()) stringResource(R.string.blk_default_worker) else w.name, style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.fg)
                         val rej = (w.sharesDiffRej ?: 0.0).toLong()
                         Text("${shortAgent(w.agent)} · diff ${(w.vdiff ?: 0.0).toLong()} · acc ${(w.sharesDiffAcc ?: 0.0).toLong()}${if (rej > 0) " · rej $rej" else ""}",
                             style = Blake.mono(7f), color = Blake.faint, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                     Column(horizontalAlignment = Alignment.End) {
                         Text(BlakeRentals.th(w.hashrateTh), style = Blake.mono(10f, FontWeight.ExtraBold), color = if ((w.hashrateTh ?: 0.0) > 0) Blake.ok else Blake.faint)
-                        Text(w.lastshare?.let { "share ${relTimeSecs(it)}" } ?: "no share yet", style = Blake.mono(7f), color = Blake.faint)
+                        Text(w.lastshare?.let { "share ${relTimeSecs(ctx, it)}" } ?: "no share yet", style = Blake.mono(7f), color = Blake.faint)
                     }
                 }
             }
@@ -305,19 +308,20 @@ private fun kpi(l: String, v: Double?) {
 
 @Composable
 private fun blocksList(list: List<BlakeMiner.MinerBlock>) {
-    sectionTitle("BLOCKS PAID TO THIS ADDRESS")
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    sectionTitle(stringResource(R.string.blk_blocks_paid_to_this_address))
     Spacer(Modifier.height(6.dp))
-    if (list.isEmpty()) Text("none yet", style = Blake.mono(8f), color = Blake.faint)
+    if (list.isEmpty()) Text(stringResource(R.string.blk_none_yet), style = Blake.mono(8f), color = Blake.faint)
     else list.sortedByDescending { it.height }.take(50).forEach { b ->
         Row(Modifier.fillMaxWidth().hairline().padding(vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("#${b.height}", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.fg)
             Spacer(Modifier.width(10.dp))
             Text((b.pool ?: "").uppercase(), style = Blake.mono(8f, FontWeight.ExtraBold), color = poolColor(b.pool ?: ""), letterSpacing = 1.sp)
-            if (b.role == "finder") { Spacer(Modifier.width(8.dp)); Text("FOUND", style = Blake.mono(7f, FontWeight.ExtraBold), color = Blake.ok, letterSpacing = 1.sp) }
+            if (b.role == "finder") { Spacer(Modifier.width(8.dp)); Text(stringResource(R.string.blk_found), style = Blake.mono(7f, FontWeight.ExtraBold), color = Blake.ok, letterSpacing = 1.sp) }
             Spacer(Modifier.weight(1f))
             b.rewardSats?.let { Text("+${Blake.btc(it.coerceAtLeast(0))} ${Blake.RUNE}", style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.pp) }
             Spacer(Modifier.width(8.dp))
-            Text(b.time?.let { relTimeSecs(it) } ?: "", style = Blake.mono(7f), color = Blake.faint)
+            Text(b.time?.let { relTimeSecs(ctx, it) } ?: "", style = Blake.mono(7f), color = Blake.faint)
         }
     }
 }

@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.util.Locale
 
-/** In-app language override (6 locales). Live switch without recreating the
+/** In-app language override (en · es · it · zh). Live switch without recreating the
  *  Activity: [LocalizedApp] provides a locale-adjusted Context so `stringResource`
  *  recomposes when [lang] changes. Mirrors iOS `LocalizationManager`. */
 object LocaleStore {
@@ -17,10 +17,8 @@ object LocaleStore {
     val supported = listOf(
         Lang("en", "English"),
         Lang("es", "Español"),
-        Lang("pt-BR", "Português"),
-        Lang("fr", "Français"),
-        Lang("de", "Deutsch"),
         Lang("it", "Italiano"),
+        Lang("zh-CN", "中文"),
     )
 
     private const val PREFS = "pyblock_locale"
@@ -44,11 +42,11 @@ object LocaleStore {
 
     /** Best match of the device language to our supported set. */
     private fun systemDefault(): String = when (Locale.getDefault().language.lowercase()) {
-        "es" -> "es"; "pt" -> "pt-BR"; "fr" -> "fr"; "de" -> "de"; "it" -> "it"; else -> "en"
+        "es" -> "es"; "it" -> "it"; "zh" -> "zh-CN"; else -> "en"
     }
 
     fun locale(code: String): Locale = when (code) {
-        "pt-BR" -> Locale("pt", "BR")
+        "zh-CN" -> Locale.SIMPLIFIED_CHINESE
         else -> Locale.forLanguageTag(code)
     }
 }

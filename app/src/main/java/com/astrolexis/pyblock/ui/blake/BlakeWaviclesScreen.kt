@@ -1,5 +1,7 @@
 package com.astrolexis.pyblock.ui.blake
 
+import com.astrolexis.pyblock.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -97,16 +99,16 @@ fun BlakeWaviclesScreen() {
             Text(
                 if (ownPct != null && stratumPct != null)
                     "DATUM · bring your own node · ${wpct(ownPct)} fee · ${wpct(stratumPct)} via our stratum"
-                else "DATUM · bring your own node",
+                else stringResource(R.string.blk_datum_bring_your_own_node),
                 style = Blake.mono(10f), color = Blake.ppDim)
             Spacer(Modifier.height(22.dp))
-            if (!loaded) { Text("⟳ loading…", style = Blake.mono(10f), color = Blake.wave); Spacer(Modifier.height(14.dp)) }
-            else if (offline) { Text("⚠ pool offline — pull to retry.", style = Blake.mono(10f), color = Blake.danger); Spacer(Modifier.height(14.dp)) }
+            if (!loaded) { Text(stringResource(R.string.blk_loading), style = Blake.mono(10f), color = Blake.wave); Spacer(Modifier.height(14.dp)) }
+            else if (offline) { Text(stringResource(R.string.blk_pool_offline_pull_to_retry), style = Blake.mono(10f), color = Blake.danger); Spacer(Modifier.height(14.dp)) }
 
             // KPIs
             Column(Modifier.fillMaxWidth().blakeCard()) {
                 Row(Modifier.fillMaxWidth()) {
-                    BlakeStat(hrGhs(stats?.hashrate?.poolGhs), "pool hashrate", Blake.wave)
+                    BlakeStat(hrGhs(stats?.hashrate?.poolGhs), stringResource(R.string.blk_pool_hashrate), Blake.wave)
                     Spacer(Modifier.weight(1f))
                     BlakeStat("${stats?.gateways ?: 0}", "gateways", Blake.fg, alignEnd = true)
                 }
@@ -121,7 +123,7 @@ fun BlakeWaviclesScreen() {
             // "If a block is found right now"
             Spacer(Modifier.height(22.dp))
             Column(Modifier.fillMaxWidth().blakeCard()) {
-                Text("IF A BLOCK IS FOUND RIGHT NOW", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.ppDim,
+                Text(stringResource(R.string.blk_if_a_block_is_found_right_now), style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.ppDim,
                     letterSpacing = 1.5.sp, maxLines = 1, softWrap = false)
                 Spacer(Modifier.height(12.dp))
                 val value = w?.sampleValue ?: 0L
@@ -149,7 +151,7 @@ fun BlakeWaviclesScreen() {
                 val miners = allMiners.filter { isPayoutIdentity(it.identity) }
                 val unpayable = allMiners.size - miners.size
                 if (miners.isEmpty()) {
-                    Text("Window empty — the first block pays the pool until work is credited.",
+                    Text(stringResource(R.string.blk_window_empty_the_first_block_pays_the_po),
                         style = Blake.mono(8f), color = Blake.faint)
                 } else {
                     miners.forEach { m ->
@@ -164,7 +166,7 @@ fun BlakeWaviclesScreen() {
                             Column(horizontalAlignment = Alignment.End) {
                                 Text("${Blake.btc(maxOf(0L, m.payoutSats ?: 0L))} ${Blake.RUNE}",
                                     style = Blake.mono(9f, FontWeight.ExtraBold), color = if (m.payable == false) Blake.faint else Blake.wave)
-                                Text(if (m.payable == false) "below min payout" else "%.1f%%".format(m.sharePercent ?: 0.0),
+                                Text(if (m.payable == false) stringResource(R.string.blk_below_min_payout) else "%.1f%%".format(m.sharePercent ?: 0.0),
                                     style = Blake.mono(7f), color = Blake.faint)
                             }
                         }
@@ -183,14 +185,14 @@ fun BlakeWaviclesScreen() {
             // "Owed to miners", which read as if we were holding somebody's coins.
             Spacer(Modifier.height(22.dp))
             Column(Modifier.fillMaxWidth().blakeCard()) {
-                Text("PROOF", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
+                Text(stringResource(R.string.blk_proof), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
                 Spacer(Modifier.height(6.dp))
                 val carry = stats?.wavicles?.carryTotalSats ?: 0L
                 if (stats?.wavicles?.carryForward == true && carry > 0) {
                     Text("Legacy carry from the earlier rule: $carry sats",
                         style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.warn)
                 }
-                Text("Nothing is held back: what a coinbase can't place isn't owed, it stays in the split and is visible in the snapshot committed to the block's OP_RETURN.",
+                Text(stringResource(R.string.blk_nothing_is_held_back_what_a_coinbase_can),
                     style = Blake.mono(8f), color = Blake.faint)
                 stats?.wavicles?.lastSnapshot?.let {
                     Spacer(Modifier.height(4.dp))
@@ -202,29 +204,29 @@ fun BlakeWaviclesScreen() {
             // How it works
             Spacer(Modifier.height(22.dp))
             Column(Modifier.fillMaxWidth().blakeCard()) {
-                Text("HOW IT WORKS", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
+                Text(stringResource(R.string.blk_how_it_works), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
                 Spacer(Modifier.height(8.dp))
                 val own = stats?.pool?.feeBps?.let { it / 100.0 }
                 val strat = stats?.pool?.stratumFeeBps?.let { it / 100.0 }
                 Text(
                     if (own != null && strat != null)
                         "${wpct(100 - own)} of every block goes to the work window — split by share of work (TIDES), paid in that block's coinbase. The fee is ${wpct(own)} when you bring your own node, ${wpct(strat)} when the block comes through PyBLØCK's stratum."
-                    else "Every block goes to the work window — split by share of work (TIDES), paid in that block's coinbase.",
+                    else stringResource(R.string.blk_every_block_goes_to_the_work_window_spli),
                     style = Blake.mono(9f), color = Blake.fg)
                 Spacer(Modifier.height(6.dp))
-                Text("Not solo: every block found by anyone in the window pays everyone in the window.",
+                Text(stringResource(R.string.blk_not_solo_every_block_found_by_anyone_in_),
                     style = Blake.mono(9f), color = Blake.wave)
                 Spacer(Modifier.height(6.dp))
-                Text("Trustless: each coinbase commits BLAKE2b-256(snapshot) in an OP_RETURN (PYBLOCK-TON618); the split is public and verifiable.",
+                Text(stringResource(R.string.blk_trustless_each_coinbase_commits_blake2b_),
                     style = Blake.mono(8f), color = Blake.faint)
             }
 
             // Connect
             Spacer(Modifier.height(22.dp))
             Column(Modifier.fillMaxWidth().blakeCard()) {
-                Text("CONNECT", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
+                Text(stringResource(R.string.blk_connect), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
                 Spacer(Modifier.height(10.dp))
-                Text("Not a stratum URL — point your DATUM gateway at the pool with this config:",
+                Text(stringResource(R.string.blk_not_a_stratum_url_point_your_datum_gatew),
                     style = Blake.mono(9f), color = Blake.faint)
                 Spacer(Modifier.height(8.dp))
                 Text(gatewayJson, style = Blake.mono(9f), color = Blake.wave,
@@ -235,7 +237,7 @@ fun BlakeWaviclesScreen() {
                     modifier = Modifier.fillMaxWidth().border(1.dp, if (copied) Blake.ok else Blake.wave, RectangleShape).padding(vertical = 9.dp)
                         .clickableNoRipple { clip.setText(AnnotatedString(gatewayJson)); copied = true })
                 Spacer(Modifier.height(8.dp))
-                Text("• set mining.pool_address to YOUR BLAKE2b address\n• set mining.coinbase_tag_secondary to your name (shows after the slash in the block's scriptsig)\n• requires your own Bitcoin Knots BLAKE2b node + a DATUM gateway (CONVOY, OCEAN forks, StartOS)\n• tip: blockreservedweight=100000",
+                Text(stringResource(R.string.blk_set_mining_pool_address_to_your_blake2b_),
                     style = Blake.mono(8f), color = Blake.faint)
                 Spacer(Modifier.height(6.dp))
                 Text("If your gateway logs \"decryption failed\", the pool_pubkey is truncated — copy the full key.",
