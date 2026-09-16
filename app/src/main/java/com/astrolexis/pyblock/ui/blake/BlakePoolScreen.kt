@@ -195,7 +195,7 @@ fun BlakePoolScreen() {
             // Places to go from the pool: rent hash to your address, or see your own miners. Same
             // rows as the wallet's command list — glyph, name, hint, chevron, hairline.
             Spacer(Modifier.height(22.dp))
-            poolCommandRow("ᚱ", "RENTALS", stringResource(R.string.blk_rent_hash_to_your_address)) { showRentals = true }
+            poolCommandRow("ᛊ", "RENTALS", stringResource(R.string.blk_rent_hash_to_your_address)) { showRentals = true }
             poolCommandRow("ᛗ", "MINER", stringResource(R.string.blk_your_workers_connect)) { showMiner = true }
 
             Spacer(Modifier.height(22.dp))
