@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- PyBLØCK ᛒ (blake UI) — generated; keys are the English text -->
+    <string name="blk_1_new_message">1 条新消息</string>
     <string name="blk_a_bindrune_is_pro_three_runes_whale_four">连结符文为 PRO：三枚符文。WHALE：四枚。</string>
     <string name="blk_a_month">每月</string>
     <string name="blk_a_push_if_this_address_stops_submitting_">此地址停止提交份额时推送通知。</string>
@@ -84,6 +85,7 @@
     <string name="blk_copied_2">已复制</string>
     <string name="blk_copied_3">✓ 已复制</string>
     <string name="blk_copied_4">✓ 已复制</string>
+    <string name="blk_copy">复制</string>
     <string name="blk_copy_address">复制地址</string>
     <string name="blk_copy_code">复制代码</string>
     <string name="blk_copy_invoice">复制发票</string>
@@ -119,6 +121,7 @@
     <string name="blk_doodle_randomly_every_point_s_coordinate">随意涂画：每个点的坐标与时间都会强化密钥。</string>
     <string name="blk_draw_a_scribble">随意涂画</string>
     <string name="blk_draw_here">在此涂画</string>
+    <string name="blk_earlier_message">较早的消息</string>
     <string name="blk_eligibility">资格</string>
     <string name="blk_eligible">%1$s 名符合条件</string>
     <string name="blk_encrypted_dms">加密私信</string>
@@ -164,6 +167,7 @@
     <string name="blk_hashrate">算力</string>
     <string name="blk_hashrate_by_stratum">各 STRATUM 算力</string>
     <string name="blk_hashrate_now">当前算力</string>
+    <string name="blk_hasn_t_shared_a_paynym_you_can_message_t">尚未分享 PayNym：你可以给对方发消息。</string>
     <string name="blk_height">高度</string>
     <string name="blk_held_by_your_account_paid_over_lightning">归属你的账户。通过 Lightning 支付，或由授予。</string>
     <string name="blk_hide_key">隐藏密钥</string>
@@ -179,6 +183,7 @@
     <string name="blk_if_a_block_is_found_right_now">若此刻找到一个区块</string>
     <string name="blk_if_a_block_is_found_right_now_2">若此刻找到区块</string>
     <string name="blk_if_you_spend_it_here_the_same_transactio">若在此花费，同一笔交易可能在两条链上都有效，可能转移或损失你比特币（SHA-256）余额中对应的币。此操作无法撤销。</string>
+    <string name="blk_image">图片</string>
     <string name="blk_image_from_another_site">来自其他站点的图片</string>
     <string name="blk_immature_blocks_to_mature">未成熟 · 还需 %1$s 个区块</string>
     <string name="blk_import_as">导入为</string>
@@ -255,6 +260,8 @@
     <string name="blk_new_contact">新联系人</string>
     <string name="blk_new_encrypted_dm">✉ 新的加密私信</string>
     <string name="blk_new_legacy_address_created">已创建新的 legacy 地址</string>
+    <string name="blk_new_messages">新消息</string>
+    <string name="blk_new_messages_n">%1$s 条新消息</string>
     <string name="blk_new_segwit_address_created">已创建新的 SegWit 地址</string>
     <string name="blk_next">下一步 ›</string>
     <string name="blk_next_draw">下一步 — 涂画</string>
@@ -285,7 +292,9 @@
     <string name="blk_not_a_stratum_url_point_your_datum_gatew">这不是 stratum 地址，请用以下配置把你的 DATUM 网关指向矿池：</string>
     <string name="blk_not_a_valid_identity_key_pynym1_check_fo">不是有效的身份密钥（PYNYM1…）。请检查是否有输错的字符：校验和已拒绝。</string>
     <string name="blk_not_a_valid_paynym_pm8t_code">不是有效的 PayNym（PM8T…）代码。</string>
+    <string name="blk_not_delivered_tap_to_retry">未送达 · 点击重试</string>
     <string name="blk_not_enough_spendable_blake2b_for_that_am">可花费的 BLAKE2b 不足以支付该金额 + 手续费。只有成熟的挖矿币计入可发送余额：分叉前/收到的币因重放风险被锁定。请尝试 MAX、更小的金额，或解锁币。</string>
+    <string name="blk_not_loaded">未加载</string>
     <string name="blk_not_solo_every_block_found_by_anyone_in_">不是 solo：窗口内任何人找到的区块都会支付给窗口内的所有人。</string>
     <string name="blk_nothing_here_yet_whales_say_something">这里还没有内容。Whale 们，说点什么吧。</string>
     <string name="blk_nothing_is_held_back_what_a_coinbase_can">没有任何扣留：coinbase 放不下的部分不构成欠款，它留在分配中，并在区块 OP_RETURN 承诺的快照里可见。</string>
@@ -367,6 +376,8 @@
     <string name="blk_rentals">租赁</string>
     <string name="blk_rentals_are_paused_right_now">租用目前已暂停。</string>
     <string name="blk_replay_exposed_coins_can_also_move_on_th">存在重放风险的币也可能在比特币（SHA-256）链上移动，在此花费可能影响或损失那边的余额。理解后再解锁。</string>
+    <string name="blk_reply">回复</string>
+    <string name="blk_reply_to">回复 %1$s</string>
     <string name="blk_report_message">举报消息</string>
     <string name="blk_restore_from_backup">从备份恢复</string>
     <string name="blk_restores_to">恢复为：%1$s</string>
@@ -382,6 +393,7 @@
     <string name="blk_ricochets">RICOCHETS</string>
     <string name="blk_rig_alerts_a_year_of_history">矿机提醒 · 一年历史</string>
     <string name="blk_rig_alerts_are_pro">矿机提醒为 PRO。</string>
+    <string name="blk_runes_earned_mining">挖矿赚得的符文</string>
     <string name="blk_runes_you_earned_mining">挖矿赚得的符文</string>
     <string name="blk_s_1_new_message">↓ 1 条新消息</string>
     <string name="blk_s_24h_average">24 小时平均</string>
@@ -415,6 +427,7 @@
     <string name="blk_segwit_bc1q_is_cheaper_to_spend_and_the_">SegWit（bc1q）花费更便宜，是现代默认格式。传统（1…）是经典格式。</string>
     <string name="blk_send">发送</string>
     <string name="blk_send_2">↗ 发送</string>
+    <string name="blk_send_again">重新发送</string>
     <string name="blk_send_blake2b">发送 BLAKE2b</string>
     <string name="blk_send_coins">发送 %1$s 枚币 · %2$s %3$s</string>
     <string name="blk_send_failed">发送失败（%1$s）</string>
@@ -430,6 +443,7 @@
     <string name="blk_share">share %1$s</string>
     <string name="blk_share_once_anyone_can_pay_you_repeatedly">分享一次即可。任何人都能多次付款到新地址，无需重复使用。</string>
     <string name="blk_share_receive">份额 · 收到</string>
+    <string name="blk_shares_a_paynym_you_can_pay_them_to_a_fr">已分享 PayNym：你可以付款到一个新地址。</string>
     <string name="blk_show_the_runes_i_earned">显示我赚得的符文</string>
     <string name="blk_sigil">印记</string>
     <string name="blk_spendable">可花费</string>
@@ -472,6 +486,7 @@
     <string name="blk_the_tempered_forge_is_whale">淬炼锻造为 WHALE。</string>
     <string name="blk_the_tempered_forge_the_lounge">淬火锻造 · 贵宾厅</string>
     <string name="blk_the_whale_room_messages_inside">WHALE 专属房间。内有 %1$s 条消息。</string>
+    <string name="blk_their_messages_and_reactions_disappear_fr">对方的消息和反应将从你的房间和私信中消失。</string>
     <string name="blk_their_pm8t_payment_code">对方的 PM8T… 付款代码</string>
     <string name="blk_this_coin_is_already_in_a_pending_transa">这枚币已在一笔待处理交易中，很快会确认。无需重新发送。</string>
     <string name="blk_this_is_a_pre_fork_or_received_coin_bitc">这是分叉前或收到的币。比特币（SHA-256）与 BLAKE2b 在分叉前历史相同，且此分叉没有重放保护。</string>
@@ -481,6 +496,7 @@
     <string name="blk_time">时间</string>
     <string name="blk_timechain">时间链</string>
     <string name="blk_to_find_two_entropy_steps_first">预计 %1$s 找到。先完成两个熵步骤。</string>
+    <string name="blk_today">今天</string>
     <string name="blk_too_short_for_an_address_something_got_c">作为地址太短：内容被截断了。</string>
     <string name="blk_total">总计</string>
     <string name="blk_transactions">交易</string>
@@ -510,6 +526,7 @@
     <string name="blk_whale">WHALE</string>
     <string name="blk_window_empty_the_first_block_pays_the_po">窗口为空：在记入工作量前，第一个区块支付给矿池。</string>
     <string name="blk_window_full_8_network_difficulty_tides">窗口已满 %1$s%% · 8× 全网难度（TIDES）</string>
+    <string name="blk_yesterday">昨天</string>
     <string name="blk_your_name">你的名字</string>
     <string name="blk_your_nostr_identity_is_device_only_blake">你的 Nostr 身份仅保存在本设备。BLAKE2b 与 SHA-256 用户共用此聊天室。</string>
     <string name="blk_your_paynym_has_no_seed_phrase_this_key_">你的 PayNym 没有助记词：这把密钥就是你的 PayNym，并印在纸质备份上。没有它，付到你 PayNym 的币无法在其他设备上恢复。</string>

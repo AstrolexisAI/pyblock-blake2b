@@ -862,6 +862,7 @@
     <string name="section_cat_about">ABOUT &amp; SUPPORT</string>
 
     <!-- PyBLØCK ᛒ (blake UI) — generated; keys are the English text -->
+    <string name="blk_1_new_message">1 NEW MESSAGE</string>
     <string name="blk_a_bindrune_is_pro_three_runes_whale_four">A bindrune is PRO: three runes. WHALE: four.</string>
     <string name="blk_a_month">a month</string>
     <string name="blk_a_push_if_this_address_stops_submitting_">A push if this address stops submitting shares.</string>
@@ -945,6 +946,7 @@
     <string name="blk_copied_2">COPIED</string>
     <string name="blk_copied_3">✓ copied</string>
     <string name="blk_copied_4">✓ COPIED</string>
+    <string name="blk_copy">Copy</string>
     <string name="blk_copy_address">COPY ADDRESS</string>
     <string name="blk_copy_code">COPY CODE</string>
     <string name="blk_copy_invoice">COPY INVOICE</string>
@@ -980,6 +982,7 @@
     <string name="blk_doodle_randomly_every_point_s_coordinate">Doodle randomly — every point\'s coordinates + timing harden the key.</string>
     <string name="blk_draw_a_scribble">DRAW A SCRIBBLE</string>
     <string name="blk_draw_here">draw here</string>
+    <string name="blk_earlier_message">earlier message</string>
     <string name="blk_eligibility">ELIGIBILITY</string>
     <string name="blk_eligible">%1$s eligible</string>
     <string name="blk_encrypted_dms">Encrypted DMs</string>
@@ -1025,6 +1028,7 @@
     <string name="blk_hashrate">HASHRATE</string>
     <string name="blk_hashrate_by_stratum">HASHRATE BY STRATUM</string>
     <string name="blk_hashrate_now">hashrate now</string>
+    <string name="blk_hasn_t_shared_a_paynym_you_can_message_t">Hasn\'t shared a PayNym — you can message them.</string>
     <string name="blk_height">HEIGHT</string>
     <string name="blk_held_by_your_account_paid_over_lightning">Held by your account. Paid over Lightning, or granted.</string>
     <string name="blk_hide_key">HIDE KEY</string>
@@ -1040,6 +1044,7 @@
     <string name="blk_if_a_block_is_found_right_now">IF A BLOCK IS FOUND RIGHT NOW</string>
     <string name="blk_if_a_block_is_found_right_now_2">if a block is found right now</string>
     <string name="blk_if_you_spend_it_here_the_same_transactio">If you spend it here, the same transaction can be valid on BOTH chains — it can move or LOSE the matching coin on your Bitcoin (SHA-256) balance. This cannot be undone.</string>
+    <string name="blk_image">image</string>
     <string name="blk_image_from_another_site">image from another site</string>
     <string name="blk_immature_blocks_to_mature">immature · %1$s blocks to mature</string>
     <string name="blk_import_as">IMPORT AS</string>
@@ -1116,6 +1121,8 @@
     <string name="blk_new_contact">NEW CONTACT</string>
     <string name="blk_new_encrypted_dm">✉ New encrypted DM</string>
     <string name="blk_new_legacy_address_created">New legacy address created</string>
+    <string name="blk_new_messages">NEW MESSAGES</string>
+    <string name="blk_new_messages_n">%1$s NEW MESSAGES</string>
     <string name="blk_new_segwit_address_created">New SegWit address created</string>
     <string name="blk_next">NEXT ›</string>
     <string name="blk_next_draw">NEXT — DRAW</string>
@@ -1146,7 +1153,9 @@
     <string name="blk_not_a_stratum_url_point_your_datum_gatew">Not a stratum URL — point your DATUM gateway at the pool with this config:</string>
     <string name="blk_not_a_valid_identity_key_pynym1_check_fo">Not a valid identity key (PYNYM1…). Check for a mistyped character — the checksum rejected it.</string>
     <string name="blk_not_a_valid_paynym_pm8t_code">Not a valid PayNym (PM8T…) code.</string>
+    <string name="blk_not_delivered_tap_to_retry">not delivered · tap to retry</string>
     <string name="blk_not_enough_spendable_blake2b_for_that_am">Not enough spendable BLAKE2b for that amount + fee. Only mature mined coins count toward the sendable balance — pre-fork/received coins are replay-locked. Try MAX, a smaller amount, or unlock coins.</string>
+    <string name="blk_not_loaded">not loaded</string>
     <string name="blk_not_solo_every_block_found_by_anyone_in_">Not solo: every block found by anyone in the window pays everyone in the window.</string>
     <string name="blk_nothing_here_yet_whales_say_something">Nothing here yet. Whales, say something.</string>
     <string name="blk_nothing_is_held_back_what_a_coinbase_can">Nothing is held back: what a coinbase can\'t place isn\'t owed, it stays in the split and is visible in the snapshot committed to the block\'s OP_RETURN.</string>
@@ -1228,6 +1237,8 @@
     <string name="blk_rentals">RENTALS</string>
     <string name="blk_rentals_are_paused_right_now">Rentals are paused right now.</string>
     <string name="blk_replay_exposed_coins_can_also_move_on_th">Replay-exposed coins can also move on the Bitcoin (SHA-256) chain — spending here may affect/lose that balance. Only unlock if you understand this.</string>
+    <string name="blk_reply">Reply</string>
+    <string name="blk_reply_to">Reply to %1$s</string>
     <string name="blk_report_message">REPORT MESSAGE</string>
     <string name="blk_restore_from_backup">RESTORE FROM BACKUP</string>
     <string name="blk_restores_to">Restores to: %1$s</string>
@@ -1243,6 +1254,7 @@
     <string name="blk_ricochets">RICOCHETS</string>
     <string name="blk_rig_alerts_a_year_of_history">Rig alerts · a year of history</string>
     <string name="blk_rig_alerts_are_pro">Rig alerts are PRO.</string>
+    <string name="blk_runes_earned_mining">RUNES EARNED MINING</string>
     <string name="blk_runes_you_earned_mining">Runes you earned mining</string>
     <string name="blk_s_1_new_message">↓ 1 NEW MESSAGE</string>
     <string name="blk_s_24h_average">24h average</string>
@@ -1276,6 +1288,7 @@
     <string name="blk_segwit_bc1q_is_cheaper_to_spend_and_the_">SegWit (bc1q) is cheaper to spend and the modern default. Legacy (1…) is the classic format.</string>
     <string name="blk_send">SEND</string>
     <string name="blk_send_2">↗ SEND</string>
+    <string name="blk_send_again">Send again</string>
     <string name="blk_send_blake2b">SEND BLAKE2b</string>
     <string name="blk_send_coins">SEND %1$s COINS · %2$s %3$s</string>
     <string name="blk_send_failed">Send failed (%1$s)</string>
@@ -1291,6 +1304,7 @@
     <string name="blk_share">share %1$s</string>
     <string name="blk_share_once_anyone_can_pay_you_repeatedly">Share once. Anyone can pay you repeatedly to fresh addresses — no reuse.</string>
     <string name="blk_share_receive">share · receive</string>
+    <string name="blk_shares_a_paynym_you_can_pay_them_to_a_fr">Shares a PayNym: you can pay them to a fresh address.</string>
     <string name="blk_show_the_runes_i_earned">SHOW THE RUNES I EARNED</string>
     <string name="blk_sigil">SIGIL</string>
     <string name="blk_spendable">SPENDABLE</string>
@@ -1333,6 +1347,7 @@
     <string name="blk_the_tempered_forge_is_whale">The tempered forge is WHALE.</string>
     <string name="blk_the_tempered_forge_the_lounge">The tempered forge · the lounge</string>
     <string name="blk_the_whale_room_messages_inside">The WHALE room. %1$s messages inside.</string>
+    <string name="blk_their_messages_and_reactions_disappear_fr">Their messages and reactions disappear from your rooms and DMs.</string>
     <string name="blk_their_pm8t_payment_code">their PM8T… payment code</string>
     <string name="blk_this_coin_is_already_in_a_pending_transa">This coin is already in a pending transaction — it will confirm shortly. No need to resend.</string>
     <string name="blk_this_is_a_pre_fork_or_received_coin_bitc">This is a pre-fork or received coin. Bitcoin (SHA-256) and BLAKE2b share the same history before the fork, and this fork has NO replay protection.</string>
@@ -1342,6 +1357,7 @@
     <string name="blk_time">TIME</string>
     <string name="blk_timechain">TIMECHAIN</string>
     <string name="blk_to_find_two_entropy_steps_first">≈ %1$s to find. Two entropy steps first.</string>
+    <string name="blk_today">TODAY</string>
     <string name="blk_too_short_for_an_address_something_got_c">Too short for an address — something got cut off.</string>
     <string name="blk_total">TOTAL</string>
     <string name="blk_transactions">TRANSACTIONS</string>
@@ -1371,6 +1387,7 @@
     <string name="blk_whale">WHALE</string>
     <string name="blk_window_empty_the_first_block_pays_the_po">Window empty — the first block pays the pool until work is credited.</string>
     <string name="blk_window_full_8_network_difficulty_tides">window %1$s%% full · 8× network difficulty (TIDES)</string>
+    <string name="blk_yesterday">YESTERDAY</string>
     <string name="blk_your_name">YOUR NAME</string>
     <string name="blk_your_nostr_identity_is_device_only_blake">Your Nostr identity is device-only. BLAKE2b and SHA-256 users share this room.</string>
     <string name="blk_your_paynym_has_no_seed_phrase_this_key_">Your PayNym has no seed phrase — this key IS your PayNym, and it\'s printed on the paper backup. Without it, coins paid to your PayNym cannot be recovered on another device.</string>

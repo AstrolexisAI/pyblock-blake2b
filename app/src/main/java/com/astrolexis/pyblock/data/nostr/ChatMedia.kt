@@ -35,6 +35,23 @@ object ChatMedia {
     /** Time of day for today, day and time before that. One formatter each, not one per row. */
     private val today = SimpleDateFormat("HH:mm", Locale.getDefault())
     private val older = SimpleDateFormat("d MMM HH:mm", Locale.getDefault())
+    private val timeFmt = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+    private val dayFmt = java.text.SimpleDateFormat("d MMM", java.util.Locale.getDefault())
+    private val dayYearFmt = java.text.SimpleDateFormat("d MMM yyyy", java.util.Locale.getDefault())
+    fun timeOnly(ts: Long): String = synchronized(this) { timeFmt.format(Date(ts * 1000)) }
+    fun sameDay(a: Long, b: Long): Boolean {
+        val ca = Calendar.getInstance().apply { time = Date(a * 1000) }; val cb = Calendar.getInstance().apply { time = Date(b * 1000) }
+        return ca.get(Calendar.YEAR) == cb.get(Calendar.YEAR) && ca.get(Calendar.DAY_OF_YEAR) == cb.get(Calendar.DAY_OF_YEAR)
+    }
+    /** TODAY / YESTERDAY / a date, for the separators between days in a transcript. */
+    fun dayLabel(ts: Long): String {
+        val now = System.currentTimeMillis() / 1000
+        if (sameDay(ts, now)) return com.astrolexis.pyblock.data.store.AppStrings.get(com.astrolexis.pyblock.R.string.blk_today)
+        if (sameDay(ts, now - 86_400)) return com.astrolexis.pyblock.data.store.AppStrings.get(com.astrolexis.pyblock.R.string.blk_yesterday)
+        val d = Date(ts * 1000); val thisYear = Calendar.getInstance().get(Calendar.YEAR) == Calendar.getInstance().apply { time = d }.get(Calendar.YEAR)
+        return synchronized(this) { (if (thisYear) dayFmt else dayYearFmt).format(d).uppercase() }
+    }
+
     fun clock(ts: Long): String {
         val d = Date(ts * 1000)
         val now = Calendar.getInstance(); val then = Calendar.getInstance().apply { time = d }

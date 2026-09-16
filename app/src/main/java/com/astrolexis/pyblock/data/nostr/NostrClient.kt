@@ -37,6 +37,8 @@ import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
 /** One decrypted direct message. */
+enum class SendStatus { SENDING, SENT, FAILED }
+
 data class DMMessage(
     val id: String,
     val peer: String,
@@ -70,6 +72,10 @@ data class NostrUiState(
     val reactions: Map<String, Map<String, Set<String>>> = emptyMap(),
     /** Text of a message the relay refused, for the composer to put back. */
     val rejectedDraft: String? = null,
+    /** Where each message of mine stands with the relay. A message used to look delivered the
+     *  instant it was typed and vanish with a banner if the relay said no; now the bubble says
+     *  which, and a refused one can be sent again. Rooms and DMs alike, keyed by event id. */
+    val sendStatus: Map<String, SendStatus> = emptyMap(),
     /** pubkey → runes the server certifies they earned mining. */
     val marks: Map<String, List<com.astrolexis.pyblock.data.blake.BlakeApi.Mark>> = emptyMap(),
 )
@@ -637,7 +643,30 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
         }
         val ev = Nostr.makeEvent(ctx, 42, trimmed, tags, now()) ?: return
         if (seen.add(ev.id)) insertMessage(ev)   // optimistic echo
+        _state.update { it.copy(sendStatus = it.sendStatus + (ev.id to SendStatus.SENDING)) }
         broadcast(ev)
+    }
+
+    /** Send a refused (or stuck) message again — a fresh event with the same words and tags.
+     *  The old bubble goes; the new one starts at "sending". Rooms and DMs. */
+    fun retry(id: String) {
+        val s = _state.value
+        val room = (s.messages + s.whaleMessages).firstOrNull { it.id == id }
+        if (room != null) {
+            seen.remove(id); verifiedIds.remove(id)
+            _state.update { st -> st.copy(messages = st.messages.filter { it.id != id }, whaleMessages = st.whaleMessages.filter { it.id != id },
+                sendStatus = st.sendStatus - id, lastRejection = null) }
+            val ev = Nostr.makeEvent(ctx, 42, room.content, room.tags, now()) ?: return
+            if (seen.add(ev.id)) insertMessage(ev)
+            _state.update { it.copy(sendStatus = it.sendStatus + (ev.id to SendStatus.SENDING)) }
+            broadcast(ev)
+            return
+        }
+        val dm = s.conversations.values.flatten().firstOrNull { it.id == id } ?: return
+        seen.remove(id)
+        _state.update { st -> st.copy(conversations = st.conversations.mapValues { (_, l) -> l.filter { it.id != id } },
+            sendStatus = st.sendStatus - id, lastRejection = null) }
+        sendDM(dm.peer, dm.text)
     }
 
     /** Reply parent id (NIP-10): an "e" tag explicitly marked "reply". */
@@ -712,6 +741,7 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
         // Control messages ride as DMs but aren't shown as bubbles.
         if (!com.astrolexis.pyblock.data.util.PaymentUri.isControl(trimmed)) {
             insertDM(DMMessage(ev.id, peer, true, trimmed, t))   // optimistic echo
+            _state.update { it.copy(sendStatus = it.sendStatus + (ev.id to SendStatus.SENDING)) }
         }
         broadcast(ev)
     }
@@ -834,25 +864,26 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
         if (arr.optString(0) == "EOSE") { backfillEOSE(arr.optString(1)); return }
         // Relay refused one of our events → roll back the optimistic echo and
         // surface the reason, instead of lying that it was sent.
-        if (arr.optString(0) == "OK" && arr.length() >= 3 && !arr.optBoolean(2, true)) {
+        if (arr.optString(0) == "OK" && arr.length() >= 3) {
             val evId = arr.optString(1)
+            if (arr.optBoolean(2, true)) {
+                // Acknowledged: the bubble's "sending" becomes "sent".
+                if (_state.value.sendStatus.containsKey(evId))
+                    _state.update { it.copy(sendStatus = it.sendStatus + (evId to SendStatus.SENT)) }
+                return
+            }
             // A rejected reaction: keep the optimistic chip so the user sees their
             // own reaction, no scary banner. (Relay allows kind-7 now; belt-and-braces.)
             if (pendingReactions.remove(evId) != null) return
             val reason = arr.optString(3).ifEmpty { "rejected by relay" }
-            seen.remove(evId); verifiedIds.remove(evId)
-            _state.update { s ->
-                // A refused room message used to take the user's typed text with it. Keep the
-                // words so the composer can put them back.
-                val refused = (s.messages + s.whaleMessages).firstOrNull { it.id == evId }?.content
-                s.copy(
-                    messages = s.messages.filter { it.id != evId },
-                    whaleMessages = s.whaleMessages.filter { it.id != evId },
-                    conversations = s.conversations.mapValues { (_, list) -> list.filter { it.id != evId } },
-                    lastRejection = reason,
-                    rejectedDraft = refused ?: s.rejectedDraft,
-                )
+            // A refused message of mine stays where it is, marked, so the words are not lost and
+            // one tap sends it again. The banner carries the reason; the bubble carries the state.
+            if (_state.value.sendStatus.containsKey(evId)) {
+                _state.update { it.copy(sendStatus = it.sendStatus + (evId to SendStatus.FAILED), lastRejection = reason) }
+                return
             }
+            seen.remove(evId); verifiedIds.remove(evId)
+            _state.update { s -> s.copy(lastRejection = reason) }
             return
         }
         if (arr.length() < 3 || arr.optString(0) != "EVENT") return

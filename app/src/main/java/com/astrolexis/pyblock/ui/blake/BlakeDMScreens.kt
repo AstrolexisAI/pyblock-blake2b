@@ -19,6 +19,10 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontWeight
+import com.astrolexis.pyblock.ui.components.clickableNoRipple
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Text
@@ -35,12 +39,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.astrolexis.pyblock.data.nostr.NostrClient
-import com.astrolexis.pyblock.ui.components.clickableNoRipple
 
 /** ✉ DMS inbox — encrypted (NIP-44) private threads. Blake port of iOS DMInboxView. */
 @Composable
@@ -135,8 +136,16 @@ fun BlakeDMThread(client: NostrClient, peer: String, onClose: () -> Unit) {
 
         LazyColumn(Modifier.weight(1f).fillMaxWidth(), state = listState,
             contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            items(thread, key = { it.id }) { m ->
-                Column(Modifier.fillMaxWidth(), horizontalAlignment = if (m.mine) Alignment.End else Alignment.Start) {
+            itemsIndexed(thread, key = { _, it -> it.id }) { i, m ->
+                val failed = state.sendStatus[m.id] == com.astrolexis.pyblock.data.nostr.SendStatus.FAILED
+                Column(Modifier.fillMaxWidth().clickableNoRipple { if (failed) client.retry(m.id) }, horizontalAlignment = if (m.mine) Alignment.End else Alignment.Start) {
+                    if (i == 0 || !ChatMedia.sameDay(thread[i - 1].createdAt, m.createdAt)) {
+                        Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Box(Modifier.weight(1f).height(1.dp).background(Blake.line))
+                            Text(ChatMedia.dayLabel(m.createdAt), style = Blake.mono(7f, FontWeight.ExtraBold), color = Blake.faint, letterSpacing = 2.sp, modifier = Modifier.padding(horizontal = 8.dp))
+                            Box(Modifier.weight(1f).height(1.dp).background(Blake.line))
+                        }
+                    }
                     val img = ChatMedia.imageUrl(m.text)
                     val foreign = ChatMedia.foreignImageUrl(m.text)
                     when {
@@ -148,10 +157,21 @@ fun BlakeDMThread(client: NostrClient, peer: String, onClose: () -> Unit) {
                             modifier = Modifier.width(220.dp).height(165.dp).border(1.dp, Blake.line, Blake.shape))
                         else -> androidx.compose.foundation.text.selection.SelectionContainer {
                             Text(m.text, style = Blake.mono(12f), color = Blake.fg,
-                                modifier = Modifier.background(if (m.mine) Blake.pp.copy(alpha = 0.14f) else Blake.ink, Blake.shape).border(1.dp, Blake.line, Blake.shape).padding(10.dp))
+                                modifier = Modifier.background(if (m.mine) Blake.pp.copy(alpha = 0.14f) else Blake.ink, Blake.shape).border(1.dp, if (failed) Blake.danger else Blake.line, Blake.shape).padding(10.dp))
                         }
                     }
-                    Text(ChatMedia.clock(m.createdAt), style = Blake.mono(7f), color = Blake.faint, modifier = Modifier.padding(top = 2.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
+                        if (failed) { Text(stringResource(R.string.blk_not_delivered_tap_to_retry), style = Blake.mono(7f, FontWeight.ExtraBold), color = Blake.danger); Spacer(Modifier.width(6.dp)) }
+                        Text(ChatMedia.timeOnly(m.createdAt), style = Blake.mono(7f), color = Blake.faint)
+                        if (m.mine) {
+                            Spacer(Modifier.width(4.dp))
+                            when (state.sendStatus[m.id]) {
+                                com.astrolexis.pyblock.data.nostr.SendStatus.SENDING -> Text("◌", style = Blake.mono(8f), color = Blake.faint)
+                                com.astrolexis.pyblock.data.nostr.SendStatus.FAILED -> Text("!", style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.danger)
+                                else -> Text("✓", style = Blake.mono(8f), color = Blake.faint)
+                            }
+                        }
+                    }
                 }
             }
         }
