@@ -109,7 +109,7 @@ object BlakeMiner {
     }
     fun masked(address: String): String = if (address.length > 10) "${address.take(6)}…${address.takeLast(4)}" else address
     suspend fun primes(address: String): List<PrimeMatch> {
-        val r: PrimesResp = get("/datum_modes_api.php?product=both") ?: return emptyList()
+        val r: PrimesResp = get(BlakeApi.B_BASE + "/datum_modes_api.php?product=both") ?: return emptyList()
         val me = masked(address)
         return listOf("carousel" to r.carousel, "chirp" to r.chirp).mapNotNull { (key, p) ->
             if (p == null || p.ok == false) return@mapNotNull null
@@ -123,7 +123,7 @@ object BlakeMiner {
 
     private suspend inline fun <reified T> get(path: String): T? = withContext(Dispatchers.IO) {
         runCatching {
-            val req = Request.Builder().url(BlakeApi.BASE + path).header("Cache-Control", "no-cache").get().build()
+            val req = Request.Builder().url(if (path.startsWith("http")) path else BlakeApi.BASE + path).header("Cache-Control", "no-cache").get().build()
             client.newCall(req).execute().use { r -> if (!r.isSuccessful) null else json.decodeFromString<T>(r.body?.string().orEmpty()) }
         }.getOrNull()
     }

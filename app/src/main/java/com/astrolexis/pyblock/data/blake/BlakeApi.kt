@@ -21,6 +21,10 @@ import java.util.concurrent.TimeUnit
  */
 object BlakeApi {
     const val BASE = "https://pyblock.xyz:8443"
+    /** The BLAKE2b site. Most endpoints answer on either host with `chain=blake2b`; the lap
+     *  (`carousel.php?carrousel=1`) and the Primes (`datum_modes_api.php`) exist only here — on the
+     *  other host the first is an HTML page and the second a 404. */
+    const val B_BASE = "https://b.pyblock.xyz:8443"
 
     private val json = Json { ignoreUnknownKeys = true; coerceInputValues = true; isLenient = true }
     private val client = OkHttpClient.Builder()
@@ -216,7 +220,7 @@ object BlakeApi {
     data class CarouselLap(val live: Boolean? = null, val current: String? = null, val miners: Int? = null, val hashrate: Double? = null,
                            val next: List<CarouselNext> = emptyList(), @SerialName("ring_n") val ringN: Int? = null, @SerialName("ring_idx") val ringIdx: Int? = null,
                            @SerialName("block_stride") val blockStride: Int? = null, @SerialName("cycle_s") val cycleS: Int? = null, @SerialName("lap_s") val lapS: Int? = null)
-    suspend fun carouselLap(): CarouselLap? = get("/carousel.php?carrousel=1") { runCatching { json.decodeFromString<CarouselLap>(it) }.getOrNull() }
+    suspend fun carouselLap(): CarouselLap? = get(B_BASE + "/carousel.php?carrousel=1") { runCatching { json.decodeFromString<CarouselLap>(it) }.getOrNull() }
 
     /** Where one template stands in the lap (`carousel.php?me=<address>`). No amounts. */
     @Serializable
@@ -224,7 +228,7 @@ object BlakeApi {
                           @SerialName("turns_ahead") val turnsAhead: Int? = null, @SerialName("eta_s") val etaS: Int? = null,
                           @SerialName("picks_24h") val picks24h: Int? = null, val blocks: Int? = null, @SerialName("mining_now") val miningNow: Boolean? = null)
     suspend fun carouselMe(address: String): CarouselMe? =
-        get("/carousel.php?me=${URLEncoder.encode(address, "UTF-8")}") { runCatching { json.decodeFromString<CarouselMe>(it) }.getOrNull() }
+        get(B_BASE + "/carousel.php?me=${URLEncoder.encode(address, "UTF-8")}") { runCatching { json.decodeFromString<CarouselMe>(it) }.getOrNull() }
 
     /** The live split of a product, from the gateway's bps (`api/split.php`). Never hardcoded. */
     @Serializable
@@ -240,14 +244,14 @@ object BlakeApi {
                                         @SerialName("node_runner_bps") val nodeRunnerBps: Int? = null, @SerialName("pool_bps") val poolBps: Int? = null)
     @Serializable data class PrimeInfo(val ok: Boolean? = null, val connect: PrimeConnect? = null, val split: PrimeSplit? = null,
                                        val gateways: Int? = null, @SerialName("hashrate_ghs") val hashrateGhs: Double? = null)
-    suspend fun prime(product: String): PrimeInfo? = get("/datum_modes_api.php?product=$product") { runCatching { json.decodeFromString<PrimeInfo>(it) }.getOrNull() }
+    suspend fun prime(product: String): PrimeInfo? = get(B_BASE + "/datum_modes_api.php?product=$product") { runCatching { json.decodeFromString<PrimeInfo>(it) }.getOrNull() }
 
     // ---- Plumbing ----
 
     private suspend inline fun <reified T> get(path: String, crossinline deserializer: (String) -> T?): T? =
         withContext(Dispatchers.IO) {
             try {
-                val req = Request.Builder().url(BASE + path)
+                val req = Request.Builder().url(if (path.startsWith("http")) path else BASE + path)
                     .header("Cache-Control", "no-cache").get().build()
                 client.newCall(req).execute().use { resp ->
                     if (!resp.isSuccessful) return@use null
@@ -301,7 +305,7 @@ object BlakeApi {
         get("/chirp_api.php?chain=blake2b&mode=miners") { runCatching { json.decodeFromString<List<ChirpMiner>>(it) }.getOrNull() }
     /** Who is on CHIRP-PRIME (their own gateway): identity masked `6…4` → seconds since last share. */
     suspend fun chirpPrimeRunners(): Map<String, Int>? =
-        get("/datum_modes_api.php?product=chirp") {
+        get(B_BASE + "/datum_modes_api.php?product=chirp") {
             runCatching { json.decodeFromString<PrimeRunnersResp>(it).runners.mapNotNull { r -> r.identity?.takeIf { it.isNotEmpty() }?.let { it to (r.lastShareS ?: Int.MAX_VALUE) } }.toMap() }.getOrNull()
         }
 

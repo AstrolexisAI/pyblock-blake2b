@@ -71,7 +71,7 @@ fun BlakeCarouselScreen() {
         BlakeApi.split("carousel")?.let { split = it }
         BlakeApi.prime("carousel")?.let { prime = it }
         BlakeApi.poolStats()?.let { stats = it }
-        BlakeApi.blocks().takeIf { it.isNotEmpty() }?.let { bl -> blocks = bl.filter { (it.stratum?.lowercase() ?: "") in setOf("carousel", "lotto", "lotto_asic", "carousel_prime") } }
+        BlakeApi.blocks().takeIf { it.isNotEmpty() }?.let { bl -> blocks = bl.filter { (it.stratum?.lowercase() ?: "") in setOf("carousel", "carousel_prime") } }
         if (connect == null) connect = BlakeMiner.connect()
         if (myAddress.isNotEmpty()) BlakeApi.carouselMe(myAddress)?.let { me = it }
         loaded = true
