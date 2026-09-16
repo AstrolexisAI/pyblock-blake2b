@@ -871,6 +871,7 @@
     <string name="blk_a_year">a year</string>
     <string name="blk_a_year_of_history_is_pro">A year of history is PRO.</string>
     <string name="blk_accepted">accepted</string>
+    <string name="blk_accepted_2">accepted %1$s</string>
     <string name="blk_activity">ACTIVITY</string>
     <string name="blk_add">ADD</string>
     <string name="blk_add_2">+ ADD</string>
@@ -909,13 +910,16 @@
     <string name="blk_block_participation">BLOCK PARTICIPATION</string>
     <string name="blk_block_user">BLOCK USER</string>
     <string name="blk_blocks_found">blocks found</string>
+    <string name="blk_blocks_found_by_the_syndicate">BLOCKS FOUND BY THE SYNDICATE</string>
     <string name="blk_blocks_found_on_the_carousel">BLOCKS FOUND ON THE CAROUSEL</string>
+    <string name="blk_blocks_found_on_wavicles">BLOCKS FOUND ON WAVICLES</string>
     <string name="blk_blocks_found_time_mining_your_own_gatewa">Blocks found, time mining, your own gateway — as runes beside your name.</string>
     <string name="blk_blocks_on_your_template">blocks on your template</string>
     <string name="blk_blocks_paid_to_this_address">BLOCKS PAID TO THIS ADDRESS</string>
     <string name="blk_blocks_payouts">Blocks &amp; payouts</string>
     <string name="blk_broadcasting">BROADCASTING…</string>
     <string name="blk_built_by">BUILT BY</string>
+    <string name="blk_built_by_the_finder_s_own_gateway">ᛖ = built by the finder\'s own gateway</string>
     <string name="blk_by_weight_tenure_power">by weight · tenure + power</string>
     <string name="blk_by_weight_tenure_power_on_chirp_prime_ow">by weight · tenure + power · ᚨ = on CHIRP-PRIME (own gateway)</string>
     <string name="blk_can_t_connect">Can\'t connect: %1$s</string>
@@ -1039,6 +1043,7 @@
     <string name="blk_found">FOUND</string>
     <string name="blk_found_2">FOUND ✓</string>
     <string name="blk_from_selected_coins_available_change_ret">From %1$s selected coins · %2$s %3$s available · change returns</string>
+    <string name="blk_gateways_connected">GATEWAYS CONNECTED</string>
     <string name="blk_get_quote">GET QUOTE</string>
     <string name="blk_give_it_a_real_shake_the_device_s_motion">Give it a real shake — the device\'s motion feeds fresh entropy into the pool.</string>
     <string name="blk_grind">GRIND</string>
@@ -1080,6 +1085,7 @@
     <string name="blk_invalid_wif">Invalid WIF</string>
     <string name="blk_it_answered_but_not_like_a_stratum">It answered, but not like a stratum: %1$s</string>
     <string name="blk_it_answers_mining_subscribe_point_your_r">✓ It answers mining.subscribe — point your rigs here.</string>
+    <string name="blk_its_own_node_builds_the_block_the_other_">ᛖ = its own node builds the block · the other rows come through PyBLØCK\'s gateway</string>
     <string name="blk_just_now">just now</string>
     <string name="blk_keep_drawing">KEEP DRAWING</string>
     <string name="blk_keep_shaking">KEEP SHAKING</string>
@@ -1163,6 +1169,7 @@
     <string name="blk_no_blocks_yet">No blocks yet.</string>
     <string name="blk_no_coins">No coins.</string>
     <string name="blk_no_contacts_yet_save_an_address_or_a_pay">No contacts yet. Save an address or a PayNym (PM…) to reuse it.</string>
+    <string name="blk_no_gateways_connected_yet_run_your_own_n">No gateways connected yet — run your own node and be the first.</string>
     <string name="blk_no_lightning_wallet_found_invoice_copied">No Lightning wallet found — invoice copied.</string>
     <string name="blk_no_mature_mined_coins_yet">No mature mined coins yet.</string>
     <string name="blk_no_messages_yet">No messages yet.</string>
@@ -1270,6 +1277,7 @@
     <string name="blk_recipient">→ recipient</string>
     <string name="blk_recipient_address">Recipient address</string>
     <string name="blk_refresh">REFRESH</string>
+    <string name="blk_registered">%1$s registered</string>
     <string name="blk_relay_link">Relay link</string>
     <string name="blk_rent_blake2b_hash_to_your_address_live_m">Rent BLAKE2b hash to your address. Live market price, paid over Lightning; delivered on the pool you pick.</string>
     <string name="blk_rent_hash_to_your_address">rent hash to your address</string>
@@ -1431,6 +1439,7 @@
     <string name="blk_unlocked_replay_exposed_you_accepted_the">unlocked · replay-exposed (you accepted the risk)</string>
     <string name="blk_unlocked_replay_risk">unlocked · replay risk</string>
     <string name="blk_unlocked_replay_risk_accepted">unlocked · replay risk accepted</string>
+    <string name="blk_up">up %1$s</string>
     <string name="blk_usdt">%1$s · %2$s/USDT</string>
     <string name="blk_usdt_on_other_currencies_crossed_via_mem">%1$s/USDT on %2$s · other currencies crossed via mempool.space</string>
     <string name="blk_use">USE</string>

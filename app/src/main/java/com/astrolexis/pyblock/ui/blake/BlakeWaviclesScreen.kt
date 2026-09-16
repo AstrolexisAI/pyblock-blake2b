@@ -122,6 +122,27 @@ fun BlakeWaviclesScreen() {
 
             // "If a block is found right now"
             Spacer(Modifier.height(22.dp))
+            GatewaysCard(stats?.clients.orEmpty().map { GatewayRow.of(it) }, accent = Blake.wave, primeHashrateGhs = stats?.hashrate?.poolGhs)
+            Spacer(Modifier.height(22.dp))
+            // The blocks WAVICLES found, Ehwaz when the finder's own gateway built them. Until the feed
+            // says so itself (asked for), the finder is matched against the window's DATUM identities.
+            Column(Modifier.fillMaxWidth().blakeCard()) {
+                Text(stringResource(R.string.blk_blocks_found_on_wavicles), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
+                Spacer(Modifier.height(8.dp))
+                val datumIds = (stats?.clients.orEmpty().filter { it.onDatum }.mapNotNull { it.identity } + w?.miners.orEmpty().filter { it.onDatum }.mapNotNull { it.identity }).toSet()
+                val list = stats?.blocks.orEmpty().sortedByDescending { it.height ?: 0 }
+                if (list.isEmpty()) Text(stringResource(R.string.blk_no_blocks_yet), style = Blake.mono(9f), color = Blake.faint)
+                list.take(8).forEach { b ->
+                    val finder = b.finder ?: "—"
+                    val datum = b.via?.let { it == "datum" } ?: (com.astrolexis.pyblock.data.blake.BlakeMiner.masked(finder) in datumIds)
+                    FoundBlockRow(b.height ?: 0, com.astrolexis.pyblock.data.blake.BlakeMiner.masked(finder),
+                        b.coinbaseValue?.let { "${Blake.btc(maxOf(0L, it))} ${Blake.RUNE}" } ?: "—",
+                        b.ts?.let { relTimeSecs(ctx, it.toLong()) } ?: "", datum, b.gatewayName)
+                }
+                Spacer(Modifier.height(4.dp))
+                Text(stringResource(R.string.blk_built_by_the_finder_s_own_gateway), style = Blake.mono(7f), color = Blake.faint)
+            }
+            Spacer(Modifier.height(22.dp))
             Column(Modifier.fillMaxWidth().blakeCard()) {
                 Text(stringResource(R.string.blk_if_a_block_is_found_right_now), style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.ppDim,
                     letterSpacing = 1.5.sp, maxLines = 1, softWrap = false)
@@ -158,8 +179,9 @@ fun BlakeWaviclesScreen() {
                         Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                             Box(Modifier.size(5.dp).background(if ((m.lastShareS ?: 999) < 120) Blake.ok else Blake.faint, CircleShape))
                             Spacer(Modifier.width(8.dp))
+                            if (m.onDatum) { RuneGlyph(Rune.EHWAZ, ink = Blake.datum, size = 11.dp); Spacer(Modifier.width(6.dp)) }   // its own node builds the block
                             Column(Modifier.weight(1f)) {
-                                Text(m.identity ?: "anon", style = Blake.mono(9f), color = Blake.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(m.identity ?: "anon", style = Blake.mono(9f), color = if (m.onDatum) Blake.datum else Blake.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 m.lastShareS?.let { Text(stringResource(R.string.blk_last_share_s_ago, it), style = Blake.mono(7f), color = Blake.faint) }
                             }
                             Spacer(Modifier.width(8.dp))

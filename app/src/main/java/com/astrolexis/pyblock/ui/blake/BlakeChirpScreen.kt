@@ -45,10 +45,13 @@ import kotlinx.coroutines.delay
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BlakeChirpScreen() {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
     var pool by remember { mutableStateOf<BlakeApi.ChirpPool?>(null) }
     var workers by remember { mutableStateOf<List<BlakeApi.ChirpWorker>>(emptyList()) }
     var miners by remember { mutableStateOf<List<BlakeApi.ChirpMiner>>(emptyList()) }
     var prime by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
+    var primeInfo by remember { mutableStateOf<BlakeApi.PrimeInfo?>(null) }
+    var blocks by remember { mutableStateOf<List<BlakeApi.Block>>(emptyList()) }
     var showParticipants by remember { mutableStateOf(true) }
     var loaded by remember { mutableStateOf(false) }
     var refreshing by remember { mutableStateOf(false) }
@@ -58,7 +61,8 @@ fun BlakeChirpScreen() {
         (BlakeApi.chirpPool() ?: BlakeApi.chirpPool())?.let { pool = it }
         (BlakeApi.chirpWorkers() ?: BlakeApi.chirpWorkers())?.let { workers = it }
         BlakeApi.chirpMiners()?.let { miners = it }
-        BlakeApi.chirpPrimeRunners()?.let { prime = it }
+        BlakeApi.prime("chirp")?.let { p -> primeInfo = p; prime = p.runners.mapNotNull { r -> r.identity?.takeIf { it.isNotEmpty() }?.let { it to (r.lastShareS ?: Int.MAX_VALUE) } }.toMap() }
+        BlakeApi.blocks().takeIf { it.isNotEmpty() }?.let { bl -> blocks = bl.filter { (it.stratum?.lowercase() ?: "") in setOf("chirp", "chirp_prime") } }
         loaded = true
     }
     LaunchedEffect(Unit) { while (true) { load(); delay(20_000) } }
@@ -98,6 +102,10 @@ fun BlakeChirpScreen() {
             }
 
             // Connected miners, newest-active first (by last share, not by power).
+            // The node-runners on CHIRP-PRIME, by name when they gave one.
+            Spacer(Modifier.height(22.dp))
+            GatewaysCard(primeInfo?.runners.orEmpty().map { GatewayRow.of(it) }, accent = Blake.ok, registered = primeInfo?.nodeRunnersRegistered, primeHashrateGhs = primeInfo?.hashrateGhs)
+
             // Everyone mining now — on the house stratum or on CHIRP-PRIME — in the draw's order:
             // weight (tenure + power), then tenure, then power. The list used to be newest-share
             // first, which said nothing about who stands where in the syndicate.
@@ -216,6 +224,18 @@ fun BlakeChirpScreen() {
                 }
             }
 
+            Spacer(Modifier.height(22.dp))
+            Column(Modifier.fillMaxWidth().blakeCard()) {
+                Text(stringResource(R.string.blk_blocks_found_by_the_syndicate), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
+                Spacer(Modifier.height(8.dp))
+                if (blocks.isEmpty()) Text(stringResource(R.string.blk_no_blocks_yet), style = Blake.mono(9f), color = Blake.faint)
+                blocks.take(8).forEach { b ->
+                    FoundBlockRow(b.height, b.finderMasked ?: "—", b.reward?.let { "%.4f ${Blake.RUNE}".format(java.util.Locale.US, it) } ?: "—",
+                        b.timestamp?.let { relTimeSecs(ctx, it.toLong()) } ?: "", b.builtOnDatum, b.gatewayName)
+                }
+                Spacer(Modifier.height(4.dp))
+                Text(stringResource(R.string.blk_built_by_the_finder_s_own_gateway), style = Blake.mono(7f), color = Blake.faint)
+            }
             Spacer(Modifier.height(22.dp))
             Column(Modifier.fillMaxWidth().blakeCard()) {
                 Text(stringResource(R.string.blk_eligibility), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)

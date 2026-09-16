@@ -172,6 +172,10 @@ fun BlakeCarouselScreen() {
                 }
             }
 
+            // GATEWAYS
+            Spacer(Modifier.height(22.dp))
+            GatewaysCard(prime?.runners.orEmpty().map { GatewayRow.of(it) }, accent = Blake.pp, registered = prime?.nodeRunnersRegistered, primeHashrateGhs = prime?.hashrateGhs)
+
             // BLOCKS
             Spacer(Modifier.height(22.dp))
             Column(Modifier.fillMaxWidth().blakeCard()) {
@@ -179,15 +183,11 @@ fun BlakeCarouselScreen() {
                 Spacer(Modifier.height(8.dp))
                 if (blocks.isEmpty()) Text(stringResource(R.string.blk_no_blocks_yet), style = Blake.mono(9f), color = Blake.faint)
                 blocks.take(8).forEach { b ->
-                    Row(Modifier.fillMaxWidth().hairline().padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("#${b.height}", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.pp); Spacer(Modifier.width(8.dp))
-                        Text(b.finderMasked ?: "—", style = Blake.mono(8f), color = Blake.faint, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-                        Spacer(Modifier.width(6.dp))
-                        Text(b.reward?.let { "%.4f ${Blake.RUNE}".format(java.util.Locale.US, it) } ?: "—", style = Blake.mono(10f), color = Blake.fg)
-                        Spacer(Modifier.width(6.dp))
-                        Text(b.timestamp?.let { relTimeSecs(ctx, it.toLong()) } ?: "", style = Blake.mono(7f), color = Blake.faint)
-                    }
+                    FoundBlockRow(b.height, b.finderMasked ?: "—", b.reward?.let { "%.4f ${Blake.RUNE}".format(java.util.Locale.US, it) } ?: "—",
+                        b.timestamp?.let { relTimeSecs(ctx, it.toLong()) } ?: "", b.builtOnDatum, b.gatewayName)
                 }
+                Spacer(Modifier.height(4.dp))
+                Text(stringResource(R.string.blk_built_by_the_finder_s_own_gateway), style = Blake.mono(7f), color = Blake.faint)
             }
 
             // CONNECT

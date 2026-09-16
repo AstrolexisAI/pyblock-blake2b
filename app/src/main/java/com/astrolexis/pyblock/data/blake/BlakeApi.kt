@@ -72,7 +72,11 @@ object BlakeApi {
         @SerialName("protocol") val protocolName: String? = null,
         val confirmed: Boolean? = null,
         val timestamp: Double? = null,
-    )
+        /** "datum" when the finder's own gateway built the block, "stratum" through the house. Optional:
+         *  the feed only starts carrying it after SERVER_ACTION_blocks_via_datum. */
+        val via: String? = null,
+        @SerialName("gateway_name") val gatewayName: String? = null,
+    ) { val builtOnDatum get() = via?.lowercase() == "datum" }
     @Serializable private data class BlocksResp(val blocks: List<Block>? = null)
 
     /** One coinbase output — how the block reward was split (carousel/chirp share the coinbase
@@ -101,7 +105,15 @@ object BlakeApi {
         val wavicles: WWav? = null,
         val window: WWindow? = null,
         val blocks: List<WBlock> = emptyList(),
+        /** The gateways connected to the Prime right now — the house one and every node-runner's. */
+        val clients: List<WClient> = emptyList(),
     )
+    @Serializable data class WClient(
+        val gateway: String? = null, val generation: String? = null, val identity: String? = null, val name: String? = null,
+        @SerialName("user_agent") val userAgent: String? = null, @SerialName("connected_s") val connectedS: Int? = null,
+        @SerialName("last_share_s") val lastShareS: Int? = null, val accepted: Int? = null, @SerialName("fee_path") val feePath: String? = null,
+        val payable: Boolean? = null,
+    ) { val onDatum get() = feePath == "datum" }
     @Serializable data class WHashrate(@SerialName("pool_ghs") val poolGhs: Double? = null)
     @Serializable data class WDatum(val host: String? = null, val port: Int? = null, val pubkey: String? = null)
     @Serializable data class WPool(
@@ -137,8 +149,11 @@ object BlakeApi {
         @SerialName("payout_sats") val payoutSats: Long? = null,
         @SerialName("last_share_s") val lastShareS: Int? = null,
         val payable: Boolean? = null,
-    )
-    @Serializable data class WBlock(val height: Int? = null)
+        @SerialName("fee_path") val feePath: String? = null,
+    ) { val onDatum get() = feePath == "datum" }
+    @Serializable data class WBlock(val height: Int? = null, val finder: String? = null, val gateway: String? = null, val ts: Double? = null,
+                                    @SerialName("coinbase_value") val coinbaseValue: Long? = null, val kind: String? = null,
+                                    val via: String? = null, @SerialName("gateway_name") val gatewayName: String? = null)
 
     @Serializable
     data class Utxo(
@@ -208,8 +223,7 @@ object BlakeApi {
                           val via: String? = null, @SerialName("prime_last_share_s") val primeLastShareS: Int? = null) {
         val onPrime get() = via == "prime" || via == "both"
     }
-    @Serializable private data class PrimeRunnerRow(val identity: String? = null, @SerialName("last_share_s") val lastShareS: Int? = null)
-    @Serializable private data class PrimeRunnersResp(val runners: List<PrimeRunnerRow> = emptyList())
+
 
     // ---- CAROUSEL (the lap) ----
 
@@ -242,8 +256,12 @@ object BlakeApi {
     @Serializable data class PrimeConnect(val host: String? = null, val port: Int? = null)
     @Serializable data class PrimeSplit(val label: String? = null, @SerialName("miners_bps") val minersBps: Int? = null,
                                         @SerialName("node_runner_bps") val nodeRunnerBps: Int? = null, @SerialName("pool_bps") val poolBps: Int? = null)
+    @Serializable data class PrimeRunner(val gateway: String? = null, val generation: String? = null, val identity: String? = null, val name: String? = null,
+                                         val accepted: Int? = null, val work: Double? = null, @SerialName("connected_s") val connectedS: Int? = null,
+                                         @SerialName("last_share_s") val lastShareS: Int? = null)
     @Serializable data class PrimeInfo(val ok: Boolean? = null, val connect: PrimeConnect? = null, val split: PrimeSplit? = null,
-                                       val gateways: Int? = null, @SerialName("hashrate_ghs") val hashrateGhs: Double? = null)
+                                       val gateways: Int? = null, @SerialName("hashrate_ghs") val hashrateGhs: Double? = null,
+                                       val runners: List<PrimeRunner> = emptyList(), @SerialName("node_runners_registered") val nodeRunnersRegistered: Int? = null)
     suspend fun prime(product: String): PrimeInfo? = get(B_BASE + "/datum_modes_api.php?product=$product") { runCatching { json.decodeFromString<PrimeInfo>(it) }.getOrNull() }
 
     // ---- Plumbing ----
@@ -304,10 +322,7 @@ object BlakeApi {
     suspend fun chirpMiners(): List<ChirpMiner>? =
         get("/chirp_api.php?chain=blake2b&mode=miners") { runCatching { json.decodeFromString<List<ChirpMiner>>(it) }.getOrNull() }
     /** Who is on CHIRP-PRIME (their own gateway): identity masked `6…4` → seconds since last share. */
-    suspend fun chirpPrimeRunners(): Map<String, Int>? =
-        get(B_BASE + "/datum_modes_api.php?product=chirp") {
-            runCatching { json.decodeFromString<PrimeRunnersResp>(it).runners.mapNotNull { r -> r.identity?.takeIf { it.isNotEmpty() }?.let { it to (r.lastShareS ?: Int.MAX_VALUE) } }.toMap() }.getOrNull()
-        }
+    suspend fun chirpPrimeRunners(): Map<String, Int>? = prime("chirp")?.runners?.mapNotNull { r -> r.identity?.takeIf { it.isNotEmpty() }?.let { it to (r.lastShareS ?: Int.MAX_VALUE) } }?.toMap()
 
     /** UTXOs for one address on blake2b. Returns null on failure/warming (retry — never a false 0). */
     suspend fun walletUtxos(address: String): Pair<List<Utxo>, Int>? {

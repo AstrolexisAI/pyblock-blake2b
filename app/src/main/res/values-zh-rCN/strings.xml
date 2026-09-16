@@ -10,6 +10,7 @@
     <string name="blk_a_year">每年</string>
     <string name="blk_a_year_of_history_is_pro">一年历史为 PRO。</string>
     <string name="blk_accepted">已接受</string>
+    <string name="blk_accepted_2">已接受 %1$s</string>
     <string name="blk_activity">动态</string>
     <string name="blk_add">添加</string>
     <string name="blk_add_2">+ 添加</string>
@@ -48,13 +49,16 @@
     <string name="blk_block_participation">区块参与</string>
     <string name="blk_block_user">屏蔽用户</string>
     <string name="blk_blocks_found">找到的区块</string>
+    <string name="blk_blocks_found_by_the_syndicate">联合找到的区块</string>
     <string name="blk_blocks_found_on_the_carousel">CAROUSEL 找到的区块</string>
+    <string name="blk_blocks_found_on_wavicles">WAVICLES 找到的区块</string>
     <string name="blk_blocks_found_time_mining_your_own_gatewa">找到的区块、挖矿时长、自有网关，以符文显示在你的名字旁。</string>
     <string name="blk_blocks_on_your_template">你模板上的区块</string>
     <string name="blk_blocks_paid_to_this_address">支付到此地址的区块</string>
     <string name="blk_blocks_payouts">区块与支付</string>
     <string name="blk_broadcasting">广播中…</string>
     <string name="blk_built_by">开发者</string>
+    <string name="blk_built_by_the_finder_s_own_gateway">ᛖ = 由发现者自有网关构建</string>
     <string name="blk_by_weight_tenure_power">按权重 · 资历 + 算力</string>
     <string name="blk_by_weight_tenure_power_on_chirp_prime_ow">按权重 · 资历 + 算力 · ᚨ = 在 CHIRP-PRIME（自有网关）</string>
     <string name="blk_can_t_connect">无法连接：%1$s</string>
@@ -178,6 +182,7 @@
     <string name="blk_found">已找到</string>
     <string name="blk_found_2">已找到 ✓</string>
     <string name="blk_from_selected_coins_available_change_ret">来自 %1$s 枚已选币 · 可用 %2$s %3$s · 找零退回</string>
+    <string name="blk_gateways_connected">已连接的网关</string>
     <string name="blk_get_quote">获取报价</string>
     <string name="blk_give_it_a_real_shake_the_device_s_motion">用力摇一摇：设备的运动会注入新的熵。</string>
     <string name="blk_grind">GRIND</string>
@@ -219,6 +224,7 @@
     <string name="blk_invalid_wif">WIF 无效</string>
     <string name="blk_it_answered_but_not_like_a_stratum">有响应，但不像 stratum：%1$s</string>
     <string name="blk_it_answers_mining_subscribe_point_your_r">✓ 它响应 mining.subscribe：把矿机指向这里。</string>
+    <string name="blk_its_own_node_builds_the_block_the_other_">ᛖ = 由其自有节点构建区块 · 其余经 PyBLØCK 网关</string>
     <string name="blk_just_now">刚刚</string>
     <string name="blk_keep_drawing">继续涂画</string>
     <string name="blk_keep_shaking">继续摇动</string>
@@ -302,6 +308,7 @@
     <string name="blk_no_blocks_yet">还没有区块。</string>
     <string name="blk_no_coins">没有币。</string>
     <string name="blk_no_contacts_yet_save_an_address_or_a_pay">还没有联系人。保存一个地址或 PayNym（PM…）以便重复使用。</string>
+    <string name="blk_no_gateways_connected_yet_run_your_own_n">还没有网关连接：运行你自己的节点，成为第一个。</string>
     <string name="blk_no_lightning_wallet_found_invoice_copied">未找到 Lightning 钱包：账单已复制。</string>
     <string name="blk_no_mature_mined_coins_yet">还没有成熟的挖矿币。</string>
     <string name="blk_no_messages_yet">还没有消息。</string>
@@ -409,6 +416,7 @@
     <string name="blk_recipient">→ 收款方</string>
     <string name="blk_recipient_address">收款地址</string>
     <string name="blk_refresh">刷新</string>
+    <string name="blk_registered">已注册 %1$s</string>
     <string name="blk_relay_link">中继连接</string>
     <string name="blk_rent_blake2b_hash_to_your_address_live_m">租用 BLAKE2b 算力挖到你的地址。实时市价，闪电支付；交付到你选择的矿池。</string>
     <string name="blk_rent_hash_to_your_address">租用算力到你的地址</string>
@@ -570,6 +578,7 @@
     <string name="blk_unlocked_replay_exposed_you_accepted_the">已解锁 · 有重放风险（你已接受）</string>
     <string name="blk_unlocked_replay_risk">已解锁 · 重放风险</string>
     <string name="blk_unlocked_replay_risk_accepted">已解锁 · 已接受重放风险</string>
+    <string name="blk_up">在线 %1$s</string>
     <string name="blk_usdt">%1$s · %2$s/USDT</string>
     <string name="blk_usdt_on_other_currencies_crossed_via_mem">%1$s/USDT 来自 %2$s · 其他货币通过 mempool.space 换算</string>
     <string name="blk_use">使用</string>
