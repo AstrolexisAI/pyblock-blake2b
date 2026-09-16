@@ -175,16 +175,33 @@ fun BlakeChirpScreen() {
                     }
                     if (showParticipants) {
                         Spacer(Modifier.height(10.dp))
-                        Text(stringResource(R.string.blk_by_weight_tenure_power_on_chirp_prime_ow), style = Blake.mono(7f), color = Blake.faint)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(stringResource(R.string.blk_by_weight_tenure_power), style = Blake.mono(7f), color = Blake.faint)
+                            val np = online.count { it.onPrime }
+                            if (np > 0) {
+                                Text(" · ", style = Blake.mono(7f), color = Blake.faint)
+                                AnsuzRune(9.dp, Blake.datum); Spacer(Modifier.width(3.dp))
+                                Text(stringResource(R.string.blk_on_chirp_prime_own_gateway, np.toString()), style = Blake.mono(7f, FontWeight.ExtraBold), color = Blake.datum)
+                            }
+                        }
                         Spacer(Modifier.height(4.dp))
                         online.forEach { w ->
                             Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Box(Modifier.size(5.dp).background(if (w.connected || w.primeLive) Blake.ok else Blake.faint, CircleShape))
                                 Spacer(Modifier.width(6.dp))
                                 // The mark of running your own gateway: their node speaks the block.
-                                if (w.onPrime) { AnsuzRune(11.dp, Blake.datum); Spacer(Modifier.width(4.dp)) }
-                                Text(w.name, style = Blake.mono(10f), color = if (w.eligible) Blake.fg else Blake.ppDim,
-                                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                                if (w.onPrime) { AnsuzRune(13.dp, Blake.datum); Spacer(Modifier.width(4.dp)) }
+                                // A Prime row reads in the DATUM colour end to end, like WAVICLES rows in cyan:
+                                // CHIRP (house stratum) and CHIRP-PRIME (own gateway) must never look alike.
+                                Text(w.name, style = Blake.mono(10f, if (w.onPrime) FontWeight.ExtraBold else FontWeight.Normal),
+                                    color = if (w.onPrime) Blake.datum else if (w.eligible) Blake.fg else Blake.ppDim,
+                                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                                if (w.onPrime) {
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("PRIME", style = Blake.mono(6f, FontWeight.ExtraBold), color = Blake.bg, letterSpacing = 1.sp,
+                                        modifier = Modifier.background(Blake.datum).padding(horizontal = 4.dp, vertical = 1.dp))
+                                }
+                                Spacer(Modifier.weight(1f))
                                 w.days?.let { Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.blk_d, it.toInt().toString()), style = Blake.mono(8f), color = Blake.faint, maxLines = 1, softWrap = false) }
                                 Spacer(Modifier.width(8.dp))
                                 Text(w.hashrateThs?.let { hr(it) } ?: "·", style = Blake.mono(10f), color = Blake.ppDim, maxLines = 1, softWrap = false)

@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.Dp
 @Composable
 fun AnsuzRune(size: Dp, color: Color = Blake.datum, modifier: Modifier = Modifier) {
     Canvas(modifier.size(size * 0.8f, size)) {
-        val lw = (this.size.height * 0.13f).coerceAtLeast(2f)
+        val lw = (this.size.height * 0.17f).coerceAtLeast(2f)
         val h = this.size.height
         val x0 = lw / 2f + this.size.width * 0.32f; val x1 = this.size.width - lw / 2f
         drawLine(color, Offset(x0, 0f), Offset(x0, h), lw, StrokeCap.Round)

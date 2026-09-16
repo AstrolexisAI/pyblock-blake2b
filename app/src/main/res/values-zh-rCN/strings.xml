@@ -52,6 +52,7 @@
     <string name="blk_blocks_payouts">区块与支付</string>
     <string name="blk_broadcasting">广播中…</string>
     <string name="blk_built_by">开发者</string>
+    <string name="blk_by_weight_tenure_power">按权重 · 资历 + 算力</string>
     <string name="blk_by_weight_tenure_power_on_chirp_prime_ow">按权重 · 资历 + 算力 · ᚨ = 在 CHIRP-PRIME（自有网关）</string>
     <string name="blk_can_t_connect">无法连接：%1$s</string>
     <string name="blk_can_t_reach_the_server">⚠ 无法连接服务器。</string>
@@ -322,6 +323,7 @@
     <string name="blk_off">关 ▸</string>
     <string name="blk_offline">离线</string>
     <string name="blk_on">开 ▸</string>
+    <string name="blk_on_chirp_prime_own_gateway">%1$s 在 CHIRP-PRIME（自有网关）</string>
     <string name="blk_one_transaction_straight_to_the_recipien">一笔交易直接发给收款方。最便宜、最快。</string>
     <string name="blk_only_base58_chars_no_0_o_i_l">仅限 Base58 字符（不含 0、O、I、l）。</string>
     <string name="blk_only_mature_mined_coins_can_be_sent_lock">只能发送成熟的挖矿币。锁定的 %1$s %2$s 保持不动。</string>

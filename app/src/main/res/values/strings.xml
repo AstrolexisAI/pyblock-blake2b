@@ -913,6 +913,7 @@
     <string name="blk_blocks_payouts">Blocks &amp; payouts</string>
     <string name="blk_broadcasting">BROADCASTING…</string>
     <string name="blk_built_by">BUILT BY</string>
+    <string name="blk_by_weight_tenure_power">by weight · tenure + power</string>
     <string name="blk_by_weight_tenure_power_on_chirp_prime_ow">by weight · tenure + power · ᚨ = on CHIRP-PRIME (own gateway)</string>
     <string name="blk_can_t_connect">Can\'t connect: %1$s</string>
     <string name="blk_can_t_reach_the_server">⚠ can\'t reach the server.</string>
@@ -1183,6 +1184,7 @@
     <string name="blk_off">off ▸</string>
     <string name="blk_offline">OFFLINE</string>
     <string name="blk_on">on ▸</string>
+    <string name="blk_on_chirp_prime_own_gateway">%1$s on CHIRP-PRIME (own gateway)</string>
     <string name="blk_one_transaction_straight_to_the_recipien">One transaction straight to the recipient. Cheapest and fastest.</string>
     <string name="blk_only_base58_chars_no_0_o_i_l">Only Base58 chars (no 0, O, I, l).</string>
     <string name="blk_only_mature_mined_coins_can_be_sent_lock">Only mature mined coins can be sent. Locked %1$s %2$s stays put.</string>
