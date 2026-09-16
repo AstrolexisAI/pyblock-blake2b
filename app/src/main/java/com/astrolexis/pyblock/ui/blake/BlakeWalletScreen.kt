@@ -199,7 +199,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit, onPaid: (peer: String, txid: S
                     if (wallets.isNotEmpty()) {
                         Box(Modifier.size(5.dp).background(if (live) Blake.ok else Blake.faint, CircleShape))
                         Spacer(Modifier.size(6.dp))
-                        Text(if (live) "LIVE" else "OFFLINE", style = Blake.mono(8f, FontWeight.ExtraBold), color = if (live) Blake.ok else Blake.faint, letterSpacing = 1.sp)
+                        Text(if (live) stringResource(R.string.blk_live) else stringResource(R.string.blk_offline), style = Blake.mono(8f, FontWeight.ExtraBold), color = if (live) Blake.ok else Blake.faint, letterSpacing = 1.sp)
                         Spacer(Modifier.size(6.dp))
                     }
                     if (tip > 0) Text("#$tip", style = Blake.mono(8f), color = Blake.faint)
@@ -293,7 +293,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit, onPaid: (peer: String, txid: S
                         Column(Modifier.fillMaxWidth()) {
                             // Tap a header to expand its coins inline — unlock a replay-locked coin
                             // (or re-lock one you unlocked) without leaving the wallet screen.
-                            breakdownRow("SPENDABLE", spendable, spendableUtxos.size, Blake.ok, spendExpanded) { spendExpanded = !spendExpanded }
+                            breakdownRow(stringResource(R.string.blk_spendable), spendable, spendableUtxos.size, Blake.ok, spendExpanded) { spendExpanded = !spendExpanded }
                             if (spendExpanded) {
                                 if (spendableUtxos.isEmpty())
                                     Text(stringResource(R.string.blk_no_mature_mined_coins_yet), style = Blake.mono(8f), color = Blake.faint, modifier = Modifier.padding(start = 12.dp, top = 4.dp))
@@ -304,7 +304,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit, onPaid: (peer: String, txid: S
                             Spacer(Modifier.height(8.dp))
                             Box(Modifier.fillMaxWidth().height(1.dp).background(Blake.line))
                             Spacer(Modifier.height(8.dp))
-                            breakdownRow("LOCKED", locked, lockedUtxos.size, Blake.warn, lockedExpanded) { lockedExpanded = !lockedExpanded }
+                            breakdownRow(stringResource(R.string.blk_locked), locked, lockedUtxos.size, Blake.warn, lockedExpanded) { lockedExpanded = !lockedExpanded }
                             if (lockedExpanded) {
                                 if (lockedUtxos.isEmpty())
                                     Text(stringResource(R.string.blk_nothing_locked), style = Blake.mono(8f), color = Blake.faint, modifier = Modifier.padding(start = 12.dp, top = 4.dp))
@@ -476,13 +476,13 @@ private fun coinBreakdownRow(u: BlakeApi.Utxo, tip: Int, locked: Boolean,
         Column(Modifier.weight(1f)) {
             Text("${Blake.btc(u.value)} ${Blake.RUNE}", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.fg)
             Text(if (locked) (BlakeFork.lockReason(u, tip) ?: "locked")
-                 else if (unlocked) "unlocked · replay risk accepted" else "mature mined",
+                 else if (unlocked) stringResource(R.string.blk_unlocked_replay_risk_accepted) else stringResource(R.string.blk_mature_mined),
                  style = Blake.mono(7f), color = Blake.faint)
             MaturityBar(u, tip)
         }
         if (replayLocked) {
             if (unlocked) miniBtn(stringResource(R.string.blk_lock), Blake.warn, onRelock)
-            else miniBtn("UNLOCK", Blake.danger, onUnlock)
+            else miniBtn(stringResource(R.string.blk_unlock), Blake.danger, onUnlock)
             Spacer(Modifier.size(8.dp))
         }
         Text("ⓘ", style = Blake.mono(11f), color = Blake.ppDim, modifier = Modifier.clickableNoRipple(onInfo))
@@ -516,11 +516,11 @@ private fun SentDetailDialog(
     var copied by remember { mutableStateOf(false) }
     LaunchedEffect(copied) { if (copied) { delay(2000); copied = false } }
     var labelText by remember(r.id) { mutableStateOf(com.astrolexis.pyblock.data.blake.BlakeLabelStore.labelFor(r.id) ?: "") }
-    sheetBox(if (r.ricochet) "RICOCHET SENT" else "SENT", Blake.pp, onClose) {
+    sheetBox(if (r.ricochet) stringResource(R.string.blk_ricochet_sent) else stringResource(R.string.blk_sent), Blake.pp, onClose) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(7.dp).background(if (pending) Blake.warn else Blake.ok, CircleShape))
             Spacer(Modifier.width(8.dp))
-            Text(if (pending) "PENDING · waiting for a block" else "CONFIRMED",
+            Text(if (pending) stringResource(R.string.blk_pending_waiting_for_a_block) else stringResource(R.string.blk_confirmed),
                 style = Blake.mono(10f, FontWeight.ExtraBold), color = if (pending) Blake.warn else Blake.ok, letterSpacing = 1.sp)
         }
         Spacer(Modifier.height(14.dp))

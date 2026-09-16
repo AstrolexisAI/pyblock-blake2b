@@ -50,7 +50,7 @@ fun ContactsSheet(onPick: ((String) -> Unit)?, onClose: () -> Unit) {
     var newValue by remember { mutableStateOf("") }
     val canSave = BlakeContact.isValidDestination(newValue)
 
-    sheetBox("CONTACTS", Blake.pp, onClose) {
+    sheetBox(stringResource(R.string.blk_contacts_2), Blake.pp, onClose) {
         if (onPick != null) {
             Text(stringResource(R.string.blk_tap_a_contact_to_use_it_as_the_recipient), style = Blake.mono(9f), color = Blake.faint)
             Spacer(Modifier.height(12.dp))
@@ -60,7 +60,7 @@ fun ContactsSheet(onPick: ((String) -> Unit)?, onClose: () -> Unit) {
             Column(Modifier.fillMaxWidth().border(1.dp, Blake.line, RectangleShape).padding(14.dp)) {
                 Text(stringResource(R.string.blk_new_contact), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
                 Spacer(Modifier.height(10.dp))
-                labeledField("Name (e.g. Stefa)", newLabel, KeyboardType.Text) { newLabel = it }
+                labeledField(stringResource(R.string.blk_name_e_g_stefa), newLabel, KeyboardType.Text) { newLabel = it }
                 Spacer(Modifier.height(10.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.blk_address_paynym), style = Blake.mono(9f), color = Blake.faint, letterSpacing = 1.sp)
@@ -110,7 +110,7 @@ fun ContactsSheet(onPick: ((String) -> Unit)?, onClose: () -> Unit) {
                     Text(shortValue(c.value), style = Blake.mono(9f), color = Blake.faint, maxLines = 1)
                 }
                 if (c.isPaymentCode) {
-                    Text("PAYNYM", style = Blake.mono(7f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 1.sp)
+                    Text(stringResource(R.string.blk_paynym), style = Blake.mono(7f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 1.sp)
                     Spacer(Modifier.width(10.dp))
                 }
                 Text("✕", style = Blake.mono(12f), color = Blake.ppDim,

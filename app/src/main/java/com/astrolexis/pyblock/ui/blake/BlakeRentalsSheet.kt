@@ -148,7 +148,7 @@ fun BlakeRentalsSheet(onClose: () -> Unit) {
         }
     }
 
-    fullSheet("RENTALS", onClose) {
+    fullSheet(stringResource(R.string.blk_rentals), onClose) {
         Text(stringResource(R.string.blk_rent_blake2b_hash_to_your_address_live_m),
             style = Blake.mono(9f), color = Blake.ppDim)
         Spacer(Modifier.height(18.dp))
@@ -198,7 +198,7 @@ fun BlakeRentalsSheet(onClose: () -> Unit) {
                 Text(invoice, style = Blake.mono(8f), color = Blake.faint, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Spacer(Modifier.height(10.dp))
                 Row {
-                    Text(if (copied) "COPIED" else "COPY INVOICE", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 1.sp, textAlign = TextAlign.Center,
+                    Text(if (copied) stringResource(R.string.blk_copied_2) else stringResource(R.string.blk_copy_invoice), style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 1.sp, textAlign = TextAlign.Center,
                         modifier = Modifier.weight(1f).border(1.dp, Blake.pp, RectangleShape).padding(vertical = 10.dp).clickableNoRipple {
                             Haptics.tap(); clip.setText(AnnotatedString(invoice)); copied = true
                             scope.launch { delay(1500); copied = false }
@@ -209,7 +209,7 @@ fun BlakeRentalsSheet(onClose: () -> Unit) {
                             Haptics.tap()
                             // Chooser surfaces every installed Lightning wallet, not only the default handler.
                             val i = Intent(Intent.ACTION_VIEW, Uri.parse("lightning:" + invoice.lowercase()))
-                            runCatching { ctx.startActivity(Intent.createChooser(i, "Pay with")) }
+                            runCatching { ctx.startActivity(Intent.createChooser(i, com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_pay_with))) }
                                 .onFailure { clip.setText(AnnotatedString(invoice)); android.widget.Toast.makeText(ctx, ctx.getString(R.string.blk_no_lightning_wallet_found_invoice_copied), android.widget.Toast.LENGTH_SHORT).show() }
                         })
                 }
@@ -221,7 +221,7 @@ fun BlakeRentalsSheet(onClose: () -> Unit) {
                 labelValue(stringResource(R.string.blk_package), "${BlakeRentals.th((s.hashratePhs ?: 0.0) * 1000)} · ${(s.durationH ?: 0.0).toInt()}h")
                 labelValue(stringResource(R.string.blk_pool_port), s.port?.let { ":$it" } ?: "—")
                 labelValue("TO", s.btcAddress ?: "—")
-                labelValue("TOTAL", BlakeRentals.sats(s.totalSats), Blake.pp)
+                labelValue(stringResource(R.string.blk_total), BlakeRentals.sats(s.totalSats), Blake.pp)
                 if (status == "active" || status == "completed") {
                     labelValue(stringResource(R.string.blk_live_hash), BlakeRentals.th((s.liveHashratePhs ?: 0.0) * 1000), Blake.ok)
                     s.percentDone?.let { p ->
@@ -334,10 +334,10 @@ fun BlakeRentalsSheet(onClose: () -> Unit) {
                 if (q != null) {
                     labelValue(stringResource(R.string.blk_package), "${BlakeRentals.th(q.th)} · ${q.hours ?: hours}h")
                     labelValue("POOL", "${pools[q.pool ?: pool]?.label ?: pool.uppercase()} :${q.port ?: 0}")
-                    labelValue("TOTAL", BlakeRentals.sats(q.totalSats), Blake.pp)
+                    labelValue(stringResource(R.string.blk_total), BlakeRentals.sats(q.totalSats), Blake.pp)
                     q.feePct?.let { Text("fee ${it.toInt()}% included · re-quoted when you pay", style = Blake.mono(7f), color = Blake.faint) }
                     Spacer(Modifier.height(10.dp))
-                    Text(if (ordering) "CREATING INVOICE…" else "PAY WITH LIGHTNING", style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.bg, letterSpacing = 1.sp, textAlign = TextAlign.Center,
+                    Text(if (ordering) stringResource(R.string.blk_creating_invoice) else stringResource(R.string.blk_pay_with_lightning), style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.bg, letterSpacing = 1.sp, textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth().background(Blake.pp.copy(alpha = if (ordering) 0.6f else 1f)).padding(vertical = 12.dp).clickableNoRipple {
                             if (ordering) return@clickableNoRipple
                             scope.launch {
@@ -349,7 +349,7 @@ fun BlakeRentalsSheet(onClose: () -> Unit) {
                             }
                         })
                 } else {
-                    Text(if (quoting) "QUOTING…" else "GET QUOTE", style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.bg, letterSpacing = 1.sp, textAlign = TextAlign.Center,
+                    Text(if (quoting) stringResource(R.string.blk_quoting) else stringResource(R.string.blk_get_quote), style = Blake.mono(12f, FontWeight.ExtraBold), color = Blake.bg, letterSpacing = 1.sp, textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth().background(if (canQuote) Blake.pp else Blake.faint).padding(vertical = 12.dp).clickableNoRipple {
                             if (!canQuote || quoting) return@clickableNoRipple
                             scope.launch {

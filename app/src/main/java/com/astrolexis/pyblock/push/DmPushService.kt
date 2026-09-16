@@ -142,8 +142,8 @@ class DmPushService : Service() {
         if (plain.startsWith("pyblock:read?")) return
         if (appVisible) return   // the open app renders it live
         val body = if (plain.startsWith("pyblock:paid?"))
-            "⚡ Sats incoming — a payment receipt just arrived"
-        else "✉ New encrypted DM"
+            com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_sats_incoming_a_payment_receipt_just_arr)
+        else com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_new_encrypted_dm)
         notifyDm(body)
     }
 
@@ -183,11 +183,11 @@ class DmPushService : Service() {
         val mgr = getSystemService(NotificationManager::class.java) ?: return
         if (mgr.getNotificationChannel(LINK_CHANNEL) == null) {
             mgr.createNotificationChannel(
-                NotificationChannel(LINK_CHANNEL, "Relay link", NotificationManager.IMPORTANCE_MIN))
+                NotificationChannel(LINK_CHANNEL, com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_relay_link), NotificationManager.IMPORTANCE_MIN))
         }
         if (mgr.getNotificationChannel(CHAT_CHANNEL) == null) {
             mgr.createNotificationChannel(
-                NotificationChannel(CHAT_CHANNEL, "Encrypted DMs", NotificationManager.IMPORTANCE_HIGH))
+                NotificationChannel(CHAT_CHANNEL, com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_encrypted_dms), NotificationManager.IMPORTANCE_HIGH))
         }
     }
 
@@ -195,8 +195,8 @@ class DmPushService : Service() {
     private fun linkNotification(): Notification =
         NotificationCompat.Builder(this, LINK_CHANNEL)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("PyBLØCK · sovereign push")
-            .setContentText("Connected to your pool's relay")
+            .setContentTitle(com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_pybl_ck_sovereign_push))
+            .setContentText(com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_connected_to_your_pool_s_relay))
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)

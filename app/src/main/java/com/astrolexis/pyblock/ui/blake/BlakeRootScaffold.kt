@@ -1,5 +1,7 @@
 package com.astrolexis.pyblock.ui.blake
 
+import com.astrolexis.pyblock.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -58,13 +60,13 @@ import com.astrolexis.pyblock.ui.components.clickableNoRipple
 
 /** Four-tab shell for the dedicated BLAKE2b app — POOL · WALLET · CHAT · CHIRP.
  *  Mirrors iOS RootView: flat black, floating capsule tab bar, app-wide "RECEIVED" banner. */
-private data class BTab(val route: String, val label: String, val icon: ImageVector)
+private data class BTab(val route: String, val label: Int, val icon: ImageVector)
 private val BTABS = listOf(
-    BTab("pool", "POOL", Icons.Filled.ShowChart),
-    BTab("wallet", "WALLET", Icons.Filled.AccountBalanceWallet),
-    BTab("chat", "CHAT", Icons.Filled.Forum),
-    BTab("chirp", "CHIRP", Icons.Filled.Groups),
-    BTab("wavicles", "WAVICLES", Icons.Filled.Grain),
+    BTab("pool", R.string.blk_pool, Icons.Filled.ShowChart),
+    BTab("wallet", R.string.blk_wallet, Icons.Filled.AccountBalanceWallet),
+    BTab("chat", R.string.blk_chat, Icons.Filled.Forum),
+    BTab("chirp", R.string.blk_chirp, Icons.Filled.Groups),
+    BTab("wavicles", R.string.blk_wavicles, Icons.Filled.Grain),
 )
 
 @Composable
@@ -175,11 +177,11 @@ private fun BlakeTabBar(nav: NavHostController, current: String?) {
                     if (tab.route == "wavicles") {
                         DagazRune(20.dp, if (selected) Blake.pp else Blake.ppDim)
                     } else {
-                        Icon(tab.icon, contentDescription = tab.label,
+                        Icon(tab.icon, contentDescription = stringResource(tab.label),
                             tint = if (selected) Blake.pp else Blake.ppDim, modifier = Modifier.size(20.dp))
                     }
                     Spacer(Modifier.size(3.dp))
-                    Text(tab.label, style = Blake.mono(8f, FontWeight.ExtraBold),
+                    Text(stringResource(tab.label), style = Blake.mono(8f, FontWeight.ExtraBold),
                         color = if (selected) Blake.pp else Blake.ppDim, letterSpacing = 1.sp)
                 }
             }

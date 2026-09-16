@@ -108,7 +108,7 @@ fun BlakePoolScreen() {
                 Spacer(Modifier.weight(1f))
                 Box(Modifier.size(7.dp).background(if (live) Blake.ok else Blake.warn, CircleShape))
                 Spacer(Modifier.size(5.dp))
-                Text(if (live) "LIVE" else (status?.rc ?: "RC"), style = Blake.mono(10f, FontWeight.ExtraBold),
+                Text(if (live) stringResource(R.string.blk_live) else (status?.rc ?: "RC"), style = Blake.mono(10f, FontWeight.ExtraBold),
                     color = if (live) Blake.ok else Blake.warn, letterSpacing = 2.sp)
             }
             Spacer(Modifier.height(8.dp))
@@ -156,8 +156,8 @@ fun BlakePoolScreen() {
                 Column(Modifier.fillMaxWidth().blakeCard()) {
                     Text(stringResource(R.string.blk_hashrate_by_stratum), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
                     Spacer(Modifier.height(10.dp))
-                    val labels = mapOf("lotto" to "LOTTO", "lotto_asic" to "LOTTO · ASIC",
-                        "chirp" to "CHIRP", "carousel" to "CAROUSEL", "wavicles" to "WAVICLES")
+                    val labels = mapOf("lotto" to stringResource(R.string.blk_lotto), "lotto_asic" to stringResource(R.string.blk_lotto_asic),
+                        "chirp" to stringResource(R.string.blk_chirp), "carousel" to stringResource(R.string.blk_carousel), "wavicles" to stringResource(R.string.blk_wavicles))
                     // Flagship first (LOTTO before 970000, CAROUSEL after — lotto's ASIC tier tags along
                     // while lotto is flagship), then the rest by hashrate desc. Leads with the flagship
                     // through the swap regardless of its size.

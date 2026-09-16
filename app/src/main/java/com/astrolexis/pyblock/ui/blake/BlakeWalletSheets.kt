@@ -101,7 +101,7 @@ fun UtxoDetailSheet(u: BlakeApi.Utxo, tip: Int, onCopy: (String) -> Unit, onClos
     val replayLocked = BlakeFork.isReplayLocked(u, tip)
     var warn by remember { mutableStateOf(false) }
     var labelText by remember(u.id) { mutableStateOf(com.astrolexis.pyblock.data.blake.BlakeLabelStore.labelFor(u.id) ?: "") }
-    sheetBox("COIN", Blake.pp, onClose) {
+    sheetBox(stringResource(R.string.blk_coin), Blake.pp, onClose) {
         Text("${Blake.btc(u.value)} ${Blake.RUNE}", style = Blake.mono(24f, FontWeight.ExtraBold), color = Blake.pp)
         Text("${"%,d".format(u.value)} sats", style = Blake.mono(10f), color = Blake.faint)
         Spacer(Modifier.height(12.dp))
@@ -202,7 +202,7 @@ fun AddressControlSheet(
     var wif by remember { mutableStateOf("") }
     var probing by remember { mutableStateOf(false) }
     var chooseTypeWif by remember { mutableStateOf<String?>(null) }   // set when neither/both funded → ask
-    var newTypeAsk by remember { mutableStateOf(false) }              // "+ NEW" segwit/legacy prompt
+    var newTypeAsk by remember { mutableStateOf(false) }              // stringResource(R.string.blk_new) segwit/legacy prompt
     var dontAskAgain by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { com.astrolexis.pyblock.data.wallet.NewAddressPref.init(ctx) }
 
@@ -223,7 +223,7 @@ fun AddressControlSheet(
         return
     }
 
-    sheetBox("ADDRESS CONTROL", Blake.pp, onClose) {
+    sheetBox(stringResource(R.string.blk_address_control), Blake.pp, onClose) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Box(Modifier.weight(1f)) {
                 sheetBtn(stringResource(R.string.blk_new), Blake.pp, filled = true) {
@@ -359,7 +359,7 @@ fun AddressControlSheet(
 
 @Composable
 fun ReceiveSheet(wallet: VanityWallet, onCopy: (String) -> Unit, onClose: () -> Unit) {
-    sheetBox("RECEIVE", Blake.pp, onClose) {
+    sheetBox(stringResource(R.string.blk_receive_2), Blake.pp, onClose) {
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             Box(Modifier.background(Blake.hero).padding(10.dp)) { QrCode(text = wallet.address, size = 220.dp) }
         }
@@ -390,7 +390,7 @@ fun AddressDetailSheet(
     val spendableSats = spendable.sumOf { it.value }
     val total = balanceFor(wallet.address)
     val canSend = spendableSats > 0 && BlakeChains.SEND_ENABLED
-    sheetBox(wallet.label.ifEmpty { "WALLET" }.uppercase(), Blake.pp, onClose) {
+    sheetBox(wallet.label.ifEmpty { stringResource(R.string.blk_wallet) }.uppercase(), Blake.pp, onClose) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             BlakeIdenticon(seed = wallet.address, dimen = 34.dp)
             Spacer(Modifier.width(10.dp))
@@ -402,7 +402,7 @@ fun AddressDetailSheet(
         Spacer(Modifier.height(10.dp))
         Text(wallet.address, style = Blake.mono(10f), color = Blake.faint, modifier = Modifier.clickableNoRipple { onCopy(wallet.address) })
         Spacer(Modifier.height(16.dp))
-        sheetBtn(if (canSend) "↗ SEND FROM THIS ADDRESS" else "↗ SEND", if (canSend) Blake.pp else Blake.faint, filled = canSend) {
+        sheetBtn(if (canSend) stringResource(R.string.blk_send_from_this_address) else stringResource(R.string.blk_send_2), if (canSend) Blake.pp else Blake.faint, filled = canSend) {
             if (canSend) onSend(spendable.map { it.id }.toSet())
         }
         Spacer(Modifier.height(8.dp))
@@ -433,7 +433,7 @@ fun CoinsSheet(utxos: List<BlakeApi.Utxo>, tip: Int, onSpend: (Set<String>) -> U
         initialValue = 0.25f, targetValue = 1f, label = "pulse",
         animationSpec = androidx.compose.animation.core.infiniteRepeatable(
             androidx.compose.animation.core.tween(900), androidx.compose.animation.core.RepeatMode.Reverse))
-    sheetBox("COIN CONTROL", Blake.pp, onClose) {
+    sheetBox(stringResource(R.string.blk_coin_control), Blake.pp, onClose) {
         val incoming = pendingIn.filter { it.value > 0 }.toList().sortedByDescending { it.second }
         val inFlight = utxos.filter { it.id in inFlightIds }
         if (incoming.isNotEmpty() || inFlight.isNotEmpty()) {
@@ -467,7 +467,7 @@ fun CoinsSheet(utxos: List<BlakeApi.Utxo>, tip: Int, onSpend: (Set<String>) -> U
                 Text(stringResource(R.string.blk_tap_spendable_coins_to_select_then_send), style = Blake.mono(9f), color = Blake.faint)
                 Spacer(Modifier.weight(1f))
                 val allOn = selected.containsAll(spendableIds)
-                Text(if (allOn) "NONE" else "ALL", style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.pp,
+                Text(if (allOn) stringResource(R.string.blk_none) else stringResource(R.string.blk_all), style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.pp,
                     modifier = Modifier.clickableNoRipple { selected = if (allOn) emptySet() else spendableIds })
             }
         }
@@ -551,7 +551,7 @@ fun SendSheet(onSend: (String, Long, Boolean, Long, Boolean) -> Unit, paste: () 
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.weight(1f)) { sheetField(if (max) "MAX" else amt, stringResource(R.string.blk_amount_sats), KeyboardType.Number, enabled = !max) { amt = it.filter { c -> c.isDigit() } } }
             Spacer(Modifier.width(10.dp))
-            Text(if (max) "◉ MAX" else "○ MAX", style = Blake.mono(12f), color = Blake.warn, modifier = Modifier.clickableNoRipple { max = !max })
+            Text(if (max) stringResource(R.string.blk_max_2) else stringResource(R.string.blk_max_3), style = Blake.mono(12f), color = Blake.warn, modifier = Modifier.clickableNoRipple { max = !max })
         }
         Spacer(Modifier.height(10.dp))
         sheetField(fee, stringResource(R.string.blk_fee_sat_vb), KeyboardType.Number) { fee = it.filter { c -> c.isDigit() } }
@@ -573,7 +573,7 @@ fun SendSheet(onSend: (String, Long, Boolean, Long, Boolean) -> Unit, paste: () 
 // ---- Currency picker ----
 @Composable
 fun CurrencyPickerSheet(currencies: List<String>, onPick: (String) -> Unit) {
-    sheetBox("CURRENCY", Blake.pp, { onPick(currencies.firstOrNull() ?: "USD") }) {
+    sheetBox(stringResource(R.string.blk_currency), Blake.pp, { onPick(currencies.firstOrNull() ?: "USD") }) {
         Text("${BlakePrice.TICKER}/USDT on ${BlakePrice.SOURCE} · other currencies crossed via mempool.space",
             style = Blake.mono(8f), color = Blake.faint, modifier = Modifier.padding(bottom = 6.dp))
         currencies.forEach { c ->
@@ -591,7 +591,7 @@ fun SettingsSheet(operational: Boolean, rc: String?, height: Int, onClose: () ->
     val newMode by com.astrolexis.pyblock.data.wallet.NewAddressPref.mode.collectAsState()
     var showContacts by remember { mutableStateOf(false) }
     val contacts by com.astrolexis.pyblock.data.wallet.BlakeContactsStore.contacts.collectAsState()
-    sheetBox("SETTINGS", Blake.pp, onClose) {
+    sheetBox(stringResource(R.string.blk_settings), Blake.pp, onClose) {
         kv(stringResource(R.string.blk_network), if (operational) "operational" else "${rc ?: "RC"} · testing", if (operational) Blake.ok else Blake.warn)
         kv(stringResource(R.string.blk_timechain), "#$height", Blake.fg)
         kv(stringResource(R.string.blk_app), "PyBLØCK ${Blake.RUNE} ${com.astrolexis.pyblock.BuildConfig.VERSION_NAME}", Blake.fg)
@@ -683,7 +683,7 @@ private fun exportBackup(ctx: android.content.Context, wallets: List<VanityWalle
     runCatching { ctx.startActivity(intent) }.onFailure { android.widget.Toast.makeText(ctx, ctx.getString(R.string.blk_no_pdf_viewer), android.widget.Toast.LENGTH_SHORT).show() }
 }
 
-/** Generate a fresh random BLAKE2b wallet (own vault) — the "+ NEW" path, matching iOS
+/** Generate a fresh random BLAKE2b wallet (own vault) — the stringResource(R.string.blk_new) path, matching iOS
  *  `store.generate()`. Full-entropy CSPRNG key (VanityCrypto.hardenedRandom32), compressed
  *  K/L WIF, watch-only pubkey cached. Returns false only if the key math fails. */
 private fun doCreateNew(ctx: android.content.Context, segwit: Boolean) {

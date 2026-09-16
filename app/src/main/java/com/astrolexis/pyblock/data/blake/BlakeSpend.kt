@@ -1,5 +1,6 @@
 package com.astrolexis.pyblock.data.blake
 
+import com.astrolexis.pyblock.R
 import android.content.Context
 import com.astrolexis.pyblock.data.crypto.VanityCrypto
 import com.astrolexis.pyblock.data.wallet.RicochetOutcome
@@ -40,15 +41,15 @@ object BlakeSpend {
     private val coinbaseMaturity = BlakeFork.COINBASE_MATURITY
 
     sealed class Err(msg: String) : Exception(msg) {
-        object Disabled : Err("BLAKE2b sending isn't enabled yet.")
-        object NoSpendable : Err("No spendable BLAKE2b coins: only mature (100-conf) mined coins can be sent; shared pre-fork coins are replay-locked.")
-        object InsufficientSpendable : Err("Not enough spendable BLAKE2b for that amount + fee. Only mature mined coins count toward the sendable balance — pre-fork/received coins are replay-locked. Try MAX, a smaller amount, or unlock coins.")
-        object BadAddress : Err("That isn't a valid Bitcoin address.")
-        object BuildFailed : Err("Couldn't build the BLAKE2b transaction.")
-        object NotSigned : Err("Couldn't sign the BLAKE2b transaction.")
-        object UnexpectedInput : Err("Safety check failed — a non-mature or shared coin entered the tx. Aborted.")
-        object BroadcastFailed : Err("Couldn't broadcast to the BLAKE2b network.")
-        object AlreadyPending : Err("This coin is already in a pending transaction — it will confirm shortly. No need to resend.")
+        object Disabled : Err(com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_blake2b_sending_isn_t_enabled_yet))
+        object NoSpendable : Err(com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_no_spendable_blake2b_coins_only_mature_1))
+        object InsufficientSpendable : Err(com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_not_enough_spendable_blake2b_for_that_am))
+        object BadAddress : Err(com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_that_isn_t_a_valid_bitcoin_address))
+        object BuildFailed : Err(com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_couldn_t_build_the_blake2b_transaction))
+        object NotSigned : Err(com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_couldn_t_sign_the_blake2b_transaction))
+        object UnexpectedInput : Err(com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_safety_check_failed_a_non_mature_or_shar))
+        object BroadcastFailed : Err(com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_couldn_t_broadcast_to_the_blake2b_networ))
+        object AlreadyPending : Err(com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_this_coin_is_already_in_a_pending_transa))
         data class FeeTooHigh(val fee: Long, val amount: Long) : Err("Fee ($fee sats) would equal or exceed the amount ($amount sats).")
         data class FeeCapped(val fee: Long, val cap: Long) : Err("Fee ($fee sats) is above the safety cap ($cap sats). Lower the fee rate.")
     }

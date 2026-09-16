@@ -245,7 +245,7 @@ fun SendWizardSheet(
                     // Header
                     Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 10.dp),
                         verticalAlignment = Alignment.CenterVertically) {
-                        Text(if (ricochet) "RICOCHET" else "SEND", style = Blake.mono(20f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 3.sp)
+                        Text(if (ricochet) stringResource(R.string.blk_ricochet) else stringResource(R.string.blk_send), style = Blake.mono(20f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 3.sp)
                         Spacer(Modifier.weight(1f))
                         Text("✕", style = Blake.mono(22f), color = Blake.ppDim, modifier = Modifier.clickableNoRipple(onClose))
                     }
@@ -499,7 +499,7 @@ private fun StepReview(
         }
         ReviewRow("AMOUNT", if (sendMax) "MAX · ${Blake.btc(sweepSats)} ${Blake.RUNE}" else "${Blake.btc(amt)} ${Blake.RUNE}")
         ReviewRow("", "${"%,d".format(if (sendMax) sweepSats else amt)} sats", 9f, faint = true)
-        BlakePrice.fiatLabel(if (sendMax) sweepSats else amt)?.let { ReviewRow("≈ FIAT", "$it $ccy") }
+        BlakePrice.fiatLabel(if (sendMax) sweepSats else amt)?.let { ReviewRow(stringResource(R.string.blk_fiat), "$it $ccy") }
         ReviewRow(stringResource(R.string.blk_mode), if (ricochet) "ricochet · $hops hop${if (hops == 1) "" else "s"}" else "direct")
         ReviewRow(stringResource(R.string.blk_coins), if (coinKeys.isEmpty()) "auto-select" else "${coinKeys.size} selected · ${Blake.btc(selectedSats)} ${Blake.RUNE}")
         ReviewRow(stringResource(R.string.blk_fee_rate), "$effectiveFee sat/vB")
@@ -574,7 +574,7 @@ private fun SendResultScreen(r: WizardResult, onCopy: (String) -> Unit, onClose:
                     modifier = Modifier.graphicsLayer { scaleX = scale; scaleY = scale; this.alpha = alpha })
             }
             Spacer(Modifier.width(10.dp))
-            Text(if (r.ricochet) "RICOCHET SENT" else "SENT", style = Blake.mono(18f, FontWeight.ExtraBold), color = Blake.ok, letterSpacing = 2.sp)
+            Text(if (r.ricochet) stringResource(R.string.blk_ricochet_sent) else stringResource(R.string.blk_sent), style = Blake.mono(18f, FontWeight.ExtraBold), color = Blake.ok, letterSpacing = 2.sp)
         }
         Spacer(Modifier.height(12.dp))
 
@@ -603,7 +603,7 @@ private fun SendResultScreen(r: WizardResult, onCopy: (String) -> Unit, onClose:
                     Text(if (r.ricochet) (if (i == 0) "source" else if (i == r.txids.size - 1) stringResource(R.string.blk_recipient) else "hop $i") else "txid",
                         style = Blake.mono(8f), color = Blake.faint)
                     Spacer(Modifier.weight(1f))
-                    Text(if (copiedTxid == t) "✓ copied" else "copy", style = Blake.mono(8f), color = if (copiedTxid == t) Blake.ok else Blake.pp)
+                    Text(if (copiedTxid == t) stringResource(R.string.blk_copied_3) else "copy", style = Blake.mono(8f), color = if (copiedTxid == t) Blake.ok else Blake.pp)
                 }
                 Text(t, style = Blake.mono(10f), color = Blake.pp, maxLines = 1)
             }
@@ -615,7 +615,7 @@ private fun SendResultScreen(r: WizardResult, onCopy: (String) -> Unit, onClose:
             when {
                 saved -> Text(stringResource(R.string.blk_saved_to_contacts), style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.ok)
                 saving -> Column(Modifier.fillMaxWidth().blakeCard()) {
-                    Text(if (isPaymentCode) "SAVE PAYNYM AS CONTACT" else "SAVE RECIPIENT AS CONTACT",
+                    Text(if (isPaymentCode) stringResource(R.string.blk_save_paynym_as_contact) else stringResource(R.string.blk_save_recipient_as_contact),
                         style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 1.sp)
                     Spacer(Modifier.height(8.dp))
                     BasicTextField(contactNameInput, { contactNameInput = it }, singleLine = true,
@@ -636,7 +636,7 @@ private fun SendResultScreen(r: WizardResult, onCopy: (String) -> Unit, onClose:
                             modifier = Modifier.weight(1f).border(1.dp, Blake.line, RectangleShape).padding(vertical = 10.dp).clickableNoRipple { saving = false })
                     }
                 }
-                else -> Text(if (isPaymentCode) "＋ SAVE PAYNYM AS CONTACT" else "＋ SAVE RECIPIENT AS CONTACT",
+                else -> Text(if (isPaymentCode) stringResource(R.string.blk_save_paynym_as_contact_2) else stringResource(R.string.blk_save_recipient_as_contact_2),
                     style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 1.sp, textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth().border(1.dp, Blake.pp, RectangleShape).padding(vertical = 11.dp).clickableNoRipple { saving = true })
             }

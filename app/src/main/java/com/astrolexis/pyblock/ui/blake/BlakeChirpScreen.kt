@@ -63,7 +63,7 @@ fun BlakeChirpScreen() {
           scope.launch { refreshing = true; load(); refreshing = false }
       }, modifier = Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) { Text("CHIRP", style = Blake.mono(24f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 3.sp); Spacer(Modifier.weight(1f)); BlakeTierBadge() }
+            Row(verticalAlignment = Alignment.CenterVertically) { Text(stringResource(R.string.blk_chirp), style = Blake.mono(24f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 3.sp); Spacer(Modifier.weight(1f)); BlakeTierBadge() }
             Spacer(Modifier.height(6.dp))
             // From the gateway, never hardcoded: CHIRP is 1% + 1% on this chain, and this line used to
             // print the SHA-256 pool's 0.9%. No split from the server → say what it is, quote nothing.
@@ -167,8 +167,8 @@ fun BlakeChirpScreen() {
             Column(Modifier.fillMaxWidth().blakeCard()) {
                 Text(stringResource(R.string.blk_eligibility), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
                 Spacer(Modifier.height(10.dp))
-                rule("min loyalty", pool?.minDays?.let { "$it days" } ?: "—")
-                rule("min power", powerStr(pool?.minPower))
+                rule(stringResource(R.string.blk_min_loyalty), pool?.minDays?.let { "$it days" } ?: "—")
+                rule(stringResource(R.string.blk_min_power), powerStr(pool?.minPower))
                 Spacer(Modifier.height(6.dp))
                 Text(stringResource(R.string.blk_below_the_floor_you_still_mine_but_don_t),
                     style = Blake.mono(8f), color = Blake.faint)

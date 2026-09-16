@@ -94,15 +94,15 @@ fun BlakeMinerSheet(onClose: () -> Unit) {
         if (address.isEmpty() && wallets.isNotEmpty()) scanWallet()
     }
 
-    fullSheet("MINER", onClose) {
+    fullSheet(stringResource(R.string.blk_miner), onClose) {
         // ---- Address ----
         Row(verticalAlignment = Alignment.CenterVertically) {
             sectionTitle(stringResource(R.string.blk_address))
             Spacer(Modifier.weight(1f))
-            if (wallets.isNotEmpty()) Text(if (scanning) "SCANNING…" else "FIND MINE", style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 1.sp,
+            if (wallets.isNotEmpty()) Text(if (scanning) stringResource(R.string.blk_scanning) else stringResource(R.string.blk_find_mine), style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 1.sp,
                 modifier = Modifier.clickableNoRipple { if (!scanning) { Haptics.tap(); scope.launch { scanWallet() } } })
             Spacer(Modifier.width(12.dp))
-            Text(if (editing) "DONE" else "CHANGE", style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 1.sp,
+            Text(if (editing) stringResource(R.string.blk_done) else stringResource(R.string.blk_change), style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 1.sp,
                 modifier = Modifier.clickableNoRipple { Haptics.tap(); editing = !editing })
         }
         if (address.isNotEmpty()) {
@@ -184,7 +184,7 @@ fun BlakeMinerSheet(onClose: () -> Unit) {
                         }, verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text(stringResource(R.string.blk_alert_me_when_a_rig_goes_quiet), style = Blake.mono(9f, FontWeight.ExtraBold), color = if (pro) Blake.fg else Blake.ppDim, letterSpacing = 1.sp)
-                            Text(if (pro) "A push if this address stops submitting shares." else "PRO. A push before a day of hash is lost.", style = Blake.mono(7f), color = Blake.faint)
+                            Text(if (pro) stringResource(R.string.blk_a_push_if_this_address_stops_submitting_) else stringResource(R.string.blk_pro_a_push_before_a_day_of_hash_is_lost), style = Blake.mono(7f), color = Blake.faint)
                         }
                         Text(if (!pro) "PRO" else if (rigAlerts) stringResource(R.string.blk_on) else stringResource(R.string.blk_off), style = Blake.mono(9f, FontWeight.ExtraBold), color = if (rigAlerts && pro) Blake.ok else Blake.pp)
                     }
@@ -243,7 +243,7 @@ fun BlakeMinerSheet(onClose: () -> Unit) {
                         }
                         p.split?.let { Text(it, style = Blake.mono(7f), color = Blake.faint) }
                     }
-                    Text(if (copied == target) "COPIED" else target, style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.pp)
+                    Text(if (copied == target) stringResource(R.string.blk_copied_2) else target, style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.pp)
                 }
             }
             c.vardiff?.let { Spacer(Modifier.height(6.dp)); Text(it, style = Blake.mono(7f), color = Blake.faint) }

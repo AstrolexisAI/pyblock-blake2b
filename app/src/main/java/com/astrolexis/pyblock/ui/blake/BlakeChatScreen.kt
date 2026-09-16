@@ -142,7 +142,7 @@ fun BlakeChatScreen(client: NostrClient, onPay: (String, Long?, String) -> Unit)
         // Two rows. One row could not hold a room name, the badge, DMS and NAME at a readable size.
         Column(Modifier.fillMaxWidth().background(Blake.ink).statusBarsPadding().padding(horizontal = 16.dp, vertical = 10.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(if (lounge) "LOUNGE" else "COMMUNITY", style = Blake.mono(18f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 2.sp, maxLines = 1)
+                Text(if (lounge) stringResource(R.string.blk_lounge) else stringResource(R.string.blk_community), style = Blake.mono(18f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 2.sp, maxLines = 1)
                 Spacer(Modifier.width(8.dp))
                 Box(Modifier.size(7.dp).background(if (state.connected) Blake.ok else Blake.warn, CircleShape))
                 Spacer(Modifier.weight(1f))
@@ -159,7 +159,7 @@ fun BlakeChatScreen(client: NostrClient, onPay: (String, Long?, String) -> Unit)
             }
             Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf(false to "COMMUNITY", true to "LOUNGE").forEach { (l, label) ->
+                listOf(false to stringResource(R.string.blk_community), true to stringResource(R.string.blk_lounge)).forEach { (l, label) ->
                     val on = lounge == l
                     Text(label, style = Blake.mono(8f, FontWeight.ExtraBold), color = if (on) Blake.bg else Blake.ppDim, letterSpacing = 1.sp, maxLines = 1, softWrap = false,
                         modifier = Modifier.then(if (on) Modifier.background(Blake.pp, Blake.shape) else Modifier.border(1.dp, Blake.line, Blake.shape))
@@ -183,7 +183,7 @@ fun BlakeChatScreen(client: NostrClient, onPay: (String, Long?, String) -> Unit)
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (roomMessages.isEmpty()) {
-                    item { Text(if (lounge) "Nothing here yet. Whales, say something." else "No messages yet. Say hi to the PyBLØCK community.", style = Blake.mono(10f), color = Blake.faint, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(top = 40.dp)) }
+                    item { Text(if (lounge) stringResource(R.string.blk_nothing_here_yet_whales_say_something) else stringResource(R.string.blk_no_messages_yet_say_hi_to_the_pybl_ck_co), style = Blake.mono(10f), color = Blake.faint, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(top = 40.dp)) }
                 }
                 items(roomMessages, key = { it.id }) { m ->
                     Bubble(m, mine = m.pubkey == myPubkey, name = state.profiles[m.pubkey],
@@ -354,14 +354,14 @@ private fun NameSheet(client: NostrClient, onClose: () -> Unit) {
             Text(stringResource(R.string.blk_forge), style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 2.sp)
             Spacer(Modifier.size(6.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                listOf(Triple("engraved", "ENGRAVED", RuneForge.ENGRAVED), Triple("cast", "CAST", RuneForge.CAST), Triple("tempered", "TEMPERED", RuneForge.TEMPERED)).forEach { (key, label, f) ->
+                listOf(Triple("engraved", stringResource(R.string.blk_engraved), RuneForge.ENGRAVED), Triple("cast", stringResource(R.string.blk_cast), RuneForge.CAST), Triple("tempered", stringResource(R.string.blk_tempered), RuneForge.TEMPERED)).forEach { (key, label, f) ->
                     val locked = key == "tempered" && !isWhale
                     val on = forge == key
                     Column(Modifier.weight(1f).border(if (on) 2.dp else 1.dp, if (on) Blake.pp else Blake.line, Blake.shape).padding(vertical = 6.dp)
                         .clickableNoRipple { if (locked) toast(ctx, ctx.getString(R.string.blk_the_tempered_forge_is_whale)) else { forge = key; client.setForge(key) } },
                         horizontalAlignment = Alignment.CenterHorizontally) {
                         RuneGlyph(Rune.TIWAZ, forge = f, ink = inkNow, size = 30.dp, modifier = Modifier.alpha(if (locked) 0.35f else 1f))
-                        Text(if (locked) "WHALE" else label, style = Blake.mono(7f, FontWeight.ExtraBold), color = if (locked) Blake.hero else if (on) Blake.pp else Blake.faint, letterSpacing = 1.sp)
+                        Text(if (locked) stringResource(R.string.blk_whale) else label, style = Blake.mono(7f, FontWeight.ExtraBold), color = if (locked) Blake.hero else if (on) Blake.pp else Blake.faint, letterSpacing = 1.sp)
                     }
                 }
             }

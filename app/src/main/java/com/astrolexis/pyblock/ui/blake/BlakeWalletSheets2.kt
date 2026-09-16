@@ -47,7 +47,7 @@ fun RicochetHistorySheet(onCopy: (String) -> Unit, onClose: () -> Unit) {
     val d = detail
     if (d != null) { RicochetChainSheet(d, onCopy) { detail = null }; return }
 
-    sheetBox("RICOCHETS", Blake.pp, onClose) {
+    sheetBox(stringResource(R.string.blk_ricochets), Blake.pp, onClose) {
         val mine = records.filter { it.network == "mainnet" }
         if (mine.isEmpty()) Text(stringResource(R.string.blk_no_ricochets_yet), style = Blake.mono(10f), color = Blake.faint)
         else mine.forEach { r ->
@@ -66,7 +66,7 @@ fun RicochetHistorySheet(onCopy: (String) -> Unit, onClose: () -> Unit) {
 @Composable
 private fun RicochetChainSheet(r: RicochetRecord, onCopy: (String) -> Unit, onClose: () -> Unit) {
     var revealed by remember { mutableStateOf(false) }
-    sheetBox("CHAIN", Blake.pp, onClose) {
+    sheetBox(stringResource(R.string.blk_chain), Blake.pp, onClose) {
         Text(stringResource(R.string.blk_transactions), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
         Spacer(Modifier.height(8.dp))
         r.txids.forEachIndexed { i, t ->
@@ -91,7 +91,7 @@ private fun RicochetChainSheet(r: RicochetRecord, onCopy: (String) -> Unit, onCl
             }
         }
         Spacer(Modifier.height(10.dp))
-        sheetBtn(if (revealed) "HIDE KEYS" else "REVEAL KEYS", Blake.warn) { revealed = !revealed }
+        sheetBtn(if (revealed) stringResource(R.string.blk_hide_keys) else stringResource(R.string.blk_reveal_keys), Blake.warn) { revealed = !revealed }
     }
 }
 
@@ -124,7 +124,7 @@ fun PaynymSheet(onCopy: (String) -> Unit, paste: () -> String, onClose: () -> Un
         return
     }
 
-    sheetBox("PAYNYM", Blake.pp, onClose) {
+    sheetBox(stringResource(R.string.blk_paynym), Blake.pp, onClose) {
         // My code
         Text(stringResource(R.string.blk_my_paynym), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
         Spacer(Modifier.height(10.dp))
@@ -164,7 +164,7 @@ fun PaynymSheet(onCopy: (String) -> Unit, paste: () -> String, onClose: () -> Un
             Spacer(Modifier.height(8.dp))
             Text(idk, style = Blake.mono(9f), color = Blake.danger,
                 modifier = Modifier.fillMaxWidth().clickableNoRipple {
-                    com.astrolexis.pyblock.ui.components.copySensitiveToClipboard(ctx, idk, "PayNym identity key")
+                    com.astrolexis.pyblock.ui.components.copySensitiveToClipboard(ctx, idk, com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_paynym_identity_key))
                 })
             Spacer(Modifier.height(6.dp))
             Text(stringResource(R.string.blk_anyone_holding_this_key_can_derive_every),
@@ -188,7 +188,7 @@ fun PaynymSheet(onCopy: (String) -> Unit, paste: () -> String, onClose: () -> Un
                 restoring = true; restoreErr = null; restoreDone = false; pending = null
             }
         } else {
-            sheetField(restoreInput, "PYNYM1… identity key", KeyboardType.Text) {
+            sheetField(restoreInput, stringResource(R.string.blk_pynym1_identity_key), KeyboardType.Text) {
                 restoreInput = it; pending = null; restoreErr = null
             }
             Spacer(Modifier.height(6.dp))
@@ -232,15 +232,15 @@ fun PaynymSheet(onCopy: (String) -> Unit, paste: () -> String, onClose: () -> Un
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.blk_add_contact_2), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
             Spacer(Modifier.weight(1f))
-            Text(if (adding) "✕" else "+ CODE", style = Blake.mono(10f), color = Blake.pp, modifier = Modifier.clickableNoRipple { adding = !adding; msg = null })
+            Text(if (adding) "✕" else stringResource(R.string.blk_code), style = Blake.mono(10f), color = Blake.pp, modifier = Modifier.clickableNoRipple { adding = !adding; msg = null })
         }
         if (adding) {
             Spacer(Modifier.height(8.dp))
-            sheetField(newCode, "their PM8T… payment code", KeyboardType.Text) { newCode = it }
+            sheetField(newCode, stringResource(R.string.blk_their_pm8t_payment_code), KeyboardType.Text) { newCode = it }
             Spacer(Modifier.height(4.dp))
             Text(stringResource(R.string.blk_paste), style = Blake.mono(10f), color = Blake.pp, modifier = Modifier.clickableNoRipple { newCode = paste() })
             Spacer(Modifier.height(6.dp))
-            sheetField(newLabel, "label (optional)", KeyboardType.Text) { newLabel = it }
+            sheetField(newLabel, stringResource(R.string.blk_label_optional), KeyboardType.Text) { newLabel = it }
             Spacer(Modifier.height(8.dp))
             sheetBtn(stringResource(R.string.blk_add), Blake.ok) {
                 val c = PaynymBook.upsert(ctx, newLabel.ifBlank { "contact" }, newCode.trim())

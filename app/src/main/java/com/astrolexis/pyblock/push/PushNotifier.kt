@@ -30,7 +30,7 @@ object PushNotifier {
             val mgr = ctx.getSystemService(NotificationManager::class.java)
             if (mgr != null && mgr.getNotificationChannel(WALLET_CHANNEL) == null) {
                 mgr.createNotificationChannel(
-                    NotificationChannel(WALLET_CHANNEL, "Payments", NotificationManager.IMPORTANCE_HIGH),
+                    NotificationChannel(WALLET_CHANNEL, com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_payments), NotificationManager.IMPORTANCE_HIGH),
                 )
             }
         }
@@ -85,7 +85,7 @@ object PushNotifier {
             "bip110_block" -> "🧊 Clean block$h mined — money, not spam"
             "my_address" -> "⛏ Payout to your address$h"
             // The relay only sees ciphertext, so the push stays generic.
-            "nostr_dm" -> "✉ New encrypted DM"
+            "nostr_dm" -> com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_new_encrypted_dm)
             // Time-based LN subscription about to lapse — 1-tap renew in Settings.
             "sub_renew" -> "⚡ Your ${tier?.uppercase() ?: "PyBLØCK"} is expiring soon — renew in one tap"
             // Rig Watch worker-down alerting.
@@ -101,7 +101,7 @@ object PushNotifier {
             val mgr = ctx.getSystemService(NotificationManager::class.java) ?: return
             if (mgr.getNotificationChannel(CHAT_CHANNEL) == null) {
                 mgr.createNotificationChannel(
-                    NotificationChannel(CHAT_CHANNEL, "Encrypted DMs", NotificationManager.IMPORTANCE_HIGH),
+                    NotificationChannel(CHAT_CHANNEL, com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_encrypted_dms), NotificationManager.IMPORTANCE_HIGH),
                 )
             }
         }
@@ -112,7 +112,7 @@ object PushNotifier {
             val mgr = ctx.getSystemService(NotificationManager::class.java) ?: return
             if (mgr.getNotificationChannel(CHANNEL) == null) {
                 mgr.createNotificationChannel(
-                    NotificationChannel(CHANNEL, "Blocks & payouts", NotificationManager.IMPORTANCE_DEFAULT),
+                    NotificationChannel(CHANNEL, com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_blocks_payouts), NotificationManager.IMPORTANCE_DEFAULT),
                 )
             }
         }

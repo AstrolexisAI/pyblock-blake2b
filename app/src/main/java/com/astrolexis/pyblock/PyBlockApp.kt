@@ -35,6 +35,7 @@ class PyBlockApp : Application() {
         // a failure here must degrade (the relay still has the recent window), never crash.
         if (!com.astrolexis.pyblock.data.nostr.DMArchive.selfTest(this))
             android.util.Log.w("PyBLOCKchat", "DM archive round-trip failed — conversations will not persist this session")
+        com.astrolexis.pyblock.data.store.AppStrings.init(this)
         AddressStore.init(this)
         com.astrolexis.pyblock.data.wallet.WalletVault.init(this)   // learn if a spending password is set
         ThemeStore.init(this)

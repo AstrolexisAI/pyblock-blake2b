@@ -95,7 +95,7 @@ fun BlakeVanityScreen(onClose: () -> Unit) {
                     if (pattern.isNotEmpty() && !valid) Text(stringResource(R.string.blk_only_base58_chars_no_0_o_i_l), style = Blake.mono(8f), color = Blake.danger)
                     else if (valid) Text("≈ ${estimate(pattern)} to find. Two entropy steps first.", style = Blake.mono(8f), color = Blake.faint)
                     Spacer(Modifier.height(12.dp))
-                    vBtn("NEXT — HARDEN ENTROPY", enabled = valid, filled = true) { entropy.feedPattern(pattern); step = VStep.MOTION }
+                    vBtn(stringResource(R.string.blk_next_harden_entropy), enabled = valid, filled = true) { entropy.feedPattern(pattern); step = VStep.MOTION }
                 }
 
                 VStep.MOTION -> Column(Modifier.fillMaxWidth().blakeCard()) {
@@ -111,7 +111,7 @@ fun BlakeVanityScreen(onClose: () -> Unit) {
                     Text(if (entropy.motionReady) stringResource(R.string.blk_enough_motion_gathered) else "${(entropy.motionProgress * 100).toInt()}%",
                         style = Blake.mono(10f), color = if (entropy.motionReady) Blake.ok else Blake.ppDim)
                     Spacer(Modifier.height(12.dp))
-                    vBtn(if (entropy.motionReady) "NEXT — DRAW" else "KEEP SHAKING", enabled = entropy.motionReady, filled = true) { entropy.stopMotion(); step = VStep.TOUCH }
+                    vBtn(if (entropy.motionReady) stringResource(R.string.blk_next_draw) else stringResource(R.string.blk_keep_shaking), enabled = entropy.motionReady, filled = true) { entropy.stopMotion(); step = VStep.TOUCH }
                 }
 
                 VStep.TOUCH -> Column(Modifier.fillMaxWidth().blakeCard()) {
@@ -126,7 +126,7 @@ fun BlakeVanityScreen(onClose: () -> Unit) {
                     Text(if (entropy.touchReady) stringResource(R.string.blk_enough_scribble_gathered) else "${(entropy.touchProgress * 100).toInt()}%",
                         style = Blake.mono(10f), color = if (entropy.touchReady) Blake.ok else Blake.ppDim)
                     Spacer(Modifier.height(12.dp))
-                    vBtn(if (entropy.touchReady) "GRIND" else "KEEP DRAWING", enabled = entropy.touchReady, filled = true) {
+                    vBtn(if (entropy.touchReady) stringResource(R.string.blk_grind) else stringResource(R.string.blk_keep_drawing), enabled = entropy.touchReady, filled = true) {
                         gen.reset(); gen.start(pattern, compressed = true, pool = entropy.pool()); step = VStep.GRIND
                     }
                 }
@@ -151,9 +151,9 @@ fun BlakeVanityScreen(onClose: () -> Unit) {
                             if (saved) {
                                 Text(stringResource(R.string.blk_saved_to_your_wallets), style = Blake.mono(10f), color = Blake.ok)
                                 Spacer(Modifier.height(8.dp))
-                                vBtn("DONE", enabled = true, filled = true) { onClose() }
+                                vBtn(stringResource(R.string.blk_done), enabled = true, filled = true) { onClose() }
                             } else {
-                                vBtn("SAVE TO WALLET", enabled = true, filled = true) {
+                                vBtn(stringResource(R.string.blk_save_to_wallet), enabled = true, filled = true) {
                                     val pub = VanityCrypto.validatedPubkeyHex(m.wif, m.address)
                                     val ok = WalletStore.add(ctx, VanityWallet(UUID.randomUUID().toString(), "1$pattern", m.address,
                                         compressed = true, birthday = BlakeFork.FORK_HEIGHT, pubkeyHex = pub), m.wif)
@@ -164,7 +164,7 @@ fun BlakeVanityScreen(onClose: () -> Unit) {
                         }
                     } else if (gen.running) {
                         Spacer(Modifier.height(16.dp))
-                        vBtn("STOP", enabled = true) { gen.stop(); step = VStep.PATTERN }
+                        vBtn(stringResource(R.string.blk_stop), enabled = true) { gen.stop(); step = VStep.PATTERN }
                     }
                 }
             }

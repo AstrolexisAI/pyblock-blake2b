@@ -1,5 +1,6 @@
 package com.astrolexis.pyblock.data.blake
 
+import com.astrolexis.pyblock.R
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -267,8 +268,8 @@ object BlakeApi {
     // ---- Broadcast (send/ricochet — gated) ----
 
     sealed class PushErr(msg: String) : Exception(msg) {
-        object Disabled : PushErr("BLAKE2b broadcasting isn't enabled.")
-        object BadResponse : PushErr("The BLAKE2b server gave an unexpected response — try again in a moment.")
+        object Disabled : PushErr(com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_blake2b_broadcasting_isn_t_enabled))
+        object BadResponse : PushErr(com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_the_blake2b_server_gave_an_unexpected_re))
         // Carry the node's actual reason instead of swallowing it (was surfacing a bare "Send failed").
         class Rejected(val errors: List<String>) : PushErr(
             if (errors.isEmpty()) "The BLAKE2b network rejected the transaction."

@@ -1,5 +1,7 @@
 package com.astrolexis.pyblock.data.blake
 
+import com.astrolexis.pyblock.R
+
 /**
  * Fork economics shared across the wallet UI. A coin is SPENDABLE only if it's a
  * mature (100-conf) POST-FORK coinbase — those exist only on BLAKE2b (Node B) and
@@ -36,10 +38,10 @@ object BlakeFork {
     /** Human reason a coin is still locked (null if spendable). */
     fun lockReason(u: BlakeApi.Utxo, tip: Int): String? {
         if (isSpendable(u, tip)) return null
-        if (u.height < FORK_HEIGHT) return "pre-fork · replay-exposed"
+        if (u.height < FORK_HEIGHT) return com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_pre_fork_replay_exposed)
         // Post-fork but NOT our own mined coinbase (a received/incoming coin) → replay-exposed
         // (the fork has no replay protection), so locked. NOT a pre-fork coin.
-        if (!u.coinbase) return "received · replay-exposed"
+        if (!u.coinbase) return com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_received_replay_exposed)
         val need = COINBASE_MATURITY - confirmations(u, tip)
         return "immature · ${maxOf(0, need)} blocks to mature"
     }

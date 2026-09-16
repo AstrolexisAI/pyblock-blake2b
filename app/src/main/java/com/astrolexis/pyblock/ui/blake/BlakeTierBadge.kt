@@ -128,8 +128,8 @@ fun BlakeMembershipSheet(onClose: () -> Unit) {
                 }
             }
             Spacer(Modifier.height(12.dp))
-            listOf("Runes you earned mining" to true, "Every ink for your runes" to EntitlementsStore.isPro, "Bindrune, your sigil" to EntitlementsStore.isPro,
-                   "Rig alerts · a year of history" to EntitlementsStore.isPro, "The tempered forge · the lounge" to EntitlementsStore.isWhale).forEach { (t, on) ->
+            listOf(stringResource(R.string.blk_runes_you_earned_mining) to true, stringResource(R.string.blk_every_ink_for_your_runes) to EntitlementsStore.isPro, stringResource(R.string.blk_bindrune_your_sigil) to EntitlementsStore.isPro,
+                   stringResource(R.string.blk_rig_alerts_a_year_of_history) to EntitlementsStore.isPro, stringResource(R.string.blk_the_tempered_forge_the_lounge) to EntitlementsStore.isWhale).forEach { (t, on) ->
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 3.dp)) {
                     if (on) RuneGlyph(Rune.ISA, ink = Blake.ok, size = 10.dp) else Text("·", style = Blake.mono(10f), color = Blake.faint, modifier = Modifier.width(10.dp))
                     Spacer(Modifier.width(8.dp))
@@ -147,7 +147,7 @@ fun BlakeMembershipSheet(onClose: () -> Unit) {
                         }
                     }
                     Spacer(Modifier.height(8.dp))
-                    listOf("pro" to "PRO", "whale" to "WHALE").forEach { (t, name) ->
+                    listOf("pro" to stringResource(R.string.blk_pro), "whale" to stringResource(R.string.blk_whale)).forEach { (t, name) ->
                         val p = plan(t)
                         if (p != null && (t == "whale" || tier == "free")) {
                             Row(Modifier.fillMaxWidth().border(1.dp, if (t == "whale") Blake.hero.copy(alpha = 0.5f) else Blake.pp.copy(alpha = 0.5f), Blake.shape).padding(12.dp)

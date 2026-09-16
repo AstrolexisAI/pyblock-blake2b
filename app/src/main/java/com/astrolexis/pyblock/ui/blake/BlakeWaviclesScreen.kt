@@ -84,7 +84,7 @@ fun BlakeWaviclesScreen() {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 DagazRune(24.dp, Blake.wave)
                 Spacer(Modifier.width(10.dp))
-                Text("WAVICLES", style = Blake.mono(24f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 3.sp)
+                Text(stringResource(R.string.blk_wavicles), style = Blake.mono(24f, FontWeight.ExtraBold), color = Blake.hero, letterSpacing = 3.sp)
                 Spacer(Modifier.weight(1f))
                 BlakeTierBadge()
             }
@@ -232,7 +232,7 @@ fun BlakeWaviclesScreen() {
                 Text(gatewayJson, style = Blake.mono(9f), color = Blake.wave,
                     modifier = Modifier.fillMaxWidth().border(1.dp, Blake.line, RectangleShape).padding(10.dp))
                 Spacer(Modifier.height(8.dp))
-                Text(if (copied) "✓ COPIED" else "TAP TO COPY CONFIG", style = Blake.mono(10f, FontWeight.ExtraBold),
+                Text(if (copied) stringResource(R.string.blk_copied_4) else stringResource(R.string.blk_tap_to_copy_config), style = Blake.mono(10f, FontWeight.ExtraBold),
                     color = if (copied) Blake.ok else Blake.wave, letterSpacing = 1.sp,
                     modifier = Modifier.fillMaxWidth().border(1.dp, if (copied) Blake.ok else Blake.wave, RectangleShape).padding(vertical = 9.dp)
                         .clickableNoRipple { clip.setText(AnnotatedString(gatewayJson)); copied = true })

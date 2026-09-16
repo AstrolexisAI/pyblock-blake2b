@@ -1,5 +1,6 @@
 package com.astrolexis.pyblock.data.nostr
 
+import com.astrolexis.pyblock.R
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import com.astrolexis.pyblock.data.crypto.PaymentCode
@@ -623,7 +624,7 @@ class NostrClient(app: Application) : AndroidViewModel(app) {
         val trimmed = content.trim()
         if (trimmed.isEmpty()) return
         // No length limit at all meant one person could post pages of text everyone had to scroll past.
-        if (trimmed.length > 2_000) { setRejection("that message is too long — keep it under 2,000 characters"); return }
+        if (trimmed.length > 2_000) { setRejection(com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_that_message_is_too_long_keep_it_under_2)); return }
         // Lounge posting is a Whale perk — the relay's write policy enforces
         // this too, this is just the client-side seatbelt.
         if (toWhaleLounge && !com.astrolexis.pyblock.data.store.EntitlementsStore.isWhale) return

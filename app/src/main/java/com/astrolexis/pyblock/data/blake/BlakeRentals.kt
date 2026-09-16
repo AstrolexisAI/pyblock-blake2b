@@ -1,5 +1,6 @@
 package com.astrolexis.pyblock.data.blake
 
+import com.astrolexis.pyblock.R
 import com.astrolexis.pyblock.data.net.HmacSigner
 import com.astrolexis.pyblock.data.store.DeviceStore
 import kotlinx.coroutines.Dispatchers
@@ -134,7 +135,7 @@ object BlakeRentals {
         runCatching { json.decodeFromString<ErrResp>(body) }.getOrNull()?.let { e ->
             (e.errors?.firstOrNull() ?: e.error ?: e.message ?: e.notice)?.takeIf { it.isNotBlank() }?.let { return it }
         }
-        return if (status == 404) "Rentals are paused right now." else "Server error ($status)."
+        return if (status == 404) com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_rentals_are_paused_right_now) else "Server error ($status)."
     }
 
     /** Public: live package list + delivery pools. Refresh ≤ 60 s (prices move). */
@@ -171,7 +172,7 @@ object BlakeRentals {
 
     suspend fun quote(rigId: String, address: String, pool: String): Quote {
         val r = signed("POST", "/api/app/blake2b_quote.php", body = bodyOf("rig_id" to rigId, "address" to address, "pool" to pool))
-            ?: throw Failure(if (DeviceStore.peek() == null) "Couldn't register this device." else "Can't reach the server.")
+            ?: throw Failure(if (DeviceStore.peek() == null) com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_couldn_t_register_this_device) else com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_can_t_reach_the_server_2))
         val q = if (r.second == 200) runCatching { json.decodeFromString<Quote>(r.first) }.getOrNull() else null
         if (q?.ok != true || (q.totalSats ?: 0) <= 0) throw Failure(serverMessage(r.first, r.second))
         return q
@@ -203,7 +204,7 @@ object BlakeRentals {
     suspend fun order(rigId: String, address: String, pool: String, clientNonce: String): Order {
         val r = signed("POST", "/api/app/blake2b_order.php",
             body = bodyOf("rig_id" to rigId, "address" to address, "pool" to pool, "client_nonce" to clientNonce))
-            ?: throw Failure(if (DeviceStore.peek() == null) "Couldn't register this device." else "Can't reach the server.")
+            ?: throw Failure(if (DeviceStore.peek() == null) com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_couldn_t_register_this_device) else com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_can_t_reach_the_server_2))
         val o = if (r.second == 200) runCatching { json.decodeFromString<Order>(r.first) }.getOrNull() else null
         if (o?.ok != true || o.invoice.isNullOrBlank() || o.orderId.isNullOrBlank()) throw Failure(serverMessage(r.first, r.second))
         // FUND-SAFETY: the screen shows a total and a QR that come from two different fields of the
@@ -244,12 +245,12 @@ object BlakeRentals {
 
     val lifecycle = listOf("pending_payment", "paid", "active", "completed")
     fun statusLabel(s: String?): String = when (s) {
-        "pending_payment" -> "AWAITING PAYMENT"
-        "paid" -> "PAID · STARTING"
-        "active" -> "DELIVERING"
-        "completed" -> "COMPLETED"
-        "expired" -> "EXPIRED"
-        "failed" -> "FAILED"
+        "pending_payment" -> com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_awaiting_payment)
+        "paid" -> com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_paid_starting)
+        "active" -> com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_delivering)
+        "completed" -> com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_completed)
+        "expired" -> com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_expired)
+        "failed" -> com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_failed)
         null -> "—"
         else -> s.replace('_', ' ').uppercase()
     }
