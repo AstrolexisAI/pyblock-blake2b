@@ -188,7 +188,10 @@ object BlakeApi {
         @SerialName("last_share") val lastShare: Long? = null,      // epoch seconds
         val eligible: Boolean? = null,                              // meets the split floor (loyalty + power); server-authoritative
         val share: Double? = null,                                  // reward-split weight 0..1 (white-paper weighted split)
-    )
+        /** How this address mines NOW: "prime" (own gateway) · "stratum" (house) · "both". Server-side, by address. */
+        val via: String? = null,
+        @SerialName("prime_last_share_s") val primeLastShareS: Int? = null,
+    ) { val onPrime get() = via == "prime" || via == "both" }
 
     @Serializable
     private data class ChirpWorkersResp(val workers: List<ChirpWorker> = emptyList())
@@ -197,7 +200,10 @@ object BlakeApi {
      *  The workers list only knows who is on the house stratum right now. */
     @Serializable
     data class ChirpMiner(val address: String? = null, val days: Double? = null, val power: Double? = null,
-                          val weight: Double? = null, val eligible: Boolean? = null, @SerialName("last_seen") val lastSeen: Long? = null)
+                          val weight: Double? = null, val eligible: Boolean? = null, @SerialName("last_seen") val lastSeen: Long? = null,
+                          val via: String? = null, @SerialName("prime_last_share_s") val primeLastShareS: Int? = null) {
+        val onPrime get() = via == "prime" || via == "both"
+    }
     @Serializable private data class PrimeRunnerRow(val identity: String? = null, @SerialName("last_share_s") val lastShareS: Int? = null)
     @Serializable private data class PrimeRunnersResp(val runners: List<PrimeRunnerRow> = emptyList())
 

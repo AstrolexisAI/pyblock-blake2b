@@ -104,21 +104,26 @@ fun BlakeChirpScreen() {
             val reg = miners.mapNotNull { m -> m.address?.let { it to m } }.toMap()
             val online: List<Participant> = run {
                 val seen = HashSet<String>(); val out = ArrayList<Participant>()
+                // `via` comes from the server, by full address. The masked-identity match against the
+                // Prime's runner list stays only as a fallback for a server that hasn't sent `via` yet.
                 workers.forEach { w ->
                     val name = w.name?.takeIf { it.isNotEmpty() } ?: return@forEach
                     seen.add(name)
-                    val m = reg[name]; val pr = prime[BlakeMiner.masked(name)]
-                    val live = (pr ?: Int.MAX_VALUE) <= 600
+                    val m = reg[name]
+                    val onPrime = when { w.via != null -> w.onPrime; m?.via != null -> m.onPrime; else -> prime[BlakeMiner.masked(name)] != null }
+                    val pls = w.primeLastShareS ?: m?.primeLastShareS ?: prime[BlakeMiner.masked(name)]
+                    val live = onPrime && (pls ?: Int.MAX_VALUE) <= 600
                     if (!w.connected && !live) return@forEach
                     out.add(Participant(name, w.hashrateThs, m?.days, m?.weight ?: w.share ?: 0.0,
-                        w.eligible ?: m?.eligible ?: ((w.hashrateThs ?: 0.0) * 1_000_000.0 >= (pool?.minPower ?: 0.0)), pr != null, live, w.connected))
+                        w.eligible ?: m?.eligible ?: ((w.hashrateThs ?: 0.0) * 1_000_000.0 >= (pool?.minPower ?: 0.0)), onPrime, live, w.connected))
                 }
-                // On the Prime but not on the house stratum: the registry knows them (shared database).
+                // In the registry as mining by their gateway, but not in the workers list.
                 miners.forEach { m ->
                     val a = m.address ?: return@forEach
                     if (a in seen) return@forEach
-                    val pr = prime[BlakeMiner.masked(a)] ?: return@forEach
-                    if (pr <= 600) out.add(Participant(a, null, m.days, m.weight ?: 0.0, m.eligible ?: false, true, true, false))
+                    val onPrime = if (m.via != null) m.onPrime else prime[BlakeMiner.masked(a)] != null
+                    val pls = m.primeLastShareS ?: prime[BlakeMiner.masked(a)]
+                    if (onPrime && (pls ?: Int.MAX_VALUE) <= 600) out.add(Participant(a, null, m.days, m.weight ?: 0.0, m.eligible ?: false, true, true, false))
                 }
                 out.sortedWith(compareByDescending<Participant> { it.weight }.thenByDescending { it.days ?: 0.0 }.thenByDescending { it.hashrateThs ?: 0.0 })
             }

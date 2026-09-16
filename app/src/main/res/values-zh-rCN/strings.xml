@@ -323,7 +323,7 @@
     <string name="blk_off">关 ▸</string>
     <string name="blk_offline">离线</string>
     <string name="blk_on">开 ▸</string>
-    <string name="blk_on_chirp_prime_own_gateway">%1$s 在 CHIRP-PRIME（自有网关）</string>
+    <string name="blk_on_chirp_prime_own_gateway">%1$s on CHIRP-PRIME (own gateway)</string>
     <string name="blk_one_transaction_straight_to_the_recipien">一笔交易直接发给收款方。最便宜、最快。</string>
     <string name="blk_only_base58_chars_no_0_o_i_l">仅限 Base58 字符（不含 0、O、I、l）。</string>
     <string name="blk_only_mature_mined_coins_can_be_sent_lock">只能发送成熟的挖矿币。锁定的 %1$s %2$s 保持不动。</string>
@@ -510,6 +510,7 @@
     <string name="blk_the_other_inks_are_pro">其他墨色为 PRO。</string>
     <string name="blk_the_pool_hasn_t_published_this_block_s_c">矿池尚未公布此区块的 coinbase 分配明细。</string>
     <string name="blk_the_port_has_to_be_between_1_and_65535">端口必须在 1 到 65535 之间。</string>
+    <string name="blk_the_port_is_the_datum_id_your_rigs_point">端口只是 DATUM 标识：你的矿机指向你自己的网关。</string>
     <string name="blk_the_price_window_closed_but_this_invoice">报价窗口已关闭，但此发票在接下来一天内仍可支付。付款后租赁会自动开始。</string>
     <string name="blk_the_rented_hash_mines_to_this_address_on">租用的算力在上方矿池挖到此地址。币会像其他奖励一样到账。</string>
     <string name="blk_the_runes_you_earn_are_yours_on_any_tier">你赚得的符文在任何等级都属于你。PRO 和 WHALE 改变它们的绘制方式，以及应用为你监控的内容。</string>

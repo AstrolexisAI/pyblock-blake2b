@@ -180,8 +180,10 @@ fun BlakeMinerSheet(onClose: () -> Unit) {
                         BlakeStat("${s.blocks.size}", "blocks paid", Blake.fg, alignEnd = true)
                     }
                 }
-                primes.forEach { m -> Spacer(Modifier.height(14.dp)); primeCard(m) }
-                s.pools.forEach { p -> Spacer(Modifier.height(14.dp)); poolCard(p) }
+                // The address API now lists the Primes itself (chirp_prime / carousel_prime); the
+                // standalone card stays only for a product the API doesn't report yet.
+                primes.filter { m -> s.pools.none { it.pool == m.product + "_prime" } }.forEach { m -> Spacer(Modifier.height(14.dp)); primeCard(m) }
+                s.pools.forEach { p -> Spacer(Modifier.height(14.dp)); poolCard(p, primes.firstOrNull { it.product + "_prime" == p.pool }) }
                 Spacer(Modifier.height(14.dp))
                 // ---- Chart ----
                 Column(Modifier.fillMaxWidth().blakeCard()) {
@@ -351,21 +353,35 @@ fun BlakeMinerSheet(onClose: () -> Unit) {
 }
 
 @Composable
-private fun poolCard(p: BlakeMiner.PoolEntry) {
+private fun poolCard(p: BlakeMiner.PoolEntry, match: BlakeMiner.PrimeMatch? = null) {
     val ctx = androidx.compose.ui.platform.LocalContext.current
+    // A Prime entry: the address mines through its own gateway; the port is the DATUM id.
+    val isPrime = p.pool.endsWith("_prime")
     Column(Modifier.fillMaxWidth().blakeCard()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(6.dp).background(if (p.live == true) Blake.ok else Blake.faint, CircleShape))
             Spacer(Modifier.width(6.dp))
+            if (isPrime) { AnsuzRune(12.dp, Blake.datum); Spacer(Modifier.width(6.dp)) }
             Text(p.label ?: p.pool.uppercase(), style = Blake.mono(11f, FontWeight.ExtraBold), color = poolColor(p.pool), letterSpacing = 2.sp)
             p.port?.takeIf { it > 0 }?.let { Spacer(Modifier.width(6.dp)); Text(":$it", style = Blake.mono(9f), color = Blake.faint) }
             Spacer(Modifier.weight(1f))
-            p.sharePct?.takeIf { it > 0 }?.let { Text("%.1f%% of pool".format(java.util.Locale.US, it), style = Blake.mono(8f), color = Blake.ppDim) }
+            if (isPrime) Text(stringResource(R.string.blk_datum_your_gateway), style = Blake.mono(8f), color = Blake.datum)
+            else p.sharePct?.takeIf { it > 0 }?.let { Text("%.1f%% of pool".format(java.util.Locale.US, it), style = Blake.mono(8f), color = Blake.ppDim) }
         }
         Spacer(Modifier.height(10.dp))
         Row(Modifier.fillMaxWidth()) {
             kpi("1m", p.hashrate1m); Spacer(Modifier.weight(1f)); kpi("5m", p.hashrate5m); Spacer(Modifier.weight(1f)); kpi("1h", p.hashrate1h); Spacer(Modifier.weight(1f)); kpi("1d", p.hashrate1d)
         }
+        match?.sharePercent?.let { pct ->
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.blk_share_of_the_window), style = Blake.mono(8f), color = Blake.faint, letterSpacing = 1.sp)
+                Spacer(Modifier.weight(1f))
+                Text(String.format(java.util.Locale.US, "%.1f%%", pct), style = Blake.mono(10f, FontWeight.ExtraBold), color = Blake.fg)
+                match.payoutSats?.takeIf { it > 0 }?.let { sats -> Spacer(Modifier.width(6.dp)); Text("· " + stringResource(R.string.blk_would_receive, Blake.btc(sats)), style = Blake.mono(8f), color = Blake.ppDim) }
+            }
+        }
+        if (isPrime) { Spacer(Modifier.height(6.dp)); Text(stringResource(R.string.blk_the_port_is_the_datum_id_your_rigs_point), style = Blake.mono(7f), color = Blake.faint) }
         if (p.workers.isNotEmpty()) {
             Spacer(Modifier.height(10.dp))
             Box(Modifier.fillMaxWidth().height(1.dp).background(Blake.line))
@@ -462,7 +478,7 @@ private fun dur(s: Int): String = when {
 private fun poolColor(p: String): Color = when (p) {
     "chirp" -> Blake.ok
     "wavicles" -> Blake.wave
-    "datum" -> Blake.datum
+    "datum", "chirp_prime", "carousel_prime" -> Blake.datum
     "carousel", "lotto", "lotto_asic" -> Blake.pp
     else -> Blake.ppDim
 }

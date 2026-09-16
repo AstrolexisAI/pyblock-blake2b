@@ -1180,7 +1180,7 @@
     <string name="blk_off">no ▸</string>
     <string name="blk_offline">FUERA DE LÍNEA</string>
     <string name="blk_on">sí ▸</string>
-    <string name="blk_on_chirp_prime_own_gateway">%1$s en CHIRP-PRIME (gateway propio)</string>
+    <string name="blk_on_chirp_prime_own_gateway">%1$s on CHIRP-PRIME (own gateway)</string>
     <string name="blk_one_transaction_straight_to_the_recipien">Una sola transacción directa al destinatario. Lo más barato y rápido.</string>
     <string name="blk_only_base58_chars_no_0_o_i_l">Solo caracteres Base58 (sin 0, O, I, l).</string>
     <string name="blk_only_mature_mined_coins_can_be_sent_lock">Solo se pueden enviar monedas minadas maduras. Los %1$s %2$s bloqueados se quedan.</string>
@@ -1367,6 +1367,7 @@
     <string name="blk_the_other_inks_are_pro">Las otras tintas son PRO.</string>
     <string name="blk_the_pool_hasn_t_published_this_block_s_c">El pool todavía no publicó el reparto de la coinbase de este bloque.</string>
     <string name="blk_the_port_has_to_be_between_1_and_65535">El puerto tiene que estar entre 1 y 65535.</string>
+    <string name="blk_the_port_is_the_datum_id_your_rigs_point">El puerto es el id DATUM: tus rigs apuntan a tu propio gateway.</string>
     <string name="blk_the_price_window_closed_but_this_invoice">La ventana de precio se cerró, pero esta invoice se puede pagar durante un día más. Pagala y el alquiler arranca solo.</string>
     <string name="blk_the_rented_hash_mines_to_this_address_on">El hash alquilado mina hacia esta dirección en el pool de arriba. Las monedas llegan como cualquier otra recompensa.</string>
     <string name="blk_the_runes_you_earn_are_yours_on_any_tier">Las runas que ganás son tuyas en cualquier nivel. PRO y WHALE cambian cómo se dibujan y qué vigila la app por vos.</string>

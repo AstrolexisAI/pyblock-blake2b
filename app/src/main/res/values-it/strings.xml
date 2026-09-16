@@ -1180,7 +1180,7 @@
     <string name="blk_off">no ▸</string>
     <string name="blk_offline">OFFLINE</string>
     <string name="blk_on">sì ▸</string>
-    <string name="blk_on_chirp_prime_own_gateway">%1$s su CHIRP-PRIME (gateway proprio)</string>
+    <string name="blk_on_chirp_prime_own_gateway">%1$s on CHIRP-PRIME (own gateway)</string>
     <string name="blk_one_transaction_straight_to_the_recipien">Una sola transazione diretta al destinatario. La più economica e veloce.</string>
     <string name="blk_only_base58_chars_no_0_o_i_l">Solo caratteri Base58 (niente 0, O, I, l).</string>
     <string name="blk_only_mature_mined_coins_can_be_sent_lock">Si possono inviare solo monete minate mature. I %1$s %2$s bloccati restano dove sono.</string>
@@ -1367,6 +1367,7 @@
     <string name="blk_the_other_inks_are_pro">Gli altri inchiostri sono PRO.</string>
     <string name="blk_the_pool_hasn_t_published_this_block_s_c">Il pool non ha ancora pubblicato la ripartizione della coinbase di questo blocco.</string>
     <string name="blk_the_port_has_to_be_between_1_and_65535">La porta deve essere tra 1 e 65535.</string>
+    <string name="blk_the_port_is_the_datum_id_your_rigs_point">La porta è l\'id DATUM: i tuoi rig puntano al tuo gateway.</string>
     <string name="blk_the_price_window_closed_but_this_invoice">La finestra di prezzo si è chiusa, ma questa invoice si può pagare ancora per un giorno. Pagala e il noleggio parte da solo.</string>
     <string name="blk_the_rented_hash_mines_to_this_address_on">L\'hash noleggiato mina verso questo indirizzo sul pool qui sopra. Le monete arrivano come qualsiasi altra ricompensa.</string>
     <string name="blk_the_runes_you_earn_are_yours_on_any_tier">Le rune che guadagni sono tue a ogni livello. PRO e WHALE cambiano come vengono disegnate e cosa l\'app controlla per te.</string>

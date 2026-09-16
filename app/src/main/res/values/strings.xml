@@ -1371,6 +1371,7 @@
     <string name="blk_the_other_inks_are_pro">The other inks are PRO.</string>
     <string name="blk_the_pool_hasn_t_published_this_block_s_c">The pool hasn\'t published this block\'s coinbase breakdown yet.</string>
     <string name="blk_the_port_has_to_be_between_1_and_65535">The port has to be between 1 and 65535.</string>
+    <string name="blk_the_port_is_the_datum_id_your_rigs_point">The port is the DATUM id — your rigs point at your own gateway.</string>
     <string name="blk_the_price_window_closed_but_this_invoice">The price window closed, but this invoice can still be paid for the next day. Pay it and the rental starts on its own.</string>
     <string name="blk_the_rented_hash_mines_to_this_address_on">The rented hash mines to this address on the pool above. Coins land like any other reward.</string>
     <string name="blk_the_runes_you_earn_are_yours_on_any_tier">The runes you earn are yours on any tier. PRO and WHALE change how they are drawn, and what the app watches for you.</string>
