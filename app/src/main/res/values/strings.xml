@@ -908,7 +908,10 @@
     <string name="blk_block_height">block height</string>
     <string name="blk_block_participation">BLOCK PARTICIPATION</string>
     <string name="blk_block_user">BLOCK USER</string>
+    <string name="blk_blocks_found">blocks found</string>
+    <string name="blk_blocks_found_on_the_carousel">BLOCKS FOUND ON THE CAROUSEL</string>
     <string name="blk_blocks_found_time_mining_your_own_gatewa">Blocks found, time mining, your own gateway — as runes beside your name.</string>
+    <string name="blk_blocks_on_your_template">blocks on your template</string>
     <string name="blk_blocks_paid_to_this_address">BLOCKS PAID TO THIS ADDRESS</string>
     <string name="blk_blocks_payouts">Blocks &amp; payouts</string>
     <string name="blk_broadcasting">BROADCASTING…</string>
@@ -918,8 +921,11 @@
     <string name="blk_can_t_connect">Can\'t connect: %1$s</string>
     <string name="blk_can_t_reach_the_server">⚠ can\'t reach the server.</string>
     <string name="blk_can_t_reach_the_server_2">Can\'t reach the server.</string>
+    <string name="blk_can_t_reach_the_server_pull_to_retry">⚠ can\'t reach the server — pull to retry.</string>
     <string name="blk_cancel">CANCEL</string>
     <string name="blk_carousel">CAROUSEL</string>
+    <string name="blk_carousel_hashrate">carousel hashrate</string>
+    <string name="blk_carousel_over_datum">CAROUSEL over DATUM</string>
     <string name="blk_cast">CAST</string>
     <string name="blk_chain">CHAIN</string>
     <string name="blk_change">CHANGE</string>
@@ -1119,8 +1125,10 @@
     <string name="blk_mined_blocks">MINED BLOCKS</string>
     <string name="blk_mined_spendable">mined · spendable</string>
     <string name="blk_miner">MINER</string>
+    <string name="blk_miners">miners</string>
     <string name="blk_miners_hidden_their_stratum_username_isn">%1$s miners hidden: their stratum username isn\'t a payout address, so the pool has nowhere to pay them.</string>
     <string name="blk_mining_from_your_wallet">mining from your wallet:</string>
+    <string name="blk_mining_now">MINING NOW</string>
     <string name="blk_mode">MODE</string>
     <string name="blk_monthly">MONTHLY</string>
     <string name="blk_more_than_you_can_spend">More than you can spend</string>
@@ -1147,6 +1155,7 @@
     <string name="blk_next">NEXT ›</string>
     <string name="blk_next_draw">NEXT — DRAW</string>
     <string name="blk_next_harden_entropy">NEXT — HARDEN ENTROPY</string>
+    <string name="blk_next_up">NEXT UP</string>
     <string name="blk_no_addresses_yet">No addresses yet</string>
     <string name="blk_no_addresses_yet_2">No addresses yet.</string>
     <string name="blk_no_answer_in_s_port_closed_or_wrong_ip">No answer in %1$s s — port closed or wrong IP?</string>
@@ -1168,7 +1177,9 @@
     <string name="blk_no_spendable_blake2b_coins_only_mature_1">No spendable BLAKE2b coins: only mature (100-conf) mined coins can be sent; shared pre-fork coins are replay-locked.</string>
     <string name="blk_no_spendable_coins_here_only_mature_mine">No spendable coins here — only mature mined coinbase is spendable; received/pre-fork coins are replay-locked (unlock in COIN CONTROL).</string>
     <string name="blk_no_spendable_coins_yet">No spendable coins yet.</string>
+    <string name="blk_nobody_picks_this_order_it_comes_out_of_">Nobody picks this order. It comes out of a public rule — turn = agenda[(start + cycle) mod n], start = (height × stride) mod n — frozen once per block. Not being in these turns doesn\'t mean you\'re out: every template in the lap gets its turn.</string>
     <string name="blk_nobody_yet_message_someone_in_community_">Nobody yet. Message someone in COMMUNITY, or add a code from outside.</string>
+    <string name="blk_node_runner">%1$s%% node-runner</string>
     <string name="blk_none">NONE</string>
     <string name="blk_none_yet">none yet</string>
     <string name="blk_not_a_stratum_url_point_your_datum_gatew">Not a stratum URL — point your DATUM gateway at the pool with this config:</string>
@@ -1225,11 +1236,13 @@
     <string name="blk_people">PEOPLE</string>
     <string name="blk_pick_from_wallet">PICK FROM WALLET ›</string>
     <string name="blk_pick_the_payout_address_you_mine_to_it_i">Pick the payout address you mine to — it is the stratum username.</string>
+    <string name="blk_picks_24h">picks · 24h</string>
     <string name="blk_pool">POOL</string>
     <string name="blk_pool_hashrate">pool hashrate</string>
     <string name="blk_pool_offline_pull_to_retry">⚠ pool offline — pull to retry.</string>
     <string name="blk_pool_port">POOL PORT</string>
     <string name="blk_pool_total_across_all_stratums_network_i">Pool total across all stratums · network is every miner on BLAKE2b.</string>
+    <string name="blk_position_in_the_lap">position in the lap</string>
     <string name="blk_pre_fork_replay_exposed">pre-fork · replay-exposed</string>
     <string name="blk_price_is_the_market_right_now_it_is_re_q">Price is the market right now; it is re-quoted when you pay. The fee is inside the total.</string>
     <string name="blk_prime_pool_your_rig_s_own_hashrate_isn_t">Prime pool %1$s · your rig\'s own hashrate isn\'t published by the Prime yet, and the house numbers above don\'t include this path.</string>
@@ -1240,11 +1253,13 @@
     <string name="blk_proof">PROOF</string>
     <string name="blk_protocol">PROTOCOL</string>
     <string name="blk_purple_is_free_pro_opens_the_other_inks">Purple is free. PRO opens the other inks.</string>
+    <string name="blk_pybl_ck">%1$s%% PyBLØCK</string>
     <string name="blk_pybl_ck_sovereign_push">PyBLØCK · sovereign push</string>
     <string name="blk_pynym1_identity_key">PYNYM1… identity key</string>
     <string name="blk_quote_failed">Quote failed.</string>
     <string name="blk_quoting">QUOTING…</string>
     <string name="blk_re_lock">RE-LOCK</string>
+    <string name="blk_read_for_the_address_miner_is_set_to_pub">Read for the address MINER is set to. Publish a template from your node and it joins the lap.</string>
     <string name="blk_reading_the_gateways">⟳ reading the gateways…</string>
     <string name="blk_receive">⭳ RECEIVE</string>
     <string name="blk_receive_2">RECEIVE</string>
@@ -1278,11 +1293,15 @@
     <string name="blk_ricochets">RICOCHETS</string>
     <string name="blk_rig_alerts_a_year_of_history">Rig alerts · a year of history</string>
     <string name="blk_rig_alerts_are_pro">Rig alerts are PRO.</string>
+    <string name="blk_rotating_block_templates">rotating block templates</string>
     <string name="blk_run_this_on_the_machine_with_your_blake2">Run this on the machine with your BLAKE2b node; it prints where to point your rigs.</string>
     <string name="blk_runes_earned_mining">RUNES EARNED MINING</string>
     <string name="blk_runes_you_earned_mining">Runes you earned mining</string>
     <string name="blk_s_1_new_message">↓ 1 NEW MESSAGE</string>
+    <string name="blk_s_1st">1st</string>
     <string name="blk_s_24h_average">24h average</string>
+    <string name="blk_s_2nd">2nd</string>
+    <string name="blk_s_3rd">3rd</string>
     <string name="blk_s_ago">%1$ss ago</string>
     <string name="blk_s_node">%1$s\'s node</string>
     <string name="blk_safety_check_failed_a_non_mature_or_shar">Safety check failed — a non-mature or shared coin entered the tx. Aborted.</string>
@@ -1354,9 +1373,12 @@
     <string name="blk_tap_to_copy_txid">TAP TO COPY TXID</string>
     <string name="blk_tap_to_unlock">%1$s · tap to unlock</string>
     <string name="blk_tempered">TEMPERED</string>
+    <string name="blk_templates_a_turn_every_s_a_lap">%1$s templates · a turn every %2$ss · a lap ≈ %3$s</string>
+    <string name="blk_templates_in_the_lap">templates in the lap</string>
     <string name="blk_test">TEST</string>
     <string name="blk_testing">TESTING…</string>
     <string name="blk_testing_on_mainnet">%1$s — TESTING ON MAINNET</string>
+    <string name="blk_th">%1$sth</string>
     <string name="blk_that_has_a_space_in_it_an_address_never_">That has a space in it — an address never does.</string>
     <string name="blk_that_isn_t_a_valid_address_or_paynym_cod">That isn\'t a valid address or PayNym code.</string>
     <string name="blk_that_isn_t_a_valid_bitcoin_address">That isn\'t a valid Bitcoin address.</string>
@@ -1368,6 +1390,7 @@
     <string name="blk_the_checksum_doesn_t_match_one_character">The checksum doesn\'t match — one character is wrong. Paste it or scan the QR instead of typing.</string>
     <string name="blk_the_identity_key_can_t_be_read_right_now">The identity key can\'t be read right now. Unlock the device and reopen the app — do NOT restore over it while it can\'t be read.</string>
     <string name="blk_the_invoice_asks_for_sats_but_the_order_">The invoice asks for %1$s sats but the order says %2$s. Not showing it — nothing was paid.</string>
+    <string name="blk_the_lap">THE LAP</string>
     <string name="blk_the_last_hop_is_the_address_a_recipient_">The last hop is the address a recipient/exchange saw as the sender. Keys prove the hops are yours.</string>
     <string name="blk_the_lounge">THE LOUNGE</string>
     <string name="blk_the_other_inks_are_pro">The other inks are PRO.</string>
@@ -1396,6 +1419,7 @@
     <string name="blk_total">TOTAL</string>
     <string name="blk_transactions">TRANSACTIONS</string>
     <string name="blk_trustless_each_coinbase_commits_blake2b_">Trustless: each coinbase commits BLAKE2b-256(snapshot) in an OP_RETURN (PYBLOCK-TON618); the split is public and verifiable.</string>
+    <string name="blk_turns_ahead">turns ahead</string>
     <string name="blk_tx_chain_broadcast_to_blake2b">%1$s-tx chain broadcast to BLAKE2b.</string>
     <string name="blk_type">TYPE</string>
     <string name="blk_unlock">UNLOCK</string>
@@ -1412,6 +1436,7 @@
     <string name="blk_use">USE</string>
     <string name="blk_user_your_blake2b_address_pass_x">user = your BLAKE2b address · pass = x</string>
     <string name="blk_username">USERNAME</string>
+    <string name="blk_username_your_blake2b_address_password_x">Username: your BLAKE2b address · password: x</string>
     <string name="blk_vanity">VANITY</string>
     <string name="blk_vanity_2">⛒ VANITY</string>
     <string name="blk_waiting_for_a_block">waiting for a block</string>
@@ -1424,10 +1449,14 @@
     <string name="blk_would_receive">would receive %1$s ᛒ</string>
     <string name="blk_write_it_as_host_port_the_installer_prin">Write it as host:port — the installer prints it, port 23334 by default.</string>
     <string name="blk_yesterday">YESTERDAY</string>
+    <string name="blk_you">%1$s%% you</string>
     <string name="blk_your_name">YOUR NAME</string>
     <string name="blk_your_node_builds_and_publishes_the_block">Your node builds and publishes the block; PyBLØCK only dictates the coinbase. Point your rigs at your own machine, username = your payout address. Same product, your node in front.</string>
+    <string name="blk_your_node_builds_and_publishes_the_block_2">Your node builds and publishes the block; PyBLØCK only sets the coinbase. Set it up in MINER › DATUM.</string>
     <string name="blk_your_nostr_identity_is_device_only_blake">Your Nostr identity is device-only. BLAKE2b and SHA-256 users share this room.</string>
     <string name="blk_your_paynym_has_no_seed_phrase_this_key_">Your PayNym has no seed phrase — this key IS your PayNym, and it\'s printed on the paper backup. Without it, coins paid to your PayNym cannot be recovered on another device.</string>
     <string name="blk_your_paynym_identity_could_not_be_read_f">Your PayNym identity could not be read from secure storage, so your code can\'t be shown. Do NOT share a new code — unlock the device and reopen the app. If this persists after a restore, your identity may not have transferred; check before receiving PayNym payments.</string>
+    <string name="blk_your_template">YOUR TEMPLATE</string>
+    <string name="blk_your_turn_in">your turn in</string>
     <string name="blk_your_workers_connect">your workers · connect</string>
 </resources>

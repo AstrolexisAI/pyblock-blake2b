@@ -65,6 +65,7 @@ private val BTABS = listOf(
     BTab("pool", R.string.blk_pool, Icons.Filled.ShowChart),
     BTab("wallet", R.string.blk_wallet, Icons.Filled.AccountBalanceWallet),
     BTab("chat", R.string.blk_chat, Icons.Filled.Forum),
+    BTab("carousel", R.string.blk_carousel, Icons.Filled.Groups),   // icon unused: the product's rune is drawn
     BTab("chirp", R.string.blk_chirp, Icons.Filled.Groups),
     BTab("wavicles", R.string.blk_wavicles, Icons.Filled.Grain),
 )
@@ -138,6 +139,7 @@ fun BlakeRootScaffold() {
                         onPay = { addr, amt, peer -> PendingPayment.set(addr, amt, peer); nav.navigate("wallet") },
                     )
                 }
+                composable("carousel") { BlakeCarouselScreen() }
                 composable("chirp") { BlakeChirpScreen() }
                 composable("wavicles") { BlakeWaviclesScreen() }
                 composable("vanity") { BlakeVanityScreen(onClose = { nav.popBackStack() }) }
@@ -173,12 +175,14 @@ private fun BlakeTabBar(nav: NavHostController, current: String?) {
                         .background(if (selected) Blake.pp.copy(alpha = 0.14f) else androidx.compose.ui.graphics.Color.Transparent, RoundedCornerShape(20.dp))
                         .padding(horizontal = 14.dp, vertical = 8.dp),
                 ) {
-                    // WAVICLES uses our own Dagaz rune (drawn), not a system icon.
-                    if (tab.route == "wavicles") {
-                        DagazRune(20.dp, if (selected) Blake.pp else Blake.ppDim)
-                    } else {
-                        Icon(tab.icon, contentDescription = stringResource(tab.label),
-                            tint = if (selected) Blake.pp else Blake.ppDim, modifier = Modifier.size(20.dp))
+                    // The products use their own runes (drawn), not system icons: Raidho, Ansuz, Dagaz.
+                    val ink = if (selected) Blake.pp else Blake.ppDim
+                    when (tab.route) {
+                        "wavicles" -> DagazRune(20.dp, ink)
+                        "carousel" -> RuneGlyph(Rune.RAIDHO, ink = ink, size = 20.dp)
+                        "chirp" -> RuneGlyph(Rune.ANSUZ, ink = ink, size = 20.dp)
+                        else ->
+                        Icon(tab.icon, contentDescription = stringResource(tab.label), tint = ink, modifier = Modifier.size(20.dp))
                     }
                     Spacer(Modifier.size(3.dp))
                     Text(stringResource(tab.label), style = Blake.mono(8f, FontWeight.ExtraBold),

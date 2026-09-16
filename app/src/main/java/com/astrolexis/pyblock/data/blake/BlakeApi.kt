@@ -207,6 +207,41 @@ object BlakeApi {
     @Serializable private data class PrimeRunnerRow(val identity: String? = null, @SerialName("last_share_s") val lastShareS: Int? = null)
     @Serializable private data class PrimeRunnersResp(val runners: List<PrimeRunnerRow> = emptyList())
 
+    // ---- CAROUSEL (the lap) ----
+
+    /** The rotation as the website shows it (`carousel.php?carrousel=1`): who is being mined now, the next
+     *  turns, the size and rhythm of the lap. Names are what suppliers typed; addresses come masked. */
+    @Serializable data class CarouselNext(val addr: String? = null, val name: String? = null)
+    @Serializable
+    data class CarouselLap(val live: Boolean? = null, val current: String? = null, val miners: Int? = null, val hashrate: Double? = null,
+                           val next: List<CarouselNext> = emptyList(), @SerialName("ring_n") val ringN: Int? = null, @SerialName("ring_idx") val ringIdx: Int? = null,
+                           @SerialName("block_stride") val blockStride: Int? = null, @SerialName("cycle_s") val cycleS: Int? = null, @SerialName("lap_s") val lapS: Int? = null)
+    suspend fun carouselLap(): CarouselLap? = get("/carousel.php?carrousel=1") { runCatching { json.decodeFromString<CarouselLap>(it) }.getOrNull() }
+
+    /** Where one template stands in the lap (`carousel.php?me=<address>`). No amounts. */
+    @Serializable
+    data class CarouselMe(val ok: Boolean? = null, @SerialName("in_ring") val inRing: Boolean? = null, val n: Int? = null, val position: Int? = null,
+                          @SerialName("turns_ahead") val turnsAhead: Int? = null, @SerialName("eta_s") val etaS: Int? = null,
+                          @SerialName("picks_24h") val picks24h: Int? = null, val blocks: Int? = null, @SerialName("mining_now") val miningNow: Boolean? = null)
+    suspend fun carouselMe(address: String): CarouselMe? =
+        get("/carousel.php?me=${URLEncoder.encode(address, "UTF-8")}") { runCatching { json.decodeFromString<CarouselMe>(it) }.getOrNull() }
+
+    /** The live split of a product, from the gateway's bps (`api/split.php`). Never hardcoded. */
+    @Serializable
+    data class SplitProduct(@SerialName("node_runner_pct") val nodeRunnerPct: Double? = null, @SerialName("pool_pct") val poolPct: Double? = null,
+                            @SerialName("miner_pct") val minerPct: Double? = null, val label: String? = null, val short: String? = null)
+    @Serializable private data class SplitResp(val ok: Boolean? = null, val products: Map<String, SplitProduct> = emptyMap())
+    suspend fun split(product: String): SplitProduct? =
+        get("/api/split.php?product=$product&chain=blake2b") { runCatching { json.decodeFromString<SplitResp>(it).products[product] }.getOrNull() }
+
+    /** A product's DATUM Prime: where a gateway connects and how that path splits the block. */
+    @Serializable data class PrimeConnect(val host: String? = null, val port: Int? = null)
+    @Serializable data class PrimeSplit(val label: String? = null, @SerialName("miners_bps") val minersBps: Int? = null,
+                                        @SerialName("node_runner_bps") val nodeRunnerBps: Int? = null, @SerialName("pool_bps") val poolBps: Int? = null)
+    @Serializable data class PrimeInfo(val ok: Boolean? = null, val connect: PrimeConnect? = null, val split: PrimeSplit? = null,
+                                       val gateways: Int? = null, @SerialName("hashrate_ghs") val hashrateGhs: Double? = null)
+    suspend fun prime(product: String): PrimeInfo? = get("/datum_modes_api.php?product=$product") { runCatching { json.decodeFromString<PrimeInfo>(it) }.getOrNull() }
+
     // ---- Plumbing ----
 
     private suspend inline fun <reified T> get(path: String, crossinline deserializer: (String) -> T?): T? =

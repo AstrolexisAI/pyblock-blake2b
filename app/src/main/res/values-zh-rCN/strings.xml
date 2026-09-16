@@ -47,7 +47,10 @@
     <string name="blk_block_height">区块高度</string>
     <string name="blk_block_participation">区块参与</string>
     <string name="blk_block_user">屏蔽用户</string>
+    <string name="blk_blocks_found">找到的区块</string>
+    <string name="blk_blocks_found_on_the_carousel">CAROUSEL 找到的区块</string>
     <string name="blk_blocks_found_time_mining_your_own_gatewa">找到的区块、挖矿时长、自有网关，以符文显示在你的名字旁。</string>
+    <string name="blk_blocks_on_your_template">你模板上的区块</string>
     <string name="blk_blocks_paid_to_this_address">支付到此地址的区块</string>
     <string name="blk_blocks_payouts">区块与支付</string>
     <string name="blk_broadcasting">广播中…</string>
@@ -57,8 +60,11 @@
     <string name="blk_can_t_connect">无法连接：%1$s</string>
     <string name="blk_can_t_reach_the_server">⚠ 无法连接服务器。</string>
     <string name="blk_can_t_reach_the_server_2">无法连接服务器。</string>
+    <string name="blk_can_t_reach_the_server_pull_to_retry">⚠ 无法连接服务器，下拉重试。</string>
     <string name="blk_cancel">取消</string>
     <string name="blk_carousel">CAROUSEL</string>
+    <string name="blk_carousel_hashrate">Carousel 算力</string>
+    <string name="blk_carousel_over_datum">DATUM 上的 CAROUSEL</string>
     <string name="blk_cast">CAST</string>
     <string name="blk_chain">链</string>
     <string name="blk_change">更改</string>
@@ -258,8 +264,10 @@
     <string name="blk_mined_blocks">已挖区块</string>
     <string name="blk_mined_spendable">挖矿 · 可花费</string>
     <string name="blk_miner">矿工</string>
+    <string name="blk_miners">矿工</string>
     <string name="blk_miners_hidden_their_stratum_username_isn">已隐藏 %1$s 名矿工：其 stratum 用户名不是支付地址，矿池无处支付。</string>
     <string name="blk_mining_from_your_wallet">从你的钱包挖矿：</string>
+    <string name="blk_mining_now">正在挖</string>
     <string name="blk_mode">模式</string>
     <string name="blk_monthly">月付</string>
     <string name="blk_more_than_you_can_spend">超过可花费余额</string>
@@ -286,6 +294,7 @@
     <string name="blk_next">下一步 ›</string>
     <string name="blk_next_draw">下一步 — 涂画</string>
     <string name="blk_next_harden_entropy">下一步 — 强化熵</string>
+    <string name="blk_next_up">接下来</string>
     <string name="blk_no_addresses_yet">还没有地址</string>
     <string name="blk_no_addresses_yet_2">还没有地址。</string>
     <string name="blk_no_answer_in_s_port_closed_or_wrong_ip">%1$s 秒内无响应：端口关闭或 IP 错误？</string>
@@ -307,7 +316,9 @@
     <string name="blk_no_spendable_blake2b_coins_only_mature_1">没有可花费的 BLAKE2b 币：只能发送成熟（100 次确认）的挖矿币；分叉前的共享币因重放风险被锁定。</string>
     <string name="blk_no_spendable_coins_here_only_mature_mine">此处没有可花费的币：只有成熟的挖矿 coinbase 可花费；收到的或分叉前的币因重放风险被锁定（可在币管理中解锁）。</string>
     <string name="blk_no_spendable_coins_yet">还没有可花费的币。</string>
+    <string name="blk_nobody_picks_this_order_it_comes_out_of_">顺序没有人挑选，来自公开规则：turn = agenda[(start + cycle) mod n]，start = (height × stride) mod n，每个区块冻结一次。不在这几轮里不代表出局：本圈的每个模板都会轮到。</string>
     <string name="blk_nobody_yet_message_someone_in_community_">还没有人。在 COMMUNITY 给某人发消息，或添加外部代码。</string>
+    <string name="blk_node_runner">%1$s%% 节点运营者</string>
     <string name="blk_none">无</string>
     <string name="blk_none_yet">暂无</string>
     <string name="blk_not_a_stratum_url_point_your_datum_gatew">这不是 stratum 地址，请用以下配置把你的 DATUM 网关指向矿池：</string>
@@ -364,11 +375,13 @@
     <string name="blk_people">联系人</string>
     <string name="blk_pick_from_wallet">从钱包选择 ›</string>
     <string name="blk_pick_the_payout_address_you_mine_to_it_i">选择你挖矿的收款地址，它就是 stratum 用户名。</string>
+    <string name="blk_picks_24h">被选 · 24小时</string>
     <string name="blk_pool">POOL</string>
     <string name="blk_pool_hashrate">矿池算力</string>
     <string name="blk_pool_offline_pull_to_retry">⚠ 矿池离线，下拉重试。</string>
     <string name="blk_pool_port">矿池端口</string>
     <string name="blk_pool_total_across_all_stratums_network_i">矿池为所有 stratum 的总和 · 网络为 BLAKE2b 上的全部矿工。</string>
+    <string name="blk_position_in_the_lap">本圈位置</string>
     <string name="blk_pre_fork_replay_exposed">分叉前 · 有重放风险</string>
     <string name="blk_price_is_the_market_right_now_it_is_re_q">价格为当前市价，付款时会重新报价。手续费已含在总额内。</string>
     <string name="blk_prime_pool_your_rig_s_own_hashrate_isn_t">Prime 矿池 %1$s · Prime 尚未公布你矿机的算力，上方的矿池数据也不包含这条路径。</string>
@@ -379,11 +392,13 @@
     <string name="blk_proof">证明</string>
     <string name="blk_protocol">协议</string>
     <string name="blk_purple_is_free_pro_opens_the_other_inks">紫色免费。PRO 解锁其他墨色。</string>
+    <string name="blk_pybl_ck">%1$s%% PyBLØCK</string>
     <string name="blk_pybl_ck_sovereign_push">PyBLØCK · sovereign push</string>
     <string name="blk_pynym1_identity_key">PYNYM1… 身份密钥</string>
     <string name="blk_quote_failed">报价失败。</string>
     <string name="blk_quoting">报价中…</string>
     <string name="blk_re_lock">重新锁定</string>
+    <string name="blk_read_for_the_address_miner_is_set_to_pub">按 MINER 中设置的地址读取。从你的节点发布模板即可加入本圈。</string>
     <string name="blk_reading_the_gateways">⟳ 读取网关…</string>
     <string name="blk_receive">⭳ 接收</string>
     <string name="blk_receive_2">接收</string>
@@ -417,11 +432,15 @@
     <string name="blk_ricochets">RICOCHETS</string>
     <string name="blk_rig_alerts_a_year_of_history">矿机提醒 · 一年历史</string>
     <string name="blk_rig_alerts_are_pro">矿机提醒为 PRO。</string>
+    <string name="blk_rotating_block_templates">轮转区块模板</string>
     <string name="blk_run_this_on_the_machine_with_your_blake2">在运行 BLAKE2b 节点的机器上执行；它会打印矿机应指向的地址。</string>
     <string name="blk_runes_earned_mining">挖矿赚得的符文</string>
     <string name="blk_runes_you_earned_mining">挖矿赚得的符文</string>
     <string name="blk_s_1_new_message">↓ 1 条新消息</string>
+    <string name="blk_s_1st">第1</string>
     <string name="blk_s_24h_average">24 小时平均</string>
+    <string name="blk_s_2nd">第2</string>
+    <string name="blk_s_3rd">第3</string>
     <string name="blk_s_ago">%1$s秒前</string>
     <string name="blk_s_node">%1$s 的节点</string>
     <string name="blk_safety_check_failed_a_non_mature_or_shar">安全检查失败：有未成熟或共享的币进入了交易。已中止。</string>
@@ -493,9 +512,12 @@
     <string name="blk_tap_to_copy_txid">点击复制 TXID</string>
     <string name="blk_tap_to_unlock">%1$s · 点击解锁</string>
     <string name="blk_tempered">TEMPERED</string>
+    <string name="blk_templates_a_turn_every_s_a_lap">%1$s 个模板 · 每 %2$s 秒一轮 · 一圈约 %3$s</string>
+    <string name="blk_templates_in_the_lap">本圈模板数</string>
     <string name="blk_test">测试</string>
     <string name="blk_testing">测试中…</string>
     <string name="blk_testing_on_mainnet">%1$s — 主网测试中</string>
+    <string name="blk_th">第%1$s</string>
     <string name="blk_that_has_a_space_in_it_an_address_never_">其中包含空格：地址不会有空格。</string>
     <string name="blk_that_isn_t_a_valid_address_or_paynym_cod">这不是有效的地址或 PayNym 代码。</string>
     <string name="blk_that_isn_t_a_valid_bitcoin_address">这不是有效的比特币地址。</string>
@@ -507,6 +529,7 @@
     <string name="blk_the_checksum_doesn_t_match_one_character">校验和不匹配：有一个字符错误。请粘贴或扫描二维码，不要手动输入。</string>
     <string name="blk_the_identity_key_can_t_be_read_right_now">当前无法读取身份密钥。请解锁设备并重新打开应用；在无法读取时切勿覆盖恢复。</string>
     <string name="blk_the_invoice_asks_for_sats_but_the_order_">账单要求 %1$s sats，但订单为 %2$s。不予显示，未支付任何款项。</string>
+    <string name="blk_the_lap">本圈</string>
     <string name="blk_the_last_hop_is_the_address_a_recipient_">最后一跳是收款方或交易所看到的发送地址。密钥可证明这些跳转属于你。</string>
     <string name="blk_the_lounge">贵宾厅</string>
     <string name="blk_the_other_inks_are_pro">其他墨色为 PRO。</string>
@@ -535,6 +558,7 @@
     <string name="blk_total">总计</string>
     <string name="blk_transactions">交易</string>
     <string name="blk_trustless_each_coinbase_commits_blake2b_">无需信任：每个 coinbase 都在 OP_RETURN（PYBLOCK-TON618）中承诺 BLAKE2b-256(快照)；分配公开可验证。</string>
+    <string name="blk_turns_ahead">前面的轮次</string>
     <string name="blk_tx_chain_broadcast_to_blake2b">%1$s 笔交易链已广播到 BLAKE2b。</string>
     <string name="blk_type">类型</string>
     <string name="blk_unlock">解锁</string>
@@ -551,6 +575,7 @@
     <string name="blk_use">使用</string>
     <string name="blk_user_your_blake2b_address_pass_x">用户名 = 你的 BLAKE2b 地址 · 密码 = x</string>
     <string name="blk_username">用户名</string>
+    <string name="blk_username_your_blake2b_address_password_x">用户名：你的 BLAKE2b 地址 · 密码：x</string>
     <string name="blk_vanity">VANITY</string>
     <string name="blk_vanity_2">⛒ VANITY</string>
     <string name="blk_waiting_for_a_block">等待区块</string>
@@ -563,10 +588,14 @@
     <string name="blk_would_receive">将收到 %1$s ᛒ</string>
     <string name="blk_write_it_as_host_port_the_installer_prin">请写成 主机:端口，安装程序会打印出来，默认端口 23334。</string>
     <string name="blk_yesterday">昨天</string>
+    <string name="blk_you">%1$s%% 归你</string>
     <string name="blk_your_name">你的名字</string>
     <string name="blk_your_node_builds_and_publishes_the_block">你的节点构建并发布区块；PyBLØCK 只决定 coinbase。把矿机指向你自己的机器，用户名 = 你的收款地址。同一产品，由你的节点打头。</string>
+    <string name="blk_your_node_builds_and_publishes_the_block_2">你的节点构建并发布区块；PyBLØCK 只设定 coinbase。在 MINER › DATUM 中设置。</string>
     <string name="blk_your_nostr_identity_is_device_only_blake">你的 Nostr 身份仅保存在本设备。BLAKE2b 与 SHA-256 用户共用此聊天室。</string>
     <string name="blk_your_paynym_has_no_seed_phrase_this_key_">你的 PayNym 没有助记词：这把密钥就是你的 PayNym，并印在纸质备份上。没有它，付到你 PayNym 的币无法在其他设备上恢复。</string>
     <string name="blk_your_paynym_identity_could_not_be_read_f">无法从安全存储读取你的 PayNym 身份，因此无法显示代码。切勿分享新代码：请解锁设备并重新打开应用。若恢复后仍如此，身份可能未迁移；在接收 PayNym 付款前请先核实。</string>
+    <string name="blk_your_template">你的模板</string>
+    <string name="blk_your_turn_in">轮到你还需</string>
     <string name="blk_your_workers_connect">你的 worker · 连接</string>
 </resources>
