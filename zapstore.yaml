@@ -1,0 +1,24 @@
+# Zapstore publishing manifest.
+#
+# Replace <YOUR_NPUB> with the nostr identity that will publish. The relay fetches
+# this file from the repository and checks that the pubkey matches the signer, which
+# is how a publisher gets whitelisted automatically.
+#
+# Generated/validated by:  zsp publish --wizard
+
+repository: https://github.com/AstrolexisAI/pyblock-blake2b
+pubkey: <YOUR_NPUB>
+
+apps:
+  - name: PyBLØCK ᛒ
+    identifier: com.astrolexis.pyblockblake2b
+    summary: Self-custody Bitcoin wallet for the BLAKE2b proof-of-work fork
+    description: |
+      Native Android wallet for Bitcoin-BLAKE2b. On-device keys, coin control,
+      Ricochet, PayNym, live pool and CHIRP stats, and community Nostr chat.
+
+      No Google Play Services: push runs over UnifiedPush, so a distributor such
+      as ntfy is needed for chat and DM notifications. Reproducible build and
+      Apache-2.0 — see README-REPRODUCIBLE.md.
+    license: Apache-2.0
+    tags: [bitcoin, wallet, blake2b, self-custody, nostr]
