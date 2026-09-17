@@ -154,6 +154,9 @@ fun BlakeRootScaffold() {
 
 @Composable
 private fun BlakeTabBar(nav: NavHostController, current: String?) {
+    // The chat composer keeps the focus when the reader taps another tab — and since SEND no
+    // longer closes the keyboard, it followed them with nothing there to dismiss it.
+    val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
     Box(Modifier.fillMaxWidth().background(Blake.bg).navigationBarsPadding().padding(horizontal = 20.dp, vertical = 10.dp)) {
         Row(
             Modifier.fillMaxWidth().background(Blake.ink, RoundedCornerShape(26.dp))
@@ -167,6 +170,7 @@ private fun BlakeTabBar(nav: NavHostController, current: String?) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
                         .clickableNoRipple {
+                            if (current != tab.route) keyboard?.hide()
                             if (current != tab.route) nav.navigate(tab.route) {
                                 popUpTo(nav.graph.startDestinationId) { saveState = true }
                                 launchSingleTop = true; restoreState = true

@@ -481,8 +481,11 @@ private fun Bubble(m: NostrEvent, mine: Boolean, name: String?, header: Boolean 
                 if (sigil.isNotEmpty()) { RuneGlyph(sigil, forge = forge, ink = ink, size = 14.dp); Spacer(Modifier.width(4.dp)) }
                 Text(label, style = Blake.mono(9f, FontWeight.ExtraBold), color = ink, maxLines = 1,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 200.dp))
-                // Runes earned mining, certified by the server. Not for sale.
-                marks.take(4).forEach { mk ->
+                // Runes earned mining, certified by the server. Not for sale. The ones with their
+                // own ink (a block through your own gateway, WAVICLES) go first, then by level: with
+                // six marks the fourth cut exactly the one earned last.
+                val inked = setOf("ehwaz", "dagaz", "ansuz")
+                marks.sortedWith(compareBy<com.astrolexis.pyblock.data.blake.BlakeApi.Mark>({ it.rune !in inked }, { -it.level })).take(6).forEach { mk ->
                     Rune.forMark(mk.rune)?.let { r ->
                         Spacer(Modifier.width(2.dp))
                         RuneGlyph(r, forge = forge, ink = Rune.markInk(r), size = 10.dp)
