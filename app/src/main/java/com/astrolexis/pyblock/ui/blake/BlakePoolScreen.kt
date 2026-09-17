@@ -72,7 +72,7 @@ fun BlakePoolScreen() {
         // fetched only when the height moved, not on every 20 s tick.
         val h = fresh?.blockHeight ?: status?.blockHeight ?: 0
         if (blocks.isEmpty() || h != blocksHeight) {
-            BlakeApi.blocks().takeIf { it.isNotEmpty() }?.let { bb ->
+            BlakeApi.blocks(limit = 40).takeIf { it.isNotEmpty() }?.let { bb ->   // the list shows 20
                 blocks = bb; blocksHeight = h
                 val newest = bb.maxOfOrNull { it.height } ?: -1
                 // Only a block that arrived while watching counts: the first load just sets the mark.
@@ -212,6 +212,12 @@ fun BlakePoolScreen() {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(b.stratum?.uppercase() ?: "—", style = Blake.mono(9f, FontWeight.ExtraBold),
                                     color = stratumColor(b.stratum, tip, stats?.flagship), letterSpacing = 0.5.sp)
+                                // Built by the finder's own gateway (DATUM): the rune, and the gateway's
+                                // name when it has one — the same mark the product tabs use.
+                                if (b.builtOnDatum) {
+                                    Spacer(Modifier.width(5.dp)); RuneGlyph(Rune.EHWAZ, ink = Blake.datum, size = 10.dp)
+                                    b.gatewayName?.takeIf { it.isNotEmpty() }?.let { Spacer(Modifier.width(4.dp)); Text(it, style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.datum, maxLines = 1) }
+                                }
                                 Text(" · ${b.finderMasked ?: "—"}", style = Blake.mono(9f), color = Blake.faint, maxLines = 1)
                             }
                         }

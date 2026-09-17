@@ -306,8 +306,9 @@ object BlakeApi {
     /** Recent mined blocks, NEWEST FIRST. The endpoint returns them oldest-first, so a naive
      *  take(N) showed the fork's earliest blocks (all `lotto`) instead of recent activity — sort
      *  by height descending so the UI shows the latest blocks and their real stratum mix. */
-    suspend fun blocks(): List<Block> =
-        (get("/api.php?mode=blocks&chain=bip110") {
+    /** [limit] asks the server for the newest N only (the full feed is the whole history, half a MB). */
+    suspend fun blocks(limit: Int? = null): List<Block> =
+        (get("/api.php?mode=blocks&chain=bip110" + (limit?.let { "&limit=$it" } ?: "")) {
             runCatching { json.decodeFromString<BlocksResp>(it) }.getOrNull()
         }?.blocks ?: emptyList())
             .filter { it.confirmed != false }   // drop orphaned blocks (reorged out — not real rewards)
