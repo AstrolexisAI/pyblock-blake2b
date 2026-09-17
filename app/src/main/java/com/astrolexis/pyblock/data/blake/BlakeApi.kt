@@ -225,6 +225,17 @@ object BlakeApi {
     }
 
 
+    // ---- Transaction status ----
+    /** What Node B says about a transaction we broadcast (`api/tx_status.php`): in its mempool,
+     *  confirmed, or never seen. The answer to "did my send land?" — not a clock. */
+    @Serializable data class TxStatus(val ok: Boolean? = null, val status: String? = null, val confirmations: Int? = null, val height: Int? = null) {
+        val inMempool get() = status == "mempool"; val confirmed get() = status == "confirmed"; val unknown get() = status == "unknown"
+    }
+    suspend fun txStatus(txid: String): TxStatus? {
+        if (txid.length != 64 || !txid.all { it in "0123456789abcdefABCDEF" }) return null
+        return get("/api/tx_status.php?chain=blake2b&txid=$txid") { runCatching { json.decodeFromString<TxStatus>(it) }.getOrNull() }
+    }
+
     // ---- CAROUSEL (the lap) ----
 
     /** The rotation as the website shows it (`carousel.php?carrousel=1`): who is being mined now, the next

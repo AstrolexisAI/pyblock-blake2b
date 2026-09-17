@@ -608,4 +608,5 @@
     <string name="blk_your_template">你的模板</string>
     <string name="blk_your_turn_in">轮到你还需</string>
     <string name="blk_your_workers_connect">你的 worker · 连接</string>
+    <string name="blk_not_sent_is_back_the_node_never_saw_it">未发送  %1$s %2$s 已退回：节点从未收到</string>
 </resources>

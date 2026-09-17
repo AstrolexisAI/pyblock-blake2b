@@ -1469,4 +1469,5 @@
     <string name="blk_your_template">YOUR TEMPLATE</string>
     <string name="blk_your_turn_in">your turn in</string>
     <string name="blk_your_workers_connect">your workers · connect</string>
+    <string name="blk_not_sent_is_back_the_node_never_saw_it">NOT SENT  %1$s %2$s is back — the node never saw it</string>
 </resources>

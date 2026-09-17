@@ -299,7 +299,7 @@ object BlakeSpend {
             if (e.alreadyInFlight) { BlakeBalanceStore.markSpent(selectedKeys); throw Err.AlreadyPending }
             throw e
         }
-        BlakeBalanceStore.markSpent(selectedKeys)   // lock these inputs locally (no double-spend in the cache window)
+        BlakeBalanceStore.markSpent(selectedKeys, txid)   // lock inputs; released by the node's word on this txid
         return txid
     }
 
@@ -380,7 +380,7 @@ object BlakeSpend {
         if (notifFee > MAX_NOTIFICATION_FEE_SATS) throw Err.FeeCapped(notifFee, MAX_NOTIFICATION_FEE_SATS)
 
         val txid = BlakeApi.pushTx(bytesToHex(tx.serialize()))
-        BlakeBalanceStore.markSpent(setOf(designated.key))
+        BlakeBalanceStore.markSpent(setOf(designated.key), txid)
         com.astrolexis.pyblock.data.crypto.PaymentCode.markNotified(ctx, peerCode)
         return txid
     }
@@ -477,8 +477,8 @@ object BlakeSpend {
         checkFeeCap(totalFee, selectedTotal, sendMax)
 
         for ((idx, tx) in builtTxs.withIndex()) {
-            BlakeApi.pushTx(bytesToHex(tx.serialize()))
-            if (idx == 0) BlakeBalanceStore.markSpent(selectedKeys)   // tx0 spent the user's coins → lock them
+            val hopTxid = BlakeApi.pushTx(bytesToHex(tx.serialize()))
+            if (idx == 0) BlakeBalanceStore.markSpent(selectedKeys, hopTxid)   // tx0 spent the user's coins → lock them until the node answers
             if (idx < builtTxs.size - 1) delay(1_500)
         }
 

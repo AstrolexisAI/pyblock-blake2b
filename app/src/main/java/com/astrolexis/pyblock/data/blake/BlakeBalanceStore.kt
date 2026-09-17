@@ -93,19 +93,25 @@ object BlakeBalanceStore {
     /** Mark coins as spent IMMEDIATELY after a successful broadcast, so a second send within the
      *  server's cache window can't reuse them (double-spend → bad-txns-inputs-missingorspent). Ids
      *  are "txid:vout"; cleared naturally once a confirmed refresh drops the spent UTXOs. */
-    fun markSpent(ids: Set<String>) {
+    fun markSpent(ids: Set<String>, txid: String? = null) {
         if (ids.isEmpty()) return
         val now = System.currentTimeMillis()
-        synchronized(localSpent) { ids.forEach { localSpent[it] = now } }
+        synchronized(localSpent) { ids.forEach { localSpent[it] = LocalMark(now, txid) } }
         _pendingSpentIds.value = _pendingSpentIds.value + ids
     }
+    data class LocalMark(val at: Long, val txid: String?)
+    /** Last word from the node per txid, so the poll asks each one at most once a minute. */
+    private val txChecked = HashMap<String, Pair<Long, BlakeApi.TxStatus>>()
     /** Coins WE broadcast a spend of → broadcast time. The server's mempool view lags the push
      *  (index cache window; it may only list txs paying an address, not spending from it), so a
      *  poll right after a send used to wipe the in-flight mark and the "sending · in mempool"
      *  line vanished. A local mark holds until the coin leaves the confirmed set (mined) or
      *  [LOCAL_SPENT_TTL_MS] passes without the node ever showing the tx. Mirrors iOS. */
-    private val localSpent = HashMap<String, Long>()
+    private val localSpent = HashMap<String, LocalMark>()
+    /** Only for a mark without a txid (a resend the node said was already pending — we never got the
+     *  first txid). A mark WITH a txid is released by the node's answer, never by a clock. */
     private const val LOCAL_SPENT_TTL_MS = 30L * 60_000
+    private const val LOCAL_SPENT_HARD_CAP_MS = 24L * 3_600_000
 
     // ---- Derived totals ----
 
@@ -184,12 +190,32 @@ object BlakeBalanceStore {
                 }
             }
         }
-        // Local marks: drop the ones whose coin is gone (mined) or that aged out unseen.
+        // Local marks: drop the ones whose coin is gone (mined). For the rest, ask the node about the
+        // txid instead of trusting a clock: a send that sits in the mempool for an hour stays in
+        // flight; a send the node never saw is given back — and said so — instead of quietly
+        // reappearing 30 minutes later as if nothing had happened (that read as "sent back").
         val now = System.currentTimeMillis()
+        synchronized(localSpent) { localSpent.entries.removeAll { it.key !in ourIds } }
+        val lost = HashMap<String, Long>()   // txid → sats coming back
+        val txids = synchronized(localSpent) { localSpent.values.mapNotNull { it.txid }.toSet() }
+        for (txid in txids) {
+            val marks = synchronized(localSpent) { localSpent.filterValues { it.txid == txid } }
+            val oldest = marks.values.minOfOrNull { it.at } ?: continue
+            if (now - oldest < 90_000) continue
+            var st = synchronized(txChecked) { txChecked[txid] }
+            if (st == null || now - st.first > 60_000) BlakeApi.txStatus(txid)?.let { fresh -> st = now to fresh; synchronized(txChecked) { txChecked[txid] = st!! } }
+            val status = st?.second ?: continue
+            if (status.unknown) {
+                lost[txid] = allUtxos().filter { it.id in marks.keys }.sumOf { it.value }
+                synchronized(localSpent) { marks.keys.forEach { localSpent.remove(it) } }
+            }
+            // mempool / confirmed: keep the mark, however long it takes.
+        }
         val local = synchronized(localSpent) {
-            localSpent.entries.removeAll { it.key !in ourIds || now - it.value >= LOCAL_SPENT_TTL_MS }
+            localSpent.entries.removeAll { (_, m) -> if (m.txid != null) now - m.at >= LOCAL_SPENT_HARD_CAP_MS else now - m.at >= LOCAL_SPENT_TTL_MS }
             localSpent.keys.toSet()
         }
+        lost.values.forEach { sats -> com.astrolexis.pyblock.ui.blake.WalletEvents.post(com.astrolexis.pyblock.ui.blake.WalletEvents.Kind.SendLost(sats)) }
         _pendingIn.value = inSats
         _pendingSpentIds.value = spent + local
         _pendingActivity.value = items.sortedByDescending { it.seen }

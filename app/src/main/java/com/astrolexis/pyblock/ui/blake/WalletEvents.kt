@@ -56,16 +56,18 @@ object WalletEvents {
         data class Confirmed(val sats: Long) : Kind()
         data class Matured(val sats: Long) : Kind()
         data class Block(val height: Int, val stratum: String) : Kind()
+        data class SendLost(val sats: Long) : Kind()
     }
     data class Event(val id: Long, val kind: Kind) {
-        val glyph get() = when (kind) { is Kind.Received -> Blake.RUNE; is Kind.Confirmed -> "✓"; is Kind.Matured -> "◈"; is Kind.Block -> "▣" }
+        val glyph get() = when (kind) { is Kind.Received -> Blake.RUNE; is Kind.Confirmed -> "✓"; is Kind.Matured -> "◈"; is Kind.Block -> "▣"; is Kind.SendLost -> "↺" }
         val text get() = when (val k = kind) {
             is Kind.Received -> com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_received_2, Blake.btc(k.sats), Blake.RUNE)
             is Kind.Confirmed -> com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_confirmed_2, Blake.btc(k.sats), Blake.RUNE)
             is Kind.Matured -> com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_matured_now_spendable, Blake.btc(k.sats), Blake.RUNE)
             is Kind.Block -> com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_block_3, k.height, k.stratum.uppercase())
+            is Kind.SendLost -> com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_not_sent_is_back_the_node_never_saw_it, Blake.btc(k.sats), Blake.RUNE)
         }
-        val color: Color get() = when (kind) { is Kind.Received, is Kind.Matured -> Blake.ok; else -> Blake.pp }
+        val color: Color get() = when (kind) { is Kind.Received, is Kind.Matured -> Blake.ok; is Kind.SendLost -> Blake.warn; else -> Blake.pp }
     }
 
     private val _current = MutableStateFlow<Event?>(null)

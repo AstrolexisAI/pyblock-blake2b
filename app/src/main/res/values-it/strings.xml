@@ -1465,4 +1465,5 @@
     <string name="blk_your_template">IL TUO TEMPLATE</string>
     <string name="blk_your_turn_in">il tuo turno tra</string>
     <string name="blk_your_workers_connect">i tuoi worker · connetti</string>
+    <string name="blk_not_sent_is_back_the_node_never_saw_it">NON INVIATO  %1$s %2$s torna: il nodo non l\'ha mai visto</string>
 </resources>
