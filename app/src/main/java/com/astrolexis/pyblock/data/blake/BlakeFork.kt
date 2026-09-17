@@ -37,7 +37,7 @@ object BlakeFork {
         // Not coinbase: only if we proved it fork-native ourselves — our own change from a spend
         // whose inputs were all fork-native (see ForkNativeStore). Any other received coin is
         // replay-exposed and stays locked.
-        if (!u.coinbase) return ForkNativeStore.contains(u.id)
+        if (!u.coinbase) return u.forkNative || ForkNativeStore.contains(u.id)
         return confirmations(u, tip) >= COINBASE_MATURITY
     }
 

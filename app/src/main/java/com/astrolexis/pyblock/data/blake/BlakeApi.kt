@@ -165,6 +165,9 @@ object BlakeApi {
         val coinbase: Boolean = false,
         @SerialName("script_hex") val scriptHex: String = "",   // output scriptPubkey
         val hex: String = "",                                    // full prev-tx hex (nonWitnessUtxo)
+        /** Node's word for a non-coinbase coin: its outpoint does NOT exist on the SHA-256 chain, so
+         *  a spend of it cannot be replayed. Only ever unlocks; absent or false keeps today's lock. */
+        @SerialName("fork_native") val forkNative: Boolean = false,
     ) {
         val id: String get() = "$txid:$vout"
     }
