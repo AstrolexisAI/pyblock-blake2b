@@ -98,8 +98,29 @@ object BlakeBalanceStore {
         val now = System.currentTimeMillis()
         synchronized(localSpent) { ids.forEach { localSpent[it] = LocalMark(now, txid) } }
         _pendingSpentIds.value = _pendingSpentIds.value + ids
+        persistInFlight()
     }
-    data class LocalMark(val at: Long, val txid: String?)
+    @Serializable data class LocalMark(val at: Long, val txid: String?)
+    @Serializable private data class InFlightFile(val marks: Map<String, LocalMark>)
+    /** The marks outlive the process. They used to live only in memory, so a send followed by the
+     *  app being killed came back with the coin unlocked, no node asked — the "reverts to locked"
+     *  report, in 10–15 minutes rather than at any TTL. A relaunch reloads them; the node decides. */
+    private var inFlightPrefs: android.content.SharedPreferences? = null
+    private fun persistInFlight() {
+        val p = inFlightPrefs ?: return
+        val snap = synchronized(localSpent) { HashMap(localSpent) }
+        p.edit().putString("marks", Json.encodeToString(InFlightFile.serializer(), InFlightFile(snap))).apply()
+    }
+    private fun loadInFlight(ctx: Context) {
+        if (inFlightPrefs != null) return
+        val p = ctx.applicationContext.getSharedPreferences("blake_inflight", Context.MODE_PRIVATE); inFlightPrefs = p
+        val raw = p.getString("marks", null) ?: return
+        val marks = runCatching { Json.decodeFromString(InFlightFile.serializer(), raw).marks }.getOrNull() ?: return
+        val now = System.currentTimeMillis()
+        val live = marks.filterValues { now - it.at < LOCAL_SPENT_HARD_CAP_MS }
+        synchronized(localSpent) { localSpent.putAll(live) }
+        _pendingSpentIds.value = _pendingSpentIds.value + live.keys
+    }
     /** Last word from the node per txid, so the poll asks each one at most once a minute. */
     private val txChecked = HashMap<String, Pair<Long, BlakeApi.TxStatus>>()
     /** Coins WE broadcast a spend of → broadcast time. The server's mempool view lags the push
@@ -195,7 +216,9 @@ object BlakeBalanceStore {
         // flight; a send the node never saw is given back — and said so — instead of quietly
         // reappearing 30 minutes later as if nothing had happened (that read as "sent back").
         val now = System.currentTimeMillis()
-        synchronized(localSpent) { localSpent.entries.removeAll { it.key !in ourIds } }
+        // Prune to coins we still hold — only once the confirmed set has actually loaded. On a
+        // fresh launch it is empty for a moment, and pruning against it dropped every mark.
+        if (ourIds.isNotEmpty()) synchronized(localSpent) { localSpent.entries.removeAll { it.key !in ourIds } }
         val lost = HashMap<String, Long>()   // txid → sats coming back
         val txids = synchronized(localSpent) { localSpent.values.mapNotNull { it.txid }.toSet() }
         for (txid in txids) {
@@ -215,6 +238,7 @@ object BlakeBalanceStore {
             localSpent.entries.removeAll { (_, m) -> if (m.txid != null) now - m.at >= LOCAL_SPENT_HARD_CAP_MS else now - m.at >= LOCAL_SPENT_TTL_MS }
             localSpent.keys.toSet()
         }
+        persistInFlight()
         lost.values.forEach { sats -> com.astrolexis.pyblock.ui.blake.WalletEvents.post(com.astrolexis.pyblock.ui.blake.WalletEvents.Kind.SendLost(sats)) }
         _pendingIn.value = inSats
         _pendingSpentIds.value = spent + local
@@ -293,6 +317,7 @@ object BlakeBalanceStore {
     /** Open the live push stream and subscribe to every wallet address. Idempotent. */
     fun startLive(ctx: Context) {
         WalletStore.ensureLoaded(ctx)
+        loadInFlight(ctx)
         subscribedAddrs = WalletStore.wallets.value.map { it.address }.filter { it.isNotBlank() }
         if (subscribedAddrs.isEmpty()) return
         synchronized(socketLock) {
