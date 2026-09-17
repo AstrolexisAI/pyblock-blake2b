@@ -62,7 +62,21 @@ object BlakeSpend {
         val valueSats: Long,
         val key: String,        // "txid:vout"
         val scriptHex: String,  // this UTXO's scriptPubKey (0014… = P2WPKH segwit, else P2PKH legacy)
+        /** Provably fork-native (mature post-fork coinbase, or change we proved from one) — not a
+         *  replay-exposed coin the user chose to unlock. Only ALL-native inputs make native change. */
+        val native: Boolean,
     )
+
+    /** Outputs of [tx] that pay one of [scripts] (our own addresses — where change goes). */
+    private fun ownOutputs(tx: Transaction, scripts: Set<String>): List<Int> =
+        tx.output().mapIndexedNotNull { i, o -> if (bytesToHex(o.scriptPubkey.toBytes()) in scripts) i else null }
+    /** After a broadcast: the change of a transaction whose inputs were ALL fork-native is itself
+     *  fork-native — the tx cannot exist on the other chain. Record it so it comes back spendable,
+     *  not as a "received · replay-exposed" coin the user has to unlock again. */
+    private fun recordNative(txid: String, outs: List<Int>, inputs: List<Coin>) {
+        if (outs.isEmpty() || inputs.isEmpty() || !inputs.all { it.native }) return
+        ForkNativeStore.add(outs.map { "$txid:$it" }.toSet())
+    }
 
     /** A native-SegWit v0 P2WPKH output script is OP_0 <20-byte-push> = "0014"+40 hex. */
     private fun isSegwitScript(h: String) = h.length == 44 && h.startsWith("0014")
@@ -152,7 +166,7 @@ object BlakeSpend {
                 // prev-tx we already hold (no extra request) and fail closed — see verifyClaims.
                 if (!verifyClaims(u, prev, tip)) continue
                 val outpoint = OutPoint(Txid.fromString(u.txid), u.vout.toUInt())
-                coins.add(Coin(outpoint, prev, wif, u.value, metaKey(u.txid, u.vout), u.scriptHex))
+                coins.add(Coin(outpoint, prev, wif, u.value, metaKey(u.txid, u.vout), u.scriptHex, BlakeFork.isSpendable(u, tip)))
             }
         }
         return coins
@@ -300,6 +314,7 @@ object BlakeSpend {
             throw e
         }
         BlakeBalanceStore.markSpent(selectedKeys, txid)   // lock inputs; released by the node's word on this txid
+        recordNative(txid, ownOutputs(tx, selected.map { it.scriptHex }.toSet()), selected)
         return txid
     }
 
@@ -381,6 +396,7 @@ object BlakeSpend {
 
         val txid = BlakeApi.pushTx(bytesToHex(tx.serialize()))
         BlakeBalanceStore.markSpent(setOf(designated.key), txid)
+        recordNative(txid, ownOutputs(tx, setOf(designated.scriptHex)), listOf(designated))
         com.astrolexis.pyblock.data.crypto.PaymentCode.markNotified(ctx, peerCode)
         return txid
     }
@@ -478,7 +494,10 @@ object BlakeSpend {
 
         for ((idx, tx) in builtTxs.withIndex()) {
             val hopTxid = BlakeApi.pushTx(bytesToHex(tx.serialize()))
-            if (idx == 0) BlakeBalanceStore.markSpent(selectedKeys, hopTxid)   // tx0 spent the user's coins → lock them until the node answers
+            if (idx == 0) {
+                BlakeBalanceStore.markSpent(selectedKeys, hopTxid)   // tx0 spent the user's coins → lock them until the node answers
+                recordNative(hopTxid, ownOutputs(tx, selected.map { it.scriptHex }.toSet()), selected)
+            }
             if (idx < builtTxs.size - 1) delay(1_500)
         }
 

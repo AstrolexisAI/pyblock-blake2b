@@ -32,8 +32,14 @@ object BlakeFork {
         if (tip > 0) maxOf(0, tip - u.height + 1) else 0
 
     /** Mature post-fork coinbase → safe to spend (non-replayable). */
-    fun isSpendable(u: BlakeApi.Utxo, tip: Int): Boolean =
-        u.coinbase && u.height >= FORK_HEIGHT && confirmations(u, tip) >= COINBASE_MATURITY
+    fun isSpendable(u: BlakeApi.Utxo, tip: Int): Boolean {
+        if (u.height < FORK_HEIGHT) return false
+        // Not coinbase: only if we proved it fork-native ourselves — our own change from a spend
+        // whose inputs were all fork-native (see ForkNativeStore). Any other received coin is
+        // replay-exposed and stays locked.
+        if (!u.coinbase) return ForkNativeStore.contains(u.id)
+        return confirmations(u, tip) >= COINBASE_MATURITY
+    }
 
     /** Human reason a coin is still locked (null if spendable). */
     fun lockReason(u: BlakeApi.Utxo, tip: Int): String? {

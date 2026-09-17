@@ -134,6 +134,7 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit, onPaid: (peer: String, txid: S
         BlakePrice.init(ctx)
         com.astrolexis.pyblock.data.blake.BlakeSentStore.init(ctx)
         com.astrolexis.pyblock.data.blake.UnlockStore.init(ctx)
+        com.astrolexis.pyblock.data.blake.ForkNativeStore.init(ctx)
         com.astrolexis.pyblock.data.blake.BlakeLabelStore.init(ctx)
         com.astrolexis.pyblock.data.wallet.BlakeContactsStore.init(ctx)
         com.astrolexis.pyblock.data.wallet.RicochetHistory.ensureLoaded(ctx)   // para saber si hay ricochets pasados (sus hop keys deben seguir alcanzables)

@@ -318,6 +318,7 @@ object BlakeBalanceStore {
     fun startLive(ctx: Context) {
         WalletStore.ensureLoaded(ctx)
         loadInFlight(ctx)
+        ForkNativeStore.init(ctx)
         subscribedAddrs = WalletStore.wallets.value.map { it.address }.filter { it.isNotBlank() }
         if (subscribedAddrs.isEmpty()) return
         synchronized(socketLock) {
