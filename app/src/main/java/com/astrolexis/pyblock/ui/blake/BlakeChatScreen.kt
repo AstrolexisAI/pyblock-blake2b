@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -75,6 +77,7 @@ import kotlinx.coroutines.launch
 /** COMMUNITY — shared PyBLØCK chat (same Nostr channel as the SHA-256 app). Faithful Blake
  *  port of iOS ChatView: colored names, bubbles, images, reactions, moderation + DMs. */
 @Composable
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 fun BlakeChatScreen(client: NostrClient, onPay: (String, Long?, String) -> Unit) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -155,6 +158,16 @@ fun BlakeChatScreen(client: NostrClient, onPay: (String, Long?, String) -> Unit)
             else -> unread++
         }
     }
+    // The keyboard shrinks the list and Compose keeps the FIRST visible row in place, so the
+    // newest message slid under the keyboard the moment the composer was tapped. When the
+    // keyboard comes up on a reader who was at the bottom, stay at the bottom.
+    val imeVisible = WindowInsets.isImeVisible
+    var pinnedBeforeIme by remember { mutableStateOf(true) }
+    LaunchedEffect(imeVisible) {
+        if (imeVisible) { if (pinnedBeforeIme && rows.isNotEmpty()) { delay(80); listState.scrollToItem(rows.size - 1) } }
+        else pinnedBeforeIme = atBottom
+    }
+    LaunchedEffect(atBottom) { if (!imeVisible) pinnedBeforeIme = atBottom }
     LaunchedEffect(atBottom, lastId) {
         if (atBottom) { unread = 0; roomMessages.lastOrNull()?.let { prefs.edit().putLong(if (lounge) "read.lounge" else "read.community", it.created_at).apply() } }
     }
