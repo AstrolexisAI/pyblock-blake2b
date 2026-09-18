@@ -13,6 +13,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import com.astrolexis.pyblock.ui.components.clickableNoRipple
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -39,17 +42,22 @@ data class GatewayRow(val id: String, val name: String?, val identity: String?, 
 /** The gateways connected to a product right now — names when their runners gave one, the software
  *  generation, shares accepted, uptime, last share. Same card on CAROUSEL, CHIRP and WAVICLES. */
 @Composable
-fun GatewaysCard(rows: List<GatewayRow>, accent: Color = Blake.datum, registered: Int? = null, primeHashrateGhs: Double? = null) {
+fun GatewaysCard(rows: List<GatewayRow>, accent: Color = Blake.datum, registered: Int? = null, primeHashrateGhs: Double? = null, startCollapsed: Boolean = false) {
+    // Start folded on a product with a dozen gateways: the list made the tab a long scroll before
+    // anything else. The header keeps the count and the hashrate, so folded still says what matters.
+    var expanded by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(!startCollapsed) }
     Column(Modifier.fillMaxWidth().blakeCard()) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().clickableNoRipple { com.astrolexis.pyblock.ui.Haptics.tap(); expanded = !expanded }, verticalAlignment = Alignment.CenterVertically) {
             RuneGlyph(Rune.EHWAZ, ink = Blake.datum, size = 13.dp); Spacer(Modifier.width(6.dp))
             Text(stringResource(R.string.blk_gateways_connected), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp,
                 maxLines = 1, modifier = Modifier.weight(1f, fill = false))
             Spacer(Modifier.width(6.dp)); Text("${rows.size}", style = Blake.mono(11f, FontWeight.ExtraBold), color = accent)
             Spacer(Modifier.weight(1f))
             registered?.takeIf { it > 0 }?.let { Text(stringResource(R.string.blk_registered, it.toString()), style = Blake.mono(7f), color = Blake.faint, maxLines = 1, softWrap = false); Spacer(Modifier.width(6.dp)) }
-            primeHashrateGhs?.takeIf { it > 0 }?.let { Text(BlakeRentals.th(it / 1000), style = Blake.mono(8f, FontWeight.ExtraBold), color = Blake.datum) }
+            primeHashrateGhs?.takeIf { it > 0 }?.let { Text(BlakeRentals.th(it / 1000), style = Blake.mono(8f, FontWeight.ExtraBold), color = Blake.datum); Spacer(Modifier.width(6.dp)) }
+            Text(if (expanded) "▲" else "▼", style = Blake.mono(9f), color = Blake.ppDim)
         }
+        if (!expanded) return@Column
         Spacer(Modifier.height(8.dp))
         if (rows.isEmpty()) {
             Text(stringResource(R.string.blk_no_gateways_connected_yet_run_your_own_n), style = Blake.mono(8f), color = Blake.faint)

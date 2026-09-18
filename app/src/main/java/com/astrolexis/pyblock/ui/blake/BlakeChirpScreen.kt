@@ -104,7 +104,7 @@ fun BlakeChirpScreen() {
             // Connected miners, newest-active first (by last share, not by power).
             // The node-runners on CHIRP-PRIME, by name when they gave one.
             Spacer(Modifier.height(22.dp))
-            GatewaysCard(primeInfo?.runners.orEmpty().map { GatewayRow.of(it) }, accent = Blake.ok, registered = primeInfo?.nodeRunnersRegistered, primeHashrateGhs = primeInfo?.hashrateGhs)
+            GatewaysCard(primeInfo?.runners.orEmpty().map { GatewayRow.of(it) }, accent = Blake.ok, registered = primeInfo?.nodeRunnersRegistered, primeHashrateGhs = primeInfo?.hashrateGhs, startCollapsed = true)
 
             // Everyone mining now — on the house stratum or on CHIRP-PRIME — in the draw's order:
             // weight (tenure + power), then tenure, then power. The list used to be newest-share
