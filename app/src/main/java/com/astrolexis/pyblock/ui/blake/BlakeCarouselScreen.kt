@@ -116,7 +116,7 @@ fun BlakeCarouselScreen() {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(6.dp).background(if (lap?.live == true) Blake.ok else Blake.faint, CircleShape)); Spacer(Modifier.width(6.dp))
                     Text(stringResource(R.string.blk_the_lap), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
-                    Spacer(Modifier.weight(1f))
+                    Spacer(Modifier.width(10.dp)); Spacer(Modifier.weight(1f))
                     val n = lap?.ringN; val c = lap?.cycleS; val l = lap?.lapS
                     if (n != null && c != null && l != null)
                         Text(stringResource(R.string.blk_templates_a_turn_every_s_a_lap, n.toString(), c.toString(), dur(l)), style = Blake.mono(7f), color = Blake.faint, maxLines = 1, overflow = TextOverflow.Ellipsis)

@@ -1466,4 +1466,9 @@
     <string name="blk_your_turn_in">tu turno en</string>
     <string name="blk_your_workers_connect">tus workers · conectar</string>
     <string name="blk_not_sent_is_back_the_node_never_saw_it">NO ENVIADO  %1$s %2$s vuelve: el nodo nunca lo vio</string>
+    <string name="blk_workers">workers</string>
+    <string name="blk_candidates">candidatos</string>
+    <string name="blk_gateways">gateways</string>
+    <string name="blk_miners_in_window">mineros en ventana</string>
+    <string name="blk_n_days">%1$s días</string>
 </resources>

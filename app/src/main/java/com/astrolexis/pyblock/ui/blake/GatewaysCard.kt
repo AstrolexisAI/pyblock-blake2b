@@ -49,13 +49,26 @@ fun GatewaysCard(rows: List<GatewayRow>, accent: Color = Blake.datum, registered
     Column(Modifier.fillMaxWidth().blakeCard()) {
         Row(Modifier.fillMaxWidth().clickableNoRipple { com.astrolexis.pyblock.ui.Haptics.tap(); expanded = !expanded }, verticalAlignment = Alignment.CenterVertically) {
             RuneGlyph(Rune.EHWAZ, ink = Blake.datum, size = 13.dp); Spacer(Modifier.width(6.dp))
-            Text(stringResource(R.string.blk_gateways_connected), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp,
-                maxLines = 1, modifier = Modifier.weight(1f, fill = false))
+            // The title takes what the count, the registered note and the hashrate leave, and
+            // shrinks to fit that; a weighted spacer next to it used to take half the row.
+            FitText(stringResource(R.string.blk_gateways_connected), style = Blake.mono(11f, FontWeight.ExtraBold).copy(letterSpacing = 3.sp), color = Blake.ppDim,
+                modifier = Modifier.weight(1f), minScale = 0.55f)
             Spacer(Modifier.width(6.dp)); Text("${rows.size}", style = Blake.mono(11f, FontWeight.ExtraBold), color = accent)
-            Spacer(Modifier.weight(1f))
-            registered?.takeIf { it > 0 }?.let { Text(stringResource(R.string.blk_registered, it.toString()), style = Blake.mono(7f), color = Blake.faint, maxLines = 1, softWrap = false); Spacer(Modifier.width(6.dp)) }
-            primeHashrateGhs?.takeIf { it > 0 }?.let { Text(BlakeRentals.th(it / 1000), style = Blake.mono(8f, FontWeight.ExtraBold), color = Blake.datum); Spacer(Modifier.width(6.dp)) }
+            Spacer(Modifier.width(10.dp))
             Text(if (expanded) "▲" else "▼", style = Blake.mono(9f), color = Blake.ppDim)
+        }
+        // Registered count and the gateways' hashrate on their own line: on a 360dp screen they
+        // left the title no room in the header row.
+        val meta = buildList {
+            registered?.takeIf { it > 0 }?.let { add(stringResource(R.string.blk_registered, it.toString())) }
+            primeHashrateGhs?.takeIf { it > 0 }?.let { add(BlakeRentals.th(it / 1000)) }
+        }
+        if (meta.isNotEmpty()) {
+            Spacer(Modifier.height(3.dp))
+            Row(Modifier.fillMaxWidth().padding(start = 19.dp)) {
+                Text(meta[0], style = Blake.mono(7f), color = Blake.faint, maxLines = 1)
+                if (meta.size > 1) { Text("  ·  ", style = Blake.mono(7f), color = Blake.faint); Text(meta[1], style = Blake.mono(8f, FontWeight.ExtraBold), color = Blake.datum, maxLines = 1) }
+            }
         }
         if (!expanded) return@Column
         Spacer(Modifier.height(8.dp))
@@ -66,20 +79,25 @@ fun GatewaysCard(rows: List<GatewayRow>, accent: Color = Blake.datum, registered
                 Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
                     androidx.compose.foundation.layout.Box(Modifier.size(5.dp).background(if (g.live) Blake.ok else Blake.faint, CircleShape))
                     Spacer(Modifier.width(8.dp))
-                    if (g.datum) { RuneGlyph(Rune.EHWAZ, ink = Blake.datum, size = 12.dp); Spacer(Modifier.width(6.dp)) }
+                    // A row without the rune keeps its width, so the names line up down the list.
+                    if (g.datum) RuneGlyph(Rune.EHWAZ, ink = Blake.datum, size = 12.dp) else Spacer(Modifier.width(12.dp))
+                    Spacer(Modifier.width(6.dp))
                     Column(Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(g.name ?: g.identity?.takeIf { it.isNotEmpty() } ?: stringResource(R.string.blk_unnamed_gateway), style = Blake.mono(10f, FontWeight.ExtraBold), color = if (g.datum) Blake.datum else Blake.fg, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
                             g.generation?.takeIf { it.isNotEmpty() }?.let { Spacer(Modifier.width(6.dp)); Text(it.uppercase(), style = Blake.mono(6f, FontWeight.ExtraBold), color = Blake.faint, letterSpacing = 1.sp) }
                         }
-                        Row {
-                            if (g.name != null && g.identity != null) { Text(g.identity, style = Blake.mono(7f), color = Blake.faint); Spacer(Modifier.width(6.dp)) }
-                            g.accepted?.let { Text(stringResource(R.string.blk_accepted_2, it.toString()), style = Blake.mono(7f), color = Blake.faint); Spacer(Modifier.width(6.dp)) }
-                            g.connectedS?.let { Text(stringResource(R.string.blk_up, gwDur(it)), style = Blake.mono(7f), color = Blake.faint) }
-                        }
+                        // One line, trimmed at the end — three separate texts wrapped into two
+                        // lines on a 360dp screen.
+                        val detail = buildList {
+                            if (g.name != null && g.identity != null) add(g.identity)
+                            g.accepted?.let { add(stringResource(R.string.blk_accepted_2, it.toString())) }
+                            g.connectedS?.let { add(stringResource(R.string.blk_up, gwDur(it))) }
+                        }.joinToString("  ")
+                        Text(detail, style = Blake.mono(7f), color = Blake.faint, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                     Spacer(Modifier.width(6.dp))
-                    Text(g.lastShareS?.let { stringResource(R.string.blk_s_ago, it.toString()) } ?: "—", style = Blake.mono(8f), color = if (g.live) Blake.ok else Blake.faint)
+                    Text(g.lastShareS?.let { agoText(it) } ?: "—", style = Blake.mono(8f), color = if (g.live) Blake.ok else Blake.faint, maxLines = 1, softWrap = false)
                 }
             }
             Spacer(Modifier.height(4.dp))
@@ -105,3 +123,12 @@ fun FoundBlockRow(height: Int, who: String, reward: String, whenText: String, da
 }
 
 internal fun gwDur(s: Int): String = when { s < 3600 -> "${maxOf(1, s / 60)}m"; s < 86400 -> "${s / 3600}h"; else -> "${s / 86400}d ${(s % 86400) / 3600}h" }
+
+/** "12s ago" only while it is seconds; a gateway last seen two days ago used to read "141963s ago". */
+@Composable
+fun agoText(s: Int): String = when {
+    s < 60 -> stringResource(R.string.blk_s_ago, s.toString())
+    s < 3600 -> stringResource(R.string.blk_m_ago, (s / 60).toString())
+    s < 86400 -> stringResource(R.string.blk_h_ago, (s / 3600).toString())
+    else -> stringResource(R.string.blk_d_ago, (s / 86400).toString())
+}

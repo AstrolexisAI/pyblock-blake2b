@@ -91,13 +91,13 @@ fun BlakeChirpScreen() {
                 Row(Modifier.fillMaxWidth()) {
                     BlakeStat(hr(pool?.hashrate), stringResource(R.string.blk_syndicate_hashrate))
                     Spacer(Modifier.weight(1f))
-                    BlakeStat("${pool?.workers ?: 0}", "workers", Blake.fg, alignEnd = true)
+                    BlakeStat("${pool?.workers ?: 0}", stringResource(R.string.blk_workers), Blake.fg, alignEnd = true)
                 }
                 Spacer(Modifier.height(18.dp))
                 Row(Modifier.fillMaxWidth()) {
-                    BlakeStat("${pool?.blocks ?: 0}", "blocks found", Blake.fg)
+                    BlakeStat("${pool?.blocks ?: 0}", stringResource(R.string.blk_blocks_found), Blake.fg)
                     Spacer(Modifier.weight(1f))
-                    BlakeStat("${pool?.candidates ?: 0}", "candidates", Blake.ppDim, alignEnd = true)
+                    BlakeStat("${pool?.candidates ?: 0}", stringResource(R.string.blk_candidates), Blake.ppDim, alignEnd = true)
                 }
             }
 
@@ -240,7 +240,7 @@ fun BlakeChirpScreen() {
             Column(Modifier.fillMaxWidth().blakeCard()) {
                 Text(stringResource(R.string.blk_eligibility), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
                 Spacer(Modifier.height(10.dp))
-                rule(stringResource(R.string.blk_min_loyalty), pool?.minDays?.let { "$it days" } ?: "—")
+                rule(stringResource(R.string.blk_min_loyalty), pool?.minDays?.let { stringResource(R.string.blk_n_days, it.toString()) } ?: "—")
                 rule(stringResource(R.string.blk_min_power), powerStr(pool?.minPower))
                 Spacer(Modifier.height(6.dp))
                 Text(stringResource(R.string.blk_below_the_floor_you_still_mine_but_don_t),

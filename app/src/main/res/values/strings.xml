@@ -1470,4 +1470,9 @@
     <string name="blk_your_turn_in">your turn in</string>
     <string name="blk_your_workers_connect">your workers · connect</string>
     <string name="blk_not_sent_is_back_the_node_never_saw_it">NOT SENT  %1$s %2$s is back — the node never saw it</string>
+    <string name="blk_workers">workers</string>
+    <string name="blk_candidates">candidates</string>
+    <string name="blk_gateways">gateways</string>
+    <string name="blk_miners_in_window">miners in window</string>
+    <string name="blk_n_days">%1$s days</string>
 </resources>

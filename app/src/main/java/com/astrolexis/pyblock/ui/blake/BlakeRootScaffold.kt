@@ -190,8 +190,8 @@ private fun BlakeTabBar(nav: NavHostController, current: String?) {
                         Icon(tab.icon, contentDescription = stringResource(tab.label), tint = ink, modifier = Modifier.size(20.dp))
                     }
                     Spacer(Modifier.size(3.dp))
-                    Text(stringResource(tab.label), style = Blake.mono(8f, FontWeight.ExtraBold),
-                        color = if (selected) Blake.pp else Blake.ppDim, letterSpacing = 1.sp, maxLines = 1, softWrap = false)
+                    FitText(stringResource(tab.label), style = Blake.mono(8f, FontWeight.ExtraBold).copy(letterSpacing = 0.5.sp),
+                        color = if (selected) Blake.pp else Blake.ppDim, minScale = 0.5f)
                 }
             }
         }

@@ -110,13 +110,13 @@ fun BlakeWaviclesScreen() {
                 Row(Modifier.fillMaxWidth()) {
                     BlakeStat(hrGhs(stats?.hashrate?.poolGhs), stringResource(R.string.blk_pool_hashrate), Blake.wave)
                     Spacer(Modifier.weight(1f))
-                    BlakeStat("${stats?.gateways ?: 0}", "gateways", Blake.fg, alignEnd = true)
+                    BlakeStat("${stats?.gateways ?: 0}", stringResource(R.string.blk_gateways), Blake.fg, alignEnd = true)
                 }
                 Spacer(Modifier.height(18.dp))
                 Row(Modifier.fillMaxWidth()) {
-                    BlakeStat("${w?.identities ?: 0}", "miners in window", Blake.fg)
+                    BlakeStat("${w?.identities ?: 0}", stringResource(R.string.blk_miners_in_window), Blake.fg)
                     Spacer(Modifier.weight(1f))
-                    BlakeStat("${stats?.blocks?.size ?: 0}", "blocks found", Blake.ppDim, alignEnd = true)
+                    BlakeStat("${stats?.blocks?.size ?: 0}", stringResource(R.string.blk_blocks_found), Blake.ppDim, alignEnd = true)
                 }
             }
 

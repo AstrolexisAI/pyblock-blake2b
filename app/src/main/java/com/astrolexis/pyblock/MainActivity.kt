@@ -44,8 +44,11 @@ class MainActivity : ComponentActivity() {
             // 1.3+ (large text on Samsung) wrapped tab labels, headers and KPI rows into each other.
             // Text still grows a little with the setting, but no further than the layouts allow.
             val d = androidx.compose.ui.platform.LocalDensity.current
+            // iOS sets these sizes in points and ignores Dynamic Type; same here, so both apps
+            // read the same. Narrow screens scale the whole type down instead (Blake.fit).
+            com.astrolexis.pyblock.ui.blake.Blake.fit = (androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp / 400f).coerceIn(0.85f, 1f)
             androidx.compose.runtime.CompositionLocalProvider(
-                androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(d.density, d.fontScale.coerceAtMost(1.15f))
+                androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(d.density, 1f)
             ) {
             com.astrolexis.pyblock.ui.theme.LocalizedApp {
                 PyBlockTheme(paletteId = ThemeStore.effectivePaletteId) {

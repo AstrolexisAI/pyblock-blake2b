@@ -9,6 +9,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.isSpecified
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -43,9 +48,13 @@ object Blake {
     // Small text (< 12pt: labels, hints, subtitles) gets an extra flat lift so the
     // tiny mono captions stay legible on device — the whole app reads a notch larger.
     private const val SCALE = 1.18f
+    /** Width fit, set from the root: the iPhone is ~400pt wide and Android phones ~360dp, so the
+     *  same point sizes wrapped and clipped there. Below 400dp the whole type scale shrinks with
+     *  the screen (never below 0.85), so the layouts fit as they do on iOS. */
+    @Volatile var fit: Float = 1f
     fun mono(size: Float, weight: FontWeight = FontWeight.Normal): TextStyle {
         val eff = if (size < 12f) size + 1.6f else size
-        return TextStyle(fontFamily = FontFamily.Monospace, fontSize = (eff * SCALE).roundToInt().sp, fontWeight = weight)
+        return TextStyle(fontFamily = FontFamily.Monospace, fontSize = (eff * SCALE * fit).roundToInt().sp, fontWeight = weight)
     }
 
     /** BTC from sats, trailing zeros trimmed (1.50000000 → "1.5", 0 → "0"). */
@@ -72,8 +81,30 @@ fun Modifier.blakeCard(padding: Dp = 16.dp): Modifier =
  *  so the digits line up under the label edge and nothing runs off the card). */
 @Composable
 fun BlakeStat(value: String, label: String, accent: Color = Blake.pp, alignEnd: Boolean = false) {
-    Column(horizontalAlignment = if (alignEnd) androidx.compose.ui.Alignment.End else androidx.compose.ui.Alignment.Start) {
-        Text(value, style = Blake.mono(24f, FontWeight.ExtraBold), color = accent, maxLines = 1)
-        Text(label.uppercase(), style = Blake.mono(9f), color = Blake.ppDim, letterSpacing = 2.sp)
+    // Two stats share a card row; each keeps to its half of the screen so the labels shrink to
+    // fit instead of running into each other (the callers place them with a weighted spacer).
+    val half = ((androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp - 72) / 2).dp
+    Column(Modifier.widthIn(max = half), horizontalAlignment = if (alignEnd) androidx.compose.ui.Alignment.End else androidx.compose.ui.Alignment.Start) {
+        FitText(value, style = Blake.mono(24f, FontWeight.ExtraBold), color = accent, minScale = 0.6f)
+        FitText(label.uppercase(), style = Blake.mono(9f).copy(letterSpacing = 2.sp), color = Blake.ppDim, minScale = 0.65f)
     }
+}
+
+/** One line that shrinks to fit its width instead of wrapping or clipping — the iOS
+ *  `minimumScaleFactor`. Labels, tab names and card titles use it; body text does not. */
+@Composable
+fun FitText(text: String, style: TextStyle, color: Color, modifier: Modifier = Modifier, minScale: Float = 0.6f,
+            textAlign: androidx.compose.ui.text.style.TextAlign? = null) {
+    var scale by androidx.compose.runtime.remember(text, style) { androidx.compose.runtime.mutableStateOf(1f) }
+    var settled by androidx.compose.runtime.remember(text, style) { androidx.compose.runtime.mutableStateOf(false) }
+    val fitted = style.copy(
+        fontSize = style.fontSize * scale,
+        letterSpacing = if (style.letterSpacing.isSpecified) style.letterSpacing * scale else style.letterSpacing,
+    )
+    Text(text, modifier = modifier.drawWithContent { if (settled) drawContent() },
+        style = fitted, color = color, maxLines = 1, softWrap = false, textAlign = textAlign,
+        overflow = androidx.compose.ui.text.style.TextOverflow.Clip,
+        onTextLayout = { r ->
+            if (r.hasVisualOverflow && scale > minScale) scale = (scale - 0.06f).coerceAtLeast(minScale) else settled = true
+        })
 }

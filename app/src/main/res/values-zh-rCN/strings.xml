@@ -609,4 +609,9 @@
     <string name="blk_your_turn_in">轮到你还需</string>
     <string name="blk_your_workers_connect">你的 worker · 连接</string>
     <string name="blk_not_sent_is_back_the_node_never_saw_it">未发送  %1$s %2$s 已退回：节点从未收到</string>
+    <string name="blk_workers">矿工</string>
+    <string name="blk_candidates">候选块</string>
+    <string name="blk_gateways">网关</string>
+    <string name="blk_miners_in_window">窗口内矿工</string>
+    <string name="blk_n_days">%1$s 天</string>
 </resources>
