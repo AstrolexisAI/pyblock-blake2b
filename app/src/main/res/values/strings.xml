@@ -1475,4 +1475,5 @@
     <string name="blk_gateways">gateways</string>
     <string name="blk_miners_in_window">miners in window</string>
     <string name="blk_n_days">%1$s days</string>
+    <string name="blk_back_to_your_wallet_in_the_same_tx">back to your wallet · same tx</string>
 </resources>

@@ -67,9 +67,27 @@ object BlakeSpend {
         val native: Boolean,
     )
 
-    /** Outputs of [tx] that pay one of [scripts] (our own addresses — where change goes). */
+    /** Every address of ours, as output scripts. Change goes to the input's own address, but a
+     *  consolidation pays another of our addresses — that is still money staying with us. */
+    private fun ourScripts(ctx: Context): Set<String> =
+        WalletStore.wallets.value.mapNotNull { w ->
+            if (w.address.isBlank()) null
+            else runCatching { bytesToHex(Address(w.address, Network.BITCOIN).scriptPubkey().toBytes()) }.getOrNull()
+        }.toSet()
+
+    /** Outputs of [tx] that pay one of [scripts] (our own addresses — change or a send to self). */
     private fun ownOutputs(tx: Transaction, scripts: Set<String>): List<Int> =
         tx.output().mapIndexedNotNull { i, o -> if (bytesToHex(o.scriptPubkey.toBytes()) in scripts) i else null }
+
+    /** Record the broadcast so the wallet can say what is in flight even after the node stops
+     *  listing the spent coin, and mark our own outputs fork-native when every input was. */
+    private fun noteBroadcast(ctx: Context, txid: String, tx: Transaction, inputs: List<Coin>) {
+        val outs = ownOutputs(tx, ourScripts(ctx))
+        val coming = outs.sumOf { tx.output()[it].value.toSat().toLong() }
+        val inTotal = inputs.sumOf { it.valueSats }
+        BlakeBalanceStore.noteSend(txid, leaving = (inTotal - coming).coerceAtLeast(0L), coming = coming)
+        recordNative(txid, outs, inputs)
+    }
     /** After a broadcast: the change of a transaction whose inputs were ALL fork-native is itself
      *  fork-native — the tx cannot exist on the other chain. Record it so it comes back spendable,
      *  not as a "received · replay-exposed" coin the user has to unlock again. */
@@ -314,7 +332,7 @@ object BlakeSpend {
             throw e
         }
         BlakeBalanceStore.markSpent(selectedKeys, txid)   // lock inputs; released by the node's word on this txid
-        recordNative(txid, ownOutputs(tx, selected.map { it.scriptHex }.toSet()), selected)
+        noteBroadcast(ctx, txid, tx, selected)
         return txid
     }
 
@@ -396,7 +414,7 @@ object BlakeSpend {
 
         val txid = BlakeApi.pushTx(bytesToHex(tx.serialize()))
         BlakeBalanceStore.markSpent(setOf(designated.key), txid)
-        recordNative(txid, ownOutputs(tx, setOf(designated.scriptHex)), listOf(designated))
+        noteBroadcast(ctx, txid, tx, listOf(designated))
         com.astrolexis.pyblock.data.crypto.PaymentCode.markNotified(ctx, peerCode)
         return txid
     }
@@ -496,7 +514,7 @@ object BlakeSpend {
             val hopTxid = BlakeApi.pushTx(bytesToHex(tx.serialize()))
             if (idx == 0) {
                 BlakeBalanceStore.markSpent(selectedKeys, hopTxid)   // tx0 spent the user's coins → lock them until the node answers
-                recordNative(hopTxid, ownOutputs(tx, selected.map { it.scriptHex }.toSet()), selected)
+                noteBroadcast(ctx, hopTxid, tx, selected)
             }
             if (idx < builtTxs.size - 1) delay(1_500)
         }

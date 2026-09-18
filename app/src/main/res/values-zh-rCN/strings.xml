@@ -614,4 +614,5 @@
     <string name="blk_gateways">网关</string>
     <string name="blk_miners_in_window">窗口内矿工</string>
     <string name="blk_n_days">%1$s 天</string>
+    <string name="blk_back_to_your_wallet_in_the_same_tx">回到你的钱包 · 同一笔交易</string>
 </resources>

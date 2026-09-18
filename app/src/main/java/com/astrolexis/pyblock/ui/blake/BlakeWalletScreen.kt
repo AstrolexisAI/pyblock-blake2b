@@ -233,7 +233,13 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit, onPaid: (peer: String, txid: S
                 // Mempool state, said plainly: the tx has been SEEN by the node but no block holds it
                 // yet, so it has 0 confirmations. One line per direction, amount first.
                 val pendInTotal = pendingIn.values.sum()
-                val pendOutTotal = BlakeBalanceStore.pendingOutTotal()
+                // While the node still lists the coin we are spending, its whole value is what is in
+                // flight; once the node drops it (it only lists confirmed, unspent outputs) the
+                // broadcast record is all we have — and without it the balance read a bare 0.
+                val inFlightSends = BlakeBalanceStore.inFlight.collectAsState().value
+                val marked = BlakeBalanceStore.pendingOutTotal()
+                val pendOutTotal = if (marked > 0) marked else inFlightSends.sumOf { it.leaving + it.coming }
+                val comingBack = if (marked > 0) 0L else inFlightSends.sumOf { it.coming }
                 if (pendInTotal > 0 || pendOutTotal > 0) {
                     Spacer(Modifier.height(4.dp))
                     if (pendInTotal > 0) Row(verticalAlignment = Alignment.CenterVertically) {
@@ -245,6 +251,12 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit, onPaid: (peer: String, txid: S
                         Box(Modifier.size(5.dp).background(Blake.warn, CircleShape)); Spacer(Modifier.width(6.dp))
                         Text("−${Blake.btc(pendOutTotal)} ${Blake.RUNE}", style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.warn); Spacer(Modifier.width(6.dp))
                         Text(stringResource(R.string.blk_sending_in_mempool_0_conf), style = Blake.mono(8f), color = Blake.warn)
+                    }
+                    // A consolidation pays us back: say so, or the wallet looks empty until the block.
+                    if (comingBack > 0) Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(5.dp).background(Blake.warn, CircleShape)); Spacer(Modifier.width(6.dp))
+                        Text("+${Blake.btc(comingBack)} ${Blake.RUNE}", style = Blake.mono(9f, FontWeight.ExtraBold), color = Blake.warn); Spacer(Modifier.width(6.dp))
+                        Text(stringResource(R.string.blk_back_to_your_wallet_in_the_same_tx), style = Blake.mono(8f), color = Blake.warn)
                     }
                     Text(stringResource(R.string.blk_seen_by_the_node_not_yet_in_a_block), style = Blake.mono(7f), color = Blake.faint)
                 }

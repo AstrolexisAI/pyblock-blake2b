@@ -101,6 +101,24 @@ object BlakeBalanceStore {
         persistInFlight()
     }
     @Serializable data class LocalMark(val at: Long, val txid: String?)
+    /** A send we broadcast, kept until the node confirms it or says it never saw it. `leaving` is
+     *  what actually goes away, `coming` what pays our own addresses (change, or the whole amount
+     *  when consolidating to ourselves). Without this the balance read a bare 0 between the node
+     *  dropping the spent coin and the block landing — the "balance is messed up" report. */
+    @Serializable data class InFlightSend(val txid: String, val at: Long, val leaving: Long, val coming: Long)
+    @Serializable private data class InFlightFile2(val sends: List<InFlightSend>)
+    private val _inFlight = MutableStateFlow<List<InFlightSend>>(emptyList())
+    val inFlight: StateFlow<List<InFlightSend>> = _inFlight.asStateFlow()
+    fun noteSend(txid: String, leaving: Long, coming: Long) {
+        if (txid.isBlank()) return
+        _inFlight.value = _inFlight.value.filter { it.txid != txid } + InFlightSend(txid, System.currentTimeMillis(), leaving, coming)
+        persistInFlight()
+    }
+    private fun dropSend(txid: String) {
+        if (_inFlight.value.none { it.txid == txid }) return
+        _inFlight.value = _inFlight.value.filter { it.txid != txid }
+        persistInFlight()
+    }
     @Serializable private data class InFlightFile(val marks: Map<String, LocalMark>)
     /** The marks outlive the process. They used to live only in memory, so a send followed by the
      *  app being killed came back with the coin unlocked, no node asked — the "reverts to locked"
@@ -109,11 +127,20 @@ object BlakeBalanceStore {
     private fun persistInFlight() {
         val p = inFlightPrefs ?: return
         val snap = synchronized(localSpent) { HashMap(localSpent) }
-        p.edit().putString("marks", Json.encodeToString(InFlightFile.serializer(), InFlightFile(snap))).apply()
+        p.edit()
+            .putString("marks", Json.encodeToString(InFlightFile.serializer(), InFlightFile(snap)))
+            .putString("sends", Json.encodeToString(InFlightFile2.serializer(), InFlightFile2(_inFlight.value)))
+            .apply()
     }
     private fun loadInFlight(ctx: Context) {
         if (inFlightPrefs != null) return
         val p = ctx.applicationContext.getSharedPreferences("blake_inflight", Context.MODE_PRIVATE); inFlightPrefs = p
+        p.getString("sends", null)?.let { raw2 ->
+            runCatching { Json.decodeFromString(InFlightFile2.serializer(), raw2).sends }.getOrNull()?.let { list ->
+                val now2 = System.currentTimeMillis()
+                _inFlight.value = list.filter { now2 - it.at < LOCAL_SPENT_HARD_CAP_MS }
+            }
+        }
         val raw = p.getString("marks", null) ?: return
         val marks = runCatching { Json.decodeFromString(InFlightFile.serializer(), raw).marks }.getOrNull() ?: return
         val now = System.currentTimeMillis()
@@ -228,6 +255,7 @@ object BlakeBalanceStore {
             var st = synchronized(txChecked) { txChecked[txid] }
             if (st == null || now - st.first > 60_000) BlakeApi.txStatus(txid)?.let { fresh -> st = now to fresh; synchronized(txChecked) { txChecked[txid] = st!! } }
             val status = st?.second ?: continue
+            if (!status.inMempool) dropSend(txid)   // confirmed → the coins are in the set again; unknown → gone
             if (status.unknown) {
                 lost[txid] = allUtxos().filter { it.id in marks.keys }.sumOf { it.value }
                 synchronized(localSpent) { marks.keys.forEach { localSpent.remove(it) } }
@@ -237,6 +265,15 @@ object BlakeBalanceStore {
         val local = synchronized(localSpent) {
             localSpent.entries.removeAll { (_, m) -> if (m.txid != null) now - m.at >= LOCAL_SPENT_HARD_CAP_MS else now - m.at >= LOCAL_SPENT_TTL_MS }
             localSpent.keys.toSet()
+        }
+        // A send whose marks are gone (its coins were mined) still needs its own answer before the
+        // pending line disappears, so ask about any txid we are still showing.
+        for (s in _inFlight.value) {
+            if (now - s.at < 90_000 || synchronized(localSpent) { localSpent.values.any { it.txid == s.txid } }) continue
+            var st = synchronized(txChecked) { txChecked[s.txid] }
+            if (st == null || now - st.first > 60_000) BlakeApi.txStatus(s.txid)?.let { fresh -> st = now to fresh; synchronized(txChecked) { txChecked[s.txid] = st!! } }
+            val status = st?.second ?: continue
+            if (!status.inMempool) dropSend(s.txid)
         }
         persistInFlight()
         lost.values.forEach { sats -> com.astrolexis.pyblock.ui.blake.WalletEvents.post(com.astrolexis.pyblock.ui.blake.WalletEvents.Kind.SendLost(sats)) }
