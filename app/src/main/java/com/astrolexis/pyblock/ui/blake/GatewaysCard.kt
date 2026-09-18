@@ -43,10 +43,11 @@ fun GatewaysCard(rows: List<GatewayRow>, accent: Color = Blake.datum, registered
     Column(Modifier.fillMaxWidth().blakeCard()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             RuneGlyph(Rune.EHWAZ, ink = Blake.datum, size = 13.dp); Spacer(Modifier.width(6.dp))
-            Text(stringResource(R.string.blk_gateways_connected), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp)
+            Text(stringResource(R.string.blk_gateways_connected), style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.ppDim, letterSpacing = 3.sp,
+                maxLines = 1, modifier = Modifier.weight(1f, fill = false))
             Spacer(Modifier.width(6.dp)); Text("${rows.size}", style = Blake.mono(11f, FontWeight.ExtraBold), color = accent)
             Spacer(Modifier.weight(1f))
-            registered?.takeIf { it > 0 }?.let { Text(stringResource(R.string.blk_registered, it.toString()), style = Blake.mono(7f), color = Blake.faint); Spacer(Modifier.width(6.dp)) }
+            registered?.takeIf { it > 0 }?.let { Text(stringResource(R.string.blk_registered, it.toString()), style = Blake.mono(7f), color = Blake.faint, maxLines = 1, softWrap = false); Spacer(Modifier.width(6.dp)) }
             primeHashrateGhs?.takeIf { it > 0 }?.let { Text(BlakeRentals.th(it / 1000), style = Blake.mono(8f, FontWeight.ExtraBold), color = Blake.datum) }
         }
         Spacer(Modifier.height(8.dp))

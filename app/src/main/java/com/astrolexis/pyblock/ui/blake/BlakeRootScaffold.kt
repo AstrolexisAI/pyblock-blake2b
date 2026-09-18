@@ -176,8 +176,9 @@ private fun BlakeTabBar(nav: NavHostController, current: String?) {
                                 launchSingleTop = true; restoreState = true
                             }
                         }
+                        .weight(1f)   // six tabs share the width; fixed padding overflowed on narrow or large-text screens
                         .background(if (selected) Blake.pp.copy(alpha = 0.14f) else androidx.compose.ui.graphics.Color.Transparent, RoundedCornerShape(20.dp))
-                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                        .padding(horizontal = 4.dp, vertical = 8.dp),
                 ) {
                     // The products use their own runes (drawn), not system icons: Raidho, Ansuz, Dagaz.
                     val ink = if (selected) Blake.pp else Blake.ppDim
@@ -190,7 +191,7 @@ private fun BlakeTabBar(nav: NavHostController, current: String?) {
                     }
                     Spacer(Modifier.size(3.dp))
                     Text(stringResource(tab.label), style = Blake.mono(8f, FontWeight.ExtraBold),
-                        color = if (selected) Blake.pp else Blake.ppDim, letterSpacing = 1.sp)
+                        color = if (selected) Blake.pp else Blake.ppDim, letterSpacing = 1.sp, maxLines = 1, softWrap = false)
                 }
             }
         }

@@ -204,7 +204,7 @@ object BlakeApi {
     /** One connected participant on the CHIRP syndicate (server `mode=workers`). */
     @Serializable
     data class ChirpWorker(
-        val name: String? = null,                                   // worker label or masked payout address
+        @Serializable(with = LossyString::class) val name: String? = null,                                   // worker label or masked payout address
         @SerialName("hashrate_ths") val hashrateThs: Double? = null,
         val connected: Boolean = true,
         @SerialName("last_share") val lastShare: Long? = null,      // epoch seconds
@@ -221,12 +221,26 @@ object BlakeApi {
     /** The syndicate registry (`mode=miners`): tenure and power per address — what the draw weighs.
      *  The workers list only knows who is on the house stratum right now. */
     @Serializable
-    data class ChirpMiner(val address: String? = null, val days: Double? = null, val power: Double? = null,
+    data class ChirpMiner(@Serializable(with = LossyString::class) val address: String? = null, val days: Double? = null, val power: Double? = null,
                           val weight: Double? = null, val eligible: Boolean? = null, @SerialName("last_seen") val lastSeen: Long? = null,
                           val via: String? = null, @SerialName("prime_last_share_s") val primeLastShareS: Int? = null) {
         val onPrime get() = via == "prime" || via == "both"
     }
 
+
+    /** A worker name or address the server sends as a JSON number when it is all digits (a worker
+     *  called "123"). One such row used to fail the whole list's decode — CHIRP showed nobody. */
+    object LossyString : kotlinx.serialization.KSerializer<String?> {
+        override val descriptor = kotlinx.serialization.descriptors.PrimitiveSerialDescriptor("LossyString", kotlinx.serialization.descriptors.PrimitiveKind.STRING).let {
+            kotlinx.serialization.descriptors.SerialDescriptor("LossyString?", it)
+        }
+        override fun deserialize(decoder: kotlinx.serialization.encoding.Decoder): String? {
+            val el = (decoder as? kotlinx.serialization.json.JsonDecoder)?.decodeJsonElement() ?: return decoder.decodeString()
+            val p = el as? kotlinx.serialization.json.JsonPrimitive ?: return null
+            return if (p is kotlinx.serialization.json.JsonNull) null else p.content
+        }
+        override fun serialize(encoder: kotlinx.serialization.encoding.Encoder, value: String?) { if (value == null) encoder.encodeNull() else encoder.encodeString(value) }
+    }
 
     // ---- Transaction status ----
     /** What Node B says about a transaction we broadcast (`api/tx_status.php`): in its mempool,

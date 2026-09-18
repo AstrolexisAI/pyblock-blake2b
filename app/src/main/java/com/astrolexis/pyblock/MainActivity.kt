@@ -40,11 +40,19 @@ class MainActivity : ComponentActivity() {
                 EntitlementsStore.refresh()   // device account (or linked wallet)
                 ThemeStore.enforce(EntitlementsStore.isWhale)
             }
+            // The whole UI is set in fixed mono sizes, like a terminal. A system font scale of
+            // 1.3+ (large text on Samsung) wrapped tab labels, headers and KPI rows into each other.
+            // Text still grows a little with the setting, but no further than the layouts allow.
+            val d = androidx.compose.ui.platform.LocalDensity.current
+            androidx.compose.runtime.CompositionLocalProvider(
+                androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(d.density, d.fontScale.coerceAtMost(1.15f))
+            ) {
             com.astrolexis.pyblock.ui.theme.LocalizedApp {
                 PyBlockTheme(paletteId = ThemeStore.effectivePaletteId) {
                     // Sober BLAKE2b look — no arcade CRT boot/scanlines.
                     BlakeRootScaffold()
                 }
+            }
             }
         }
     }
