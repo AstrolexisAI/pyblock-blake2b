@@ -168,6 +168,10 @@ object BlakeApi {
         /** Node's word for a non-coinbase coin: its outpoint does NOT exist on the SHA-256 chain, so
          *  a spend of it cannot be replayed. Only ever unlocks; absent or false keeps today's lock. */
         @SerialName("fork_native") val forkNative: Boolean = false,
+        /** A transaction in the node's mempool already spends this coin. The confirmed set still
+         *  lists it (that set is confirmed-only), so without this the wallet would offer it again
+         *  and the second spend would be refused — a send that silently never goes out. */
+        @SerialName("spent_in_mempool") val spentInMempool: Boolean = false,
     ) {
         val id: String get() = "$txid:$vout"
     }
@@ -496,8 +500,13 @@ object BlakeApi {
     fun incomingSats(address: String, txHex: String): Long {
         val dec = com.astrolexis.pyblock.data.crypto.VanityCrypto.base58Decode(address) ?: return 0
         if (dec.size != 25) return 0
+        return incomingSatsToScript(byteArrayOf(0x76, 0xa9.toByte(), 0x14) + dec.copyOfRange(1, 21) + byteArrayOf(0x88.toByte(), 0xac.toByte()), txHex)
+    }
+
+    /** Sats an unconfirmed tx pays to one output script of ours. Only the legacy form could be
+     *  rebuilt from a base58 string, so a bech32 wallet never saw an incoming 0-conf payment. */
+    fun incomingSatsToScript(spk: ByteArray, txHex: String): Long {
         val raw = hexBytes(txHex) ?: return 0
-        val spk = byteArrayOf(0x76, 0xa9.toByte(), 0x14) + dec.copyOfRange(1, 21) + byteArrayOf(0x88.toByte(), 0xac.toByte())
         val p = TxParser(raw)
         if (p.take(4) == null) return 0
         p.skipSegwitMarker()

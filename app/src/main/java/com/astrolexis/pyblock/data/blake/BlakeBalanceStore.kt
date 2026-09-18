@@ -166,6 +166,12 @@ object BlakeBalanceStore {
     /** All UTXOs across every wallet, flattened. */
     fun allUtxos(): List<BlakeApi.Utxo> = _utxos.value.values.flatten()
 
+    /** Cached output script per address (BDK parses both forms; an unparsable address gives []). */
+    private val scriptCache = HashMap<String, ByteArray>()
+    @Synchronized fun scriptFor(address: String): ByteArray = scriptCache.getOrPut(address) {
+        runCatching { org.bitcoindevkit.Address(address, org.bitcoindevkit.Network.BITCOIN).scriptPubkey().toBytes() }.getOrDefault(ByteArray(0))
+    }
+
     /** Confirmed balance = every UTXO's value (server returns confirmed only). */
     fun totalSats(): Long = allUtxos().sumOf { it.value }
 
@@ -174,7 +180,7 @@ object BlakeBalanceStore {
     fun spendableSats(): Long {
         val t = _tip.value
         val spent = _pendingSpentIds.value
-        return allUtxos().filter { BlakeFork.isEffectivelySpendable(it, t) && it.id !in spent }.sumOf { it.value }
+        return allUtxos().filter { BlakeFork.isEffectivelySpendable(it, t) && it.id !in spent && !it.spentInMempool }.sumOf { it.value }
     }
 
     /** Locked = everything not safely spendable (pre-fork/shared or immature coinbase). */
@@ -231,7 +237,9 @@ object BlakeBalanceStore {
                 val key = tx.txid + w.address
                 if (key in seen) continue
                 seen.add(key)
-                val sats = BlakeApi.incomingSats(w.address, tx.hex)
+                // By script, not by address: only the legacy form could be rebuilt from a base58
+                // string, so a bech32 wallet never saw an incoming 0-conf payment at all.
+                val sats = BlakeApi.incomingSatsToScript(scriptFor(w.address), tx.hex)
                 if (sats > 0) {
                     inSats[w.address] = (inSats[w.address] ?: 0) + sats
                     items.add(PendingItem(key, true, sats, w.address, tx.seen ?: (System.currentTimeMillis() / 1000)))
@@ -278,7 +286,9 @@ object BlakeBalanceStore {
         persistInFlight()
         lost.values.forEach { sats -> com.astrolexis.pyblock.ui.blake.WalletEvents.post(com.astrolexis.pyblock.ui.blake.WalletEvents.Kind.SendLost(sats)) }
         _pendingIn.value = inSats
-        _pendingSpentIds.value = spent + local
+        // The node's own word: a tx in its mempool already spends this coin. Our marks can be gone
+        // (a reinstall, another device), so this is what stops us offering it a second time.
+        _pendingSpentIds.value = spent + local + allUtxos().filter { it.spentInMempool }.map { it.id }
         _pendingActivity.value = items.sortedByDescending { it.seen }
     }
 

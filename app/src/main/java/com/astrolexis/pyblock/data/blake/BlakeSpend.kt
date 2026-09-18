@@ -178,6 +178,7 @@ object BlakeSpend {
                 if (u.id in spent) continue                          // don't re-spend an in-flight coin
                 // Mature post-fork coinbase (safe) OR a replay-locked coin the user chose to unlock.
                 if (!BlakeFork.isEffectivelySpendable(u, tip)) continue
+                if (u.spentInMempool) continue                       // the node already has a tx spending it
                 val prev = runCatching { Transaction(hexToBytes(u.hex)) }.getOrNull() ?: continue
                 // FUND-CRITICAL: `coinbase`, `height`, `value` and `scriptHex` are all SERVER-supplied,
                 // and the whole replay-safety model rests on them. Verify every claim against the
