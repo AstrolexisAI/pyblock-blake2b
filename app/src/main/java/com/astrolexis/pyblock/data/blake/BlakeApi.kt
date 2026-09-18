@@ -59,7 +59,36 @@ object BlakeApi {
         val operational: Boolean? = null,
         val rc: String? = null,
         @SerialName("block_height") val blockHeight: Int? = null,
+        @SerialName("coinbase_maturity") val coinbaseMaturity: CoinbaseMaturity? = null,
     )
+
+    /** The Bitcoin BLAKE2b client's proposed longer coinbase maturity, as the server reads it. Our
+     *  payouts are written per-miner inside the coinbase, so if the rule lands it is every hasher's
+     *  sats that sit still, not a pool fee — people would open the wallet and think it broke. The
+     *  server keeps the heights and an interlock; the app only reports what it says.
+     *
+     *  The gate is [shown], and it fails the OTHER way round from the RC banner: no field, no answer
+     *  or `shown == false` means say NOTHING. A false "your coins are frozen for 48 days" does more
+     *  damage than staying quiet — that already happened once. */
+    @Serializable
+    data class CoinbaseMaturity(
+        val status: String? = null,            // off | announced | in_force | expired
+        val shown: Boolean? = null,
+        val armed: Boolean? = null,
+        val tip: Int? = null,
+        @SerialName("start_height") val startHeight: Int? = null,      // covered from here (retroactive)
+        @SerialName("enforce_height") val enforceHeight: Int? = null,
+        @SerialName("release_height") val releaseHeight: Int? = null,  // everything unlocks at once
+        @SerialName("maturity_blocks") val maturityBlocks: Int? = null,
+        @SerialName("blocks_to_enforce") val blocksToEnforce: Int? = null,
+        @SerialName("blocks_to_release") val blocksToRelease: Int? = null,
+        @SerialName("eta_enforce_ts") val etaEnforceTs: Long? = null,  // estimated by pace — never a promise
+        @SerialName("eta_release_ts") val etaReleaseTs: Long? = null,
+        @SerialName("policy_unresolved") val policyUnresolved: Boolean? = null,
+    ) {
+        val visible get() = shown == true && (status == "announced" || status == "in_force")
+        val inForce get() = shown == true && status == "in_force"
+    }
 
     @Serializable
     data class Block(

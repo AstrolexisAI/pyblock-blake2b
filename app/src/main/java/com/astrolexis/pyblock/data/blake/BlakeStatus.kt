@@ -17,12 +17,18 @@ object BlakeStatus {
     val blockHeight: StateFlow<Int> = _blockHeight.asStateFlow()
     private val _loaded = MutableStateFlow(false)
     val loaded: StateFlow<Boolean> = _loaded.asStateFlow()
+    /** The long-coinbase-maturity state, or null while the server says nothing. Null shows nothing. */
+    private val _maturity = MutableStateFlow<BlakeApi.CoinbaseMaturity?>(null)
+    val maturity: StateFlow<BlakeApi.CoinbaseMaturity?> = _maturity.asStateFlow()
 
     suspend fun refresh() {
         val s = BlakeApi.status() ?: return
         _operational.value = s.operational ?: false
         _rc.value = s.rc
         _blockHeight.value = s.blockHeight ?: 0
+        // Only a state the server marks as shown reaches the UI; anything else clears it.
+        _maturity.value = s.coinbaseMaturity?.takeIf { it.visible }
+        CoinbasePolicy.update(s.coinbaseMaturity)
         _loaded.value = true
     }
 }

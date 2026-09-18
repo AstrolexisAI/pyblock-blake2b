@@ -1472,4 +1472,11 @@
     <string name="blk_miners_in_window">miner in finestra</string>
     <string name="blk_n_days">%1$s giorni</string>
     <string name="blk_back_to_your_wallet_in_the_same_tx">torna al tuo portafoglio · stessa tx</string>
+    <string name="blk_locked_unlocks_at_block">bloccata · si sblocca al blocco %1$s</string>
+    <string name="blk_rewards_are_held_by_the_client">IL CLIENT TRATTIENE LE RICOMPENSE</string>
+    <string name="blk_coinbase_maturity_is_changing">LA MATURITÀ COINBASE STA CAMBIANDO</string>
+    <string name="blk_mined_rewards_cannot_move_until_block">Le ricompense minate non si possono muovere fino al blocco %1$s%2$s.</string>
+    <string name="blk_blocks_to_go">Mancano %1$s blocchi.</string>
+    <string name="blk_from_block_rewards_mined_from_block_onward">Dal blocco %1$s%2$s, le ricompense minate dal blocco %3$s in poi restano bloccate fino al blocco %4$s%5$s.</string>
+    <string name="blk_a_rule_of_the_bitcoin_blake2b_client_not">È una regola del client Bitcoin BLAKE2b, non della pool. Quello che ti spetta non cambia: cambia solo quanto resta fermo prima di muoversi.</string>
 </resources>

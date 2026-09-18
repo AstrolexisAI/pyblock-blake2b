@@ -1472,4 +1472,11 @@
     <string name="blk_miners_in_window">mineros en ventana</string>
     <string name="blk_n_days">%1$s días</string>
     <string name="blk_back_to_your_wallet_in_the_same_tx">vuelve a tu billetera · misma tx</string>
+    <string name="blk_locked_unlocks_at_block">bloqueada · se libera en el bloque %1$s</string>
+    <string name="blk_rewards_are_held_by_the_client">EL CLIENTE RETIENE LAS RECOMPENSAS</string>
+    <string name="blk_coinbase_maturity_is_changing">CAMBIA LA MADUREZ DE COINBASE</string>
+    <string name="blk_mined_rewards_cannot_move_until_block">Las recompensas minadas no se pueden mover hasta el bloque %1$s%2$s.</string>
+    <string name="blk_blocks_to_go">Faltan %1$s bloques.</string>
+    <string name="blk_from_block_rewards_mined_from_block_onward">Desde el bloque %1$s%2$s, las recompensas minadas a partir del bloque %3$s quedan bloqueadas hasta el bloque %4$s%5$s.</string>
+    <string name="blk_a_rule_of_the_bitcoin_blake2b_client_not">Es una regla del cliente Bitcoin BLAKE2b, no de la pool. Lo que te corresponde no cambia: cambia cuánto tiempo espera antes de moverse.</string>
 </resources>

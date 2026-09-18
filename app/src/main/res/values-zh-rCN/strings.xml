@@ -615,4 +615,11 @@
     <string name="blk_miners_in_window">窗口内矿工</string>
     <string name="blk_n_days">%1$s 天</string>
     <string name="blk_back_to_your_wallet_in_the_same_tx">回到你的钱包 · 同一笔交易</string>
+    <string name="blk_locked_unlocks_at_block">锁定 · 在区块 %1$s 解锁</string>
+    <string name="blk_rewards_are_held_by_the_client">客户端锁定了奖励</string>
+    <string name="blk_coinbase_maturity_is_changing">COINBASE 成熟期即将变更</string>
+    <string name="blk_mined_rewards_cannot_move_until_block">挖到的奖励在区块 %1$s%2$s 之前无法转移。</string>
+    <string name="blk_blocks_to_go">还差 %1$s 个区块。</string>
+    <string name="blk_from_block_rewards_mined_from_block_onward">从区块 %1$s%2$s 起，自区块 %3$s 之后挖到的奖励将锁定至区块 %4$s%5$s。</string>
+    <string name="blk_a_rule_of_the_bitcoin_blake2b_client_not">这是 Bitcoin BLAKE2b 客户端的规则，不是矿池的规则。你应得的不变，变的只是它要等多久才能动。</string>
 </resources>

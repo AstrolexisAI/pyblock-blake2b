@@ -33,6 +33,9 @@ object BlakeFork {
 
     /** Mature post-fork coinbase → safe to spend (non-replayable). */
     fun isSpendable(u: BlakeApi.Utxo, tip: Int): Boolean {
+        // A consensus hold from the client itself, when that rule is in force: the coin cannot move
+        // until its release block, no matter how mature it is by the old count.
+        if (CoinbasePolicy.heldUntil(u, tip) != null) return false
         if (u.height < FORK_HEIGHT) return false
         // Not coinbase: only if we proved it fork-native ourselves — our own change from a spend
         // whose inputs were all fork-native (see ForkNativeStore). Any other received coin is
@@ -44,6 +47,7 @@ object BlakeFork {
     /** Human reason a coin is still locked (null if spendable). */
     fun lockReason(u: BlakeApi.Utxo, tip: Int): String? {
         if (isSpendable(u, tip)) return null
+        CoinbasePolicy.heldUntil(u, tip)?.let { return com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_locked_unlocks_at_block, it.toString()) }
         if (u.height < FORK_HEIGHT) return com.astrolexis.pyblock.data.store.AppStrings.get(R.string.blk_pre_fork_replay_exposed)
         // Post-fork but NOT our own mined coinbase (a received/incoming coin) → replay-exposed
         // (the fork has no replay protection), so locked. NOT a pre-fork coin.
@@ -56,6 +60,8 @@ object BlakeFork {
      *  replay risk). Immature coinbase is a consensus lock — NOT unlockable, must wait to mature. */
     fun isReplayLocked(u: BlakeApi.Utxo, tip: Int): Boolean {
         if (isSpendable(u, tip)) return false
+        // Not a policy of ours to waive: the chain would refuse the spend.
+        if (CoinbasePolicy.heldUntil(u, tip) != null) return false
         return u.height < FORK_HEIGHT || !u.coinbase
     }
 

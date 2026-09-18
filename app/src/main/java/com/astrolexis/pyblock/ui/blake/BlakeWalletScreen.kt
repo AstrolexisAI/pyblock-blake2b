@@ -262,6 +262,42 @@ fun BlakeWalletScreen(onLaunchVanity: () -> Unit, onPaid: (peer: String, txid: S
                 }
             }
 
+            // The client's longer coinbase maturity, only while the server says to show it. Plain
+            // about whose rule it is: the pool holds nothing, the reward is already written to the
+            // miner's own address inside the coinbase — what changes is how long it sits.
+            BlakeStatus.maturity.collectAsState().value?.let { m ->
+                Spacer(Modifier.height(16.dp))
+                Column(Modifier.fillMaxWidth().border(1.dp, Blake.warn.copy(alpha = 0.5f), RectangleShape).padding(10.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("⏳", style = Blake.mono(11f, FontWeight.ExtraBold), color = Blake.warn); Spacer(Modifier.width(8.dp))
+                        FitText(stringResource(if (m.inForce) R.string.blk_rewards_are_held_by_the_client else R.string.blk_coinbase_maturity_is_changing),
+                            style = Blake.mono(9f, FontWeight.ExtraBold).copy(letterSpacing = 1.sp), color = Blake.warn, minScale = 0.7f)
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    if (m.inForce) {
+                        m.releaseHeight?.let {
+                            Text(stringResource(R.string.blk_mined_rewards_cannot_move_until_block, it.toString(), etaSuffix(m.etaReleaseTs)),
+                                style = Blake.mono(8f), color = Blake.fg)
+                        }
+                        m.blocksToRelease?.takeIf { it > 0 }?.let {
+                            Text(stringResource(R.string.blk_blocks_to_go, it.toString()), style = Blake.mono(8f), color = Blake.faint)
+                        }
+                    } else {
+                        val enf = m.enforceHeight; val start = m.startHeight; val rel = m.releaseHeight
+                        if (enf != null && start != null && rel != null) {
+                            Text(stringResource(R.string.blk_from_block_rewards_mined_from_block_onward,
+                                enf.toString(), etaSuffix(m.etaEnforceTs), start.toString(), rel.toString(), etaSuffix(m.etaReleaseTs)),
+                                style = Blake.mono(8f), color = Blake.fg)
+                        }
+                        m.blocksToEnforce?.takeIf { it > 0 }?.let {
+                            Text(stringResource(R.string.blk_blocks_to_go, it.toString()), style = Blake.mono(8f), color = Blake.faint)
+                        }
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Text(stringResource(R.string.blk_a_rule_of_the_bitcoin_blake2b_client_not), style = Blake.mono(7f), color = Blake.faint)
+                }
+            }
+
             // One primary action and a list of places to go: identical rows, hairlines, no boxes.
             if (wallets.isNotEmpty()) {
                 Spacer(Modifier.height(22.dp))
@@ -591,4 +627,11 @@ private fun commandRow(glyph: String, name: String, trailing: String, onClick: (
         Spacer(Modifier.width(10.dp))
         Text("›", style = Blake.mono(14f), color = Blake.ppDim)
     }
+}
+
+/** Estimated from the average block pace, so it is always shown as an approximation. */
+private fun etaSuffix(ts: Long?): String {
+    if (ts == null || ts <= 0) return ""
+    val f = java.text.SimpleDateFormat("d MMM", java.util.Locale.getDefault())
+    return " (~" + f.format(java.util.Date(ts * 1000)) + ")"
 }

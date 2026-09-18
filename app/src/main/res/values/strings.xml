@@ -1476,4 +1476,11 @@
     <string name="blk_miners_in_window">miners in window</string>
     <string name="blk_n_days">%1$s days</string>
     <string name="blk_back_to_your_wallet_in_the_same_tx">back to your wallet · same tx</string>
+    <string name="blk_locked_unlocks_at_block">locked · unlocks at block %1$s</string>
+    <string name="blk_rewards_are_held_by_the_client">REWARDS ARE HELD BY THE CLIENT</string>
+    <string name="blk_coinbase_maturity_is_changing">COINBASE MATURITY IS CHANGING</string>
+    <string name="blk_mined_rewards_cannot_move_until_block">Mined rewards cannot move until block %1$s%2$s.</string>
+    <string name="blk_blocks_to_go">%1$s blocks to go.</string>
+    <string name="blk_from_block_rewards_mined_from_block_onward">From block %1$s%2$s, rewards mined from block %3$s onward stay locked until block %4$s%5$s.</string>
+    <string name="blk_a_rule_of_the_bitcoin_blake2b_client_not">A rule of the Bitcoin BLAKE2b client, not of the pool. What you are owed does not change — only how long it sits before it moves.</string>
 </resources>
