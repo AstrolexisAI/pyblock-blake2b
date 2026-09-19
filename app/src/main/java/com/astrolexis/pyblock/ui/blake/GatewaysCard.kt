@@ -33,14 +33,21 @@ data class GatewayRow(val id: String, val name: String?, val identity: String?, 
                       val accepted: Int?, val connectedS: Int?, val lastShareS: Int?, val datum: Boolean,
                       /** A gateway that has never sent a share reports `last_share_s: 0`, which read as
                        *  "0s ago" and lit the live dot — the opposite of the truth. Zero means never. */
-                      val everShared: Boolean) {
+                      val everShared: Boolean,
+                      /** One of the pool's own gateways, the door for miners who run no node. Its
+                       *  `identity` is not its owner: the Prime overwrites that field with whoever sent
+                       *  the last accepted share, so it changes every few seconds. */
+                      val house: Boolean = false) {
     val live get() = everShared && (lastShareS ?: Int.MAX_VALUE) <= 600
     companion object {
         fun of(r: BlakeApi.PrimeRunner) = GatewayRow((r.gateway ?: "") + (r.identity ?: ""), r.name?.takeIf { it.isNotEmpty() }, r.identity, r.generation,
-            r.accepted, r.connectedS, r.lastShareS, true, (r.accepted ?: 0) > 0 || (r.lastShareS ?: 0) > 0)
+            r.accepted, r.connectedS, r.lastShareS, true, (r.accepted ?: 0) > 0 || (r.lastShareS ?: 0) > 0, false)
         fun of(c: BlakeApi.WClient) = GatewayRow((c.gateway ?: "") + (c.identity ?: ""), c.name?.takeIf { it.isNotEmpty() }, c.identity,
             c.generation ?: c.userAgent?.substringBefore('/'), c.accepted, c.connectedS, c.lastShareS, c.onDatum,
-            (c.lastShareTs ?: 0L) > 0L || (c.accepted ?: 0) > 0)
+            (c.lastShareTs ?: 0L) > 0L || (c.accepted ?: 0) > 0,
+            // The server marks its own gateways two ways today: the fee path it charges them
+            // (loopback → the house rate) and the name it already fills in for them.
+            c.feePath == "stratum" || c.name == "PyBLØCK")
     }
 }
 
@@ -95,12 +102,14 @@ fun GatewaysCard(rows: List<GatewayRow>, accent: Color = Blake.datum, registered
                     Column(Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(g.name ?: g.identity?.takeIf { it.isNotEmpty() } ?: stringResource(R.string.blk_unnamed_gateway), style = Blake.mono(10f, FontWeight.ExtraBold), color = if (datum) Blake.datum else Blake.fg, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                            if (g.house) { Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.blk_house), style = Blake.mono(6f, FontWeight.ExtraBold), color = Blake.pp, letterSpacing = 1.sp) }
                             g.generation?.takeIf { it.isNotEmpty() }?.let { Spacer(Modifier.width(6.dp)); Text(it.uppercase(), style = Blake.mono(6f, FontWeight.ExtraBold), color = Blake.faint, letterSpacing = 1.sp) }
                         }
                         // One line, trimmed at the end — three separate texts wrapped into two
                         // lines on a 360dp screen.
                         val detail = buildList {
-                            if (g.name != null && g.identity != null) add(g.identity)
+                            // Never on a house row: there the identity is the last miner seen, not the owner.
+                            if (!g.house && g.name != null && g.identity != null) add(g.identity)
                             g.accepted?.let { add(stringResource(R.string.blk_accepted_2, it.toString())) }
                             g.connectedS?.let { add(stringResource(R.string.blk_up, gwDur(it))) }
                         }.joinToString("  ")

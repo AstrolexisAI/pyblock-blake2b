@@ -1485,4 +1485,5 @@
     <string name="blk_a_rule_of_the_bitcoin_blake2b_client_not">A rule of the Bitcoin BLAKE2b client, not of the pool. What you are owed does not change — only how long it sits before it moves.</string>
     <string name="blk_its_own_node_builds_the_block_on_wavicles">ᛖ = its own node builds the block · on WAVICLES that is the only way in</string>
     <string name="blk_no_shares_yet">no shares yet</string>
+    <string name="blk_house">HOUSE</string>
 </resources>

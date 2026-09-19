@@ -624,4 +624,5 @@
     <string name="blk_a_rule_of_the_bitcoin_blake2b_client_not">这是 Bitcoin BLAKE2b 客户端的规则，不是矿池的规则。你应得的不变，变的只是它要等多久才能动。</string>
     <string name="blk_its_own_node_builds_the_block_on_wavicles">ᛖ = 自己的节点构建区块 · 在 WAVICLES 这是唯一的接入方式</string>
     <string name="blk_no_shares_yet">尚无份额</string>
+    <string name="blk_house">矿池</string>
 </resources>

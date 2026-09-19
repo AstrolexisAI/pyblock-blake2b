@@ -1481,4 +1481,5 @@
     <string name="blk_a_rule_of_the_bitcoin_blake2b_client_not">Es una regla del cliente Bitcoin BLAKE2b, no de la pool. Lo que te corresponde no cambia: cambia cuánto tiempo espera antes de moverse.</string>
     <string name="blk_its_own_node_builds_the_block_on_wavicles">ᛖ = su propio nodo arma el bloque · en WAVICLES es la única forma de entrar</string>
     <string name="blk_no_shares_yet">sin shares aún</string>
+    <string name="blk_house">CASA</string>
 </resources>
