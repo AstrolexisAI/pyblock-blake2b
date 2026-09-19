@@ -122,7 +122,7 @@ fun BlakeWaviclesScreen() {
 
             // "If a block is found right now"
             Spacer(Modifier.height(22.dp))
-            GatewaysCard(stats?.clients.orEmpty().map { GatewayRow.of(it) }, accent = Blake.wave, primeHashrateGhs = stats?.hashrate?.poolGhs)
+            GatewaysCard(stats?.clients.orEmpty().map { GatewayRow.of(it) }, accent = Blake.wave, primeHashrateGhs = stats?.hashrate?.poolGhs, allDatum = true)
             Spacer(Modifier.height(22.dp))
             // The blocks WAVICLES found, Ehwaz when the finder's own gateway built them. Until the feed
             // says so itself (asked for), the finder is matched against the window's DATUM identities.

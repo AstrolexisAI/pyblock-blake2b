@@ -1479,4 +1479,5 @@
     <string name="blk_blocks_to_go">Mancano %1$s blocchi.</string>
     <string name="blk_from_block_rewards_mined_from_block_onward">Dal blocco %1$s%2$s, le ricompense minate dal blocco %3$s in poi restano bloccate fino al blocco %4$s%5$s.</string>
     <string name="blk_a_rule_of_the_bitcoin_blake2b_client_not">È una regola del client Bitcoin BLAKE2b, non della pool. Quello che ti spetta non cambia: cambia solo quanto resta fermo prima di muoversi.</string>
+    <string name="blk_its_own_node_builds_the_block_on_wavicles">ᛖ = il suo nodo costruisce il blocco · su WAVICLES è l\'unico modo per entrare</string>
 </resources>

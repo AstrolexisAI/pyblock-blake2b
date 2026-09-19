@@ -42,7 +42,11 @@ data class GatewayRow(val id: String, val name: String?, val identity: String?, 
 /** The gateways connected to a product right now — names when their runners gave one, the software
  *  generation, shares accepted, uptime, last share. Same card on CAROUSEL, CHIRP and WAVICLES. */
 @Composable
-fun GatewaysCard(rows: List<GatewayRow>, accent: Color = Blake.datum, registered: Int? = null, primeHashrateGhs: Double? = null, startCollapsed: Boolean = false) {
+fun GatewaysCard(rows: List<GatewayRow>, accent: Color = Blake.datum, registered: Int? = null, primeHashrateGhs: Double? = null,
+                 startCollapsed: Boolean = false, allDatum: Boolean = false) {
+    // On WAVICLES every connected gateway mines through DATUM — there is no other way in — so the
+    // mark belongs on all of them. The server's `fee_path` says where the fee goes, which is a
+    // different question, and reading it as "is this DATUM?" left real gateways unmarked.
     // Start folded on a product with a dozen gateways: the list made the tab a long scroll before
     // anything else. The header keeps the count and the hashrate, so folded still says what matters.
     var expanded by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(!startCollapsed) }
@@ -80,11 +84,12 @@ fun GatewaysCard(rows: List<GatewayRow>, accent: Color = Blake.datum, registered
                     androidx.compose.foundation.layout.Box(Modifier.size(5.dp).background(if (g.live) Blake.ok else Blake.faint, CircleShape))
                     Spacer(Modifier.width(8.dp))
                     // A row without the rune keeps its width, so the names line up down the list.
-                    if (g.datum) RuneGlyph(Rune.EHWAZ, ink = Blake.datum, size = 12.dp) else Spacer(Modifier.width(12.dp))
+                    val datum = allDatum || g.datum
+                    if (datum) RuneGlyph(Rune.EHWAZ, ink = Blake.datum, size = 12.dp) else Spacer(Modifier.width(12.dp))
                     Spacer(Modifier.width(6.dp))
                     Column(Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(g.name ?: g.identity?.takeIf { it.isNotEmpty() } ?: stringResource(R.string.blk_unnamed_gateway), style = Blake.mono(10f, FontWeight.ExtraBold), color = if (g.datum) Blake.datum else Blake.fg, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                            Text(g.name ?: g.identity?.takeIf { it.isNotEmpty() } ?: stringResource(R.string.blk_unnamed_gateway), style = Blake.mono(10f, FontWeight.ExtraBold), color = if (datum) Blake.datum else Blake.fg, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
                             g.generation?.takeIf { it.isNotEmpty() }?.let { Spacer(Modifier.width(6.dp)); Text(it.uppercase(), style = Blake.mono(6f, FontWeight.ExtraBold), color = Blake.faint, letterSpacing = 1.sp) }
                         }
                         // One line, trimmed at the end — three separate texts wrapped into two
@@ -101,7 +106,8 @@ fun GatewaysCard(rows: List<GatewayRow>, accent: Color = Blake.datum, registered
                 }
             }
             Spacer(Modifier.height(4.dp))
-            Text(stringResource(R.string.blk_its_own_node_builds_the_block_the_other_), style = Blake.mono(7f), color = Blake.faint)
+            Text(stringResource(if (allDatum) R.string.blk_its_own_node_builds_the_block_on_wavicles else R.string.blk_its_own_node_builds_the_block_the_other_),
+                style = Blake.mono(7f), color = Blake.faint)
         }
     }
 }
