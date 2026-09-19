@@ -62,6 +62,10 @@ fun GatewaysCard(rows: List<GatewayRow>, accent: Color = Blake.datum, registered
     // Start folded on a product with a dozen gateways: the list made the tab a long scroll before
     // anything else. The header keeps the count and the hashrate, so folded still says what matters.
     var expanded by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(!startCollapsed) }
+    // A gateway whose runner has not set an address yet cannot be paid and sends no shares, so it says
+    // nothing to anyone reading this list — it used to sit there as an "unnamed gateway", sometimes for
+    // days. Kept out of the list and out of the count.
+    @Suppress("NAME_SHADOWING") val rows = rows.filter { !it.identity.isNullOrEmpty() || it.name != null || (it.accepted ?: 0) > 0 }
     Column(Modifier.fillMaxWidth().blakeCard()) {
         Row(Modifier.fillMaxWidth().clickableNoRipple { com.astrolexis.pyblock.ui.Haptics.tap(); expanded = !expanded }, verticalAlignment = Alignment.CenterVertically) {
             RuneGlyph(Rune.EHWAZ, ink = Blake.datum, size = 13.dp); Spacer(Modifier.width(6.dp))
