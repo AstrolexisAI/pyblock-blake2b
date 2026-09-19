@@ -1484,4 +1484,5 @@
     <string name="blk_from_block_rewards_mined_from_block_onward">From block %1$s%2$s, rewards mined from block %3$s onward stay locked until block %4$s%5$s.</string>
     <string name="blk_a_rule_of_the_bitcoin_blake2b_client_not">A rule of the Bitcoin BLAKE2b client, not of the pool. What you are owed does not change — only how long it sits before it moves.</string>
     <string name="blk_its_own_node_builds_the_block_on_wavicles">ᛖ = its own node builds the block · on WAVICLES that is the only way in</string>
+    <string name="blk_no_shares_yet">no shares yet</string>
 </resources>

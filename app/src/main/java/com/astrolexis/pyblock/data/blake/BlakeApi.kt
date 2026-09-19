@@ -140,7 +140,8 @@ object BlakeApi {
     @Serializable data class WClient(
         val gateway: String? = null, val generation: String? = null, val identity: String? = null, val name: String? = null,
         @SerialName("user_agent") val userAgent: String? = null, @SerialName("connected_s") val connectedS: Int? = null,
-        @SerialName("last_share_s") val lastShareS: Int? = null, val accepted: Int? = null, @SerialName("fee_path") val feePath: String? = null,
+        @SerialName("last_share_s") val lastShareS: Int? = null, @SerialName("last_share_ts") val lastShareTs: Long? = null,
+        val accepted: Int? = null, @SerialName("fee_path") val feePath: String? = null,
         val payable: Boolean? = null,
     ) { val onDatum get() = feePath == "datum" }
     @Serializable data class WHashrate(@SerialName("pool_ghs") val poolGhs: Double? = null)

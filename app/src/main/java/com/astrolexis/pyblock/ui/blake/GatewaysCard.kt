@@ -30,12 +30,17 @@ import com.astrolexis.pyblock.data.blake.BlakeRentals
 /** One connected gateway, whatever product it serves. [datum] = the finder's own node builds the
  *  block (Ehwaz); the house gateway is the other path. */
 data class GatewayRow(val id: String, val name: String?, val identity: String?, val generation: String?,
-                      val accepted: Int?, val connectedS: Int?, val lastShareS: Int?, val datum: Boolean) {
-    val live get() = (lastShareS ?: Int.MAX_VALUE) <= 600
+                      val accepted: Int?, val connectedS: Int?, val lastShareS: Int?, val datum: Boolean,
+                      /** A gateway that has never sent a share reports `last_share_s: 0`, which read as
+                       *  "0s ago" and lit the live dot — the opposite of the truth. Zero means never. */
+                      val everShared: Boolean) {
+    val live get() = everShared && (lastShareS ?: Int.MAX_VALUE) <= 600
     companion object {
-        fun of(r: BlakeApi.PrimeRunner) = GatewayRow((r.gateway ?: "") + (r.identity ?: ""), r.name?.takeIf { it.isNotEmpty() }, r.identity, r.generation, r.accepted, r.connectedS, r.lastShareS, true)
+        fun of(r: BlakeApi.PrimeRunner) = GatewayRow((r.gateway ?: "") + (r.identity ?: ""), r.name?.takeIf { it.isNotEmpty() }, r.identity, r.generation,
+            r.accepted, r.connectedS, r.lastShareS, true, (r.accepted ?: 0) > 0 || (r.lastShareS ?: 0) > 0)
         fun of(c: BlakeApi.WClient) = GatewayRow((c.gateway ?: "") + (c.identity ?: ""), c.name?.takeIf { it.isNotEmpty() }, c.identity,
-            c.generation ?: c.userAgent?.substringBefore('/'), c.accepted, c.connectedS, c.lastShareS, c.onDatum)
+            c.generation ?: c.userAgent?.substringBefore('/'), c.accepted, c.connectedS, c.lastShareS, c.onDatum,
+            (c.lastShareTs ?: 0L) > 0L || (c.accepted ?: 0) > 0)
     }
 }
 
@@ -102,7 +107,8 @@ fun GatewaysCard(rows: List<GatewayRow>, accent: Color = Blake.datum, registered
                         Text(detail, style = Blake.mono(7f), color = Blake.faint, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                     Spacer(Modifier.width(6.dp))
-                    Text(g.lastShareS?.let { agoText(it) } ?: "—", style = Blake.mono(8f), color = if (g.live) Blake.ok else Blake.faint, maxLines = 1, softWrap = false)
+                    Text(if (g.everShared) (g.lastShareS?.let { agoText(it) } ?: "—") else stringResource(R.string.blk_no_shares_yet),
+                        style = Blake.mono(8f), color = if (g.live) Blake.ok else Blake.faint, maxLines = 1, softWrap = false)
                 }
             }
             Spacer(Modifier.height(4.dp))
